@@ -32,4 +32,4 @@ Prepared by Dr Arveen Arasu, Gynecologic Oncologist.
 
 ## Website
 
-Visit the site at: `https://dr.arveen.arasu.gynaeoncologist.github.io`
+Visit the site at: `https://dr-arveen-arasu-gynaeoncologist.github.io`
