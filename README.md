@@ -1,4 +1,4 @@
-# dr.arveen.arasu.gynaeoncologist.github.io
+# dr-arveen-arasu-gynaeoncologist.github.io
 # Dr Arveen Arasu — Gynecologic Oncology Notes
 
 A growing educational website containing notes and resources related to gynecologic oncology.
