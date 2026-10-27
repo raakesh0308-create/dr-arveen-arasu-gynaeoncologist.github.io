@@ -25,7 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check page scripts for syntax errors
-        run: node --check assets/app.js && node --check assets/data.js
+        run: node --check assets/app.js && node --check assets/patient-data.js && node --check assets/config.js
+      - name: Refuse to publish professional content
+        run: |
+          if [ -e assets/data.js ] || grep -q "pro_content" assets/patient-data.js; then
+            echo "Professional content must not be in the public site"; exit 1
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

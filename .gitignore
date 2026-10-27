@@ -1,0 +1,4 @@
+.claude/
+data.js
+seed.sql
+*.local.*

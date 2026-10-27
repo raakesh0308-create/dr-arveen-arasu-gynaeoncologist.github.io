@@ -1,5 +1,6 @@
 (() => {
-const D = window.ARVEEN_DATA;
+/* Patient content is public (patient-data.js). Professional content is loaded from Supabase after sign-in. */
+let D = { ...window.ARVEEN_PUBLIC };
 const $ = (s, el = document) => el.querySelector(s);
 const app = $("#app");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -33,10 +34,10 @@ const supPill = g => g.superseded === "superseded" ? `<span class="pill bad">Sup
 const orgs = g => g.org.join(" / ");
 
 /* ---------- navigation ---------- */
-const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["about", "About"]];
-const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["about", "About"]];
+const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
+const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["governance", "How we check information"], ["about", "About"]];
 /* Each route name maps to its own HTML file; records use ?id= */
-const FILES = { home: "index.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
+const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", governance: "governance.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
@@ -48,9 +49,11 @@ function url(route) {
   return arg ? `${f}?id=${encodeURIComponent(arg)}` : f;
 }
 const PARAMS = new URLSearchParams(location.search);
-const PAGE = document.body.dataset.page || PAGE_BY_FILE[location.pathname.split("/").pop()] || "home";
+const PAGE = document.body.dataset.page || PAGE_BY_FILE[location.pathname.split("/").pop()] || "welcome";
 const PT_PAGES = ["pt", "ptcancers", "ptd", "leaflets", "l", "tracker", "glossary"];
-const SHARED_PAGES = ["workspace", "about", "sdm", "search"];
+const SHARED_PAGES = ["welcome", "login", "register", "reset", "governance", "workspace", "about", "sdm", "search"];
+const PUBLIC_PAGES = [...PT_PAGES, ...SHARED_PAGES];
+const GATED = !PUBLIC_PAGES.includes(PAGE);
 if (PT_PAGES.includes(PAGE)) state.aud = "pt"; else if (!SHARED_PAGES.includes(PAGE)) state.aud = "pro";
 store.set("aud", state.aud);
 state.q = PARAMS.get("q") || "";
@@ -61,16 +64,18 @@ function renderShell() {
       <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="7" fill="none" stroke="#7ee0e5" stroke-width="2"/><path d="M9 25 L17 8 L25 25" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/><path d="M12.5 19 H21.5" stroke="#b9a7f0" stroke-width="2.4" stroke-linecap="round"/></svg>
       <span><b>DR ARVEEN</b><small id="tagline"></small></span></a>
     <form class="msearch" id="msearch" role="search" action="search.html"><input id="mq" name="q" type="search" aria-label="Search DR ARVEEN"><button type="submit">Search</button></form>
-    <div class="aud" role="group" aria-label="Audience"><a id="aud-pro" href="index.html">For healthcare professionals</a><a id="aud-pt" href="patients.html">For patients and caregivers</a></div>
+    <div class="aud" role="group" aria-label="Audience"><a id="aud-pro" href="professional.html">For healthcare professionals</a><a id="aud-pt" href="patients.html">For patients and caregivers</a></div>
     <select class="lang" id="lang" aria-label="Language"><option value="en">English</option><option value="ms">Bahasa Malaysia</option><option value="zh">中文</option><option value="ta">தமிழ்</option></select>
     <button class="theme-btn" id="theme" type="button" aria-label="Switch light or dark mode">☾ Dark</button>
+    <span class="acct" id="acct"></span>
   </div><nav class="mnav" id="nav" aria-label="Sections"></nav></div>`;
   $("#foot").innerHTML = `<div class="in"><p><b>DR ARVEEN</b> — Advanced Reference and Verified Evidence Network for Gynaecological Oncology.</p>
-    <p>Educational reference only. It does not replace clinical assessment, an authorised prescription or your institution's protocols. Every clinical record is a seed record marked NOT VERIFIED. Always confirm against the original source.</p></div>`;
+    <p>Educational reference only. It does not replace clinical assessment, an authorised prescription or your institution's protocols. Professional content is for registered healthcare professionals. <a href="governance.html">How content is checked and approved</a>.</p></div>`;
 }
 renderShell();
 function renderNav() {
-  const items = state.aud === "pro" ? NAV_PRO : NAV_PT;
+  const items = (state.aud === "pro" ? NAV_PRO : NAV_PT).filter(([r]) => r !== "accounts" || isAdmin());
+  renderAcct();
   const map = { g: "guidelines", recs: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "ptcancers" };
   const cur = map[PAGE] || PAGE;
   $("#nav").innerHTML = items.map(([r, t]) => `<a href="${url(r)}" ${r === cur ? 'aria-current="page"' : ""}>${t}</a>`).join("");
@@ -79,7 +84,107 @@ function renderNav() {
   $("#tagline").textContent = state.aud === "pro" ? "Evidence. Guidelines. Clinical Excellence." : "Understand Your Diagnosis. Navigate Your Care.";
   $("#mq").placeholder = state.aud === "pro" ? "Search a cancer, guideline, drug, trial or stage" : "Search for your cancer, treatment, test or question";
 }
-function setAud(a) { state.aud = a; store.set("aud", a); location.href = a === "pro" ? "index.html" : "patients.html"; }
+function setAud(a) { state.aud = a; store.set("aud", a); location.href = a === "pro" ? "professional.html" : "patients.html"; }
+
+/* ---------- accounts (Supabase) ---------- */
+const CFG = window.ARVEEN_CONFIG || {};
+const sb = (window.supabase && CFG.supabaseUrl && !/YOUR-/.test(CFG.supabaseUrl + CFG.supabaseAnonKey)) ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey) : null;
+state.user = null; state.profile = null; state.proLoaded = false;
+const approved = () => state.profile?.status === "approved";
+const isAdmin = () => approved() && state.profile.role === "admin";
+const siteBase = () => location.origin + location.pathname.replace(/[^/]*$/, "");
+async function loadSession() {
+  if (!sb) return;
+  const { data: { session } } = await sb.auth.getSession();
+  state.user = session?.user || null;
+  if (state.user) { const { data } = await sb.from("profiles").select("*").eq("id", state.user.id).maybeSingle(); state.profile = data; }
+}
+async function loadPro() {
+  const { data, error } = await sb.from("pro_content").select("key,data");
+  if (error || !data?.length) return false;
+  D = { ...window.ARVEEN_PUBLIC, ...Object.fromEntries(data.map(r => [r.key, r.data])) };
+  state.proLoaded = true; return true;
+}
+function renderAcct() {
+  const el = $("#acct"); if (!el) return;
+  el.innerHTML = state.user
+    ? `<span class="acct-name" title="${esc(state.user.email)}">${esc(state.profile?.full_name || state.user.email)}</span><button class="theme-btn" id="signout" type="button">Sign out</button>`
+    : `<a class="theme-btn" href="login.html?next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}">Sign in</a>`;
+  const so = $("#signout"); if (so) so.onclick = async () => { await sb.auth.signOut(); location.href = "index.html"; };
+}
+const authErr = (msg) => { const e = $("#autherr"); if (e) { e.hidden = false; e.textContent = msg; } };
+const authOk = (msg) => { const e = $("#authok"); if (e) { e.hidden = false; e.innerHTML = msg; } };
+const notConfigured = () => `<p class="banner bad">Sign-in isn't connected yet. The site owner needs to finish the Supabase setup (see SUPABASE-SETUP.md in the repository).</p>`;
+const loginForm = () => `<form class="calc authbox" id="loginf"><h2>Sign in</h2>
+  <p class="muted">Professional content is for registered healthcare professionals with an approved DR ARVEEN account.</p>
+  <label for="li-email">Email<input id="li-email" type="email" autocomplete="email" required></label>
+  <label for="li-pass">Password<input id="li-pass" type="password" autocomplete="current-password" required></label>
+  <p class="result err" id="autherr" hidden></p>
+  <div class="toc"><button class="btn primary" type="submit">Sign in</button><a class="btn" href="register.html">Request an account</a><a class="btn" href="reset-password.html">Forgot password</a></div></form>`;
+function gateView() {
+  if (!sb) return `<h1>Healthcare professionals</h1>${notConfigured()}`;
+  if (!state.user) return `<span class="eyebrow">Healthcare professionals</span><h1>Sign in to continue</h1>${loginForm()}<p class="muted">Patients and caregivers don't need an account: <a href="patients.html">go to the Patient Education Centre</a>.</p>`;
+  const st = state.profile?.status;
+  if (st === "pending" || !st) return `<span class="eyebrow">Account</span><h1>Your account is waiting for approval</h1><p class="prose">We check each professional registration before giving access. You'll be able to use the professional pages once an administrator approves your account.</p><p class="muted">Signed in as ${esc(state.user.email)}.</p>`;
+  if (st === "rejected" || st === "suspended") return `<span class="eyebrow">Account</span><h1>Access not available</h1><p class="prose">This account doesn't have access to the professional pages. Contact the DR ARVEEN team if you think this is a mistake.</p>`;
+  return `<h1>Professional content isn't loaded yet</h1><p class="banner">Your account is approved, but the professional content hasn't been added to the database. The site owner needs to run the content import (see SUPABASE-SETUP.md).</p>`;
+}
+function bindAuth() {
+  const lf = $("#loginf");
+  if (lf) lf.onsubmit = async e => {
+    e.preventDefault();
+    const { error } = await sb.auth.signInWithPassword({ email: $("#li-email").value.trim(), password: $("#li-pass").value });
+    if (error) return authErr(error.message === "Email not confirmed" ? "Confirm your email first: open the link we sent you." : "That email and password don't match an account.");
+    const next = PARAMS.get("next"); location.href = PAGE === "login" ? (next && !/^[a-z]+:|^\/\//i.test(next) ? next : "professional.html") : location.href;
+  };
+  const rf = $("#regf");
+  if (rf) rf.onsubmit = async e => {
+    e.preventDefault();
+    const v = id => $("#" + id).value.trim();
+    if ($("#rg-pass").value.length < 8) return authErr("Use a password of at least 8 characters.");
+    if (!$("#rg-agree").checked) return authErr("Tick the confirmation box to continue.");
+    const { error } = await sb.auth.signUp({ email: v("rg-email"), password: $("#rg-pass").value, options: {
+      emailRedirectTo: siteBase() + "login.html",
+      data: { full_name: v("rg-name"), profession: v("rg-prof"), registration_body: v("rg-body"), registration_number: v("rg-num"), institution: v("rg-inst") } } });
+    if (error) return authErr(error.message);
+    rf.hidden = true; authOk("Request received. Check your email and open the confirmation link. An administrator will then verify your registration and approve your account.");
+  };
+  const pf = $("#resetf");
+  if (pf) pf.onsubmit = async e => {
+    e.preventDefault();
+    const { error } = await sb.auth.resetPasswordForEmail($("#rs-email").value.trim(), { redirectTo: siteBase() + "reset-password.html" });
+    if (error) return authErr(error.message);
+    authOk("If that email has an account, a reset link is on its way.");
+  };
+  const nf = $("#newpassf");
+  if (nf) nf.onsubmit = async e => {
+    e.preventDefault();
+    if ($("#np-pass").value.length < 8) return authErr("Use a password of at least 8 characters.");
+    const { error } = await sb.auth.updateUser({ password: $("#np-pass").value });
+    if (error) return authErr(error.message);
+    nf.hidden = true; authOk(`Password updated. <a href="professional.html">Continue</a>`);
+  };
+  if (PAGE === "accounts" && isAdmin()) loadAccounts();
+}
+async function loadAccounts() {
+  const box = $("#acctlist"); if (!box) return;
+  const { data, error } = await sb.from("profiles").select("*").order("created_at", { ascending: false });
+  if (error) { box.innerHTML = `<p class="result err">${esc(error.message)}</p>`; return; }
+  const pill = s => `<span class="pill ${s === "approved" ? "ok" : s === "pending" ? "warn" : "bad"}">${esc(s)}</span>`;
+  box.innerHTML = `<div class="tablewrap"><table><thead><tr><th>Name and email</th><th>Profession</th><th>Registration</th><th>Institution</th><th>Requested</th><th>Status</th><th>Role</th><th>Action</th></tr></thead><tbody>
+  ${data.map(p => `<tr><td><b>${esc(p.full_name)}</b><br><span class="muted">${esc(p.email)}</span></td><td>${esc(p.profession)}</td><td>${esc(p.registration_body)}<br><span class="mono">${esc(p.registration_number)}</span></td><td>${esc(p.institution)}</td>
+    <td class="mono">${esc((p.created_at || "").slice(0, 10))}</td><td>${pill(p.status)}${p.reviewed_at ? `<div class="muted" style="font-size:.75rem">${esc(p.reviewed_at.slice(0, 10))}</div>` : ""}</td>
+    <td><select data-role="${p.id}" aria-label="Role for ${esc(p.email)}">${["reader", "editor", "reviewer", "admin"].map(r => `<option ${r === p.role ? "selected" : ""}>${r}</option>`).join("")}</select></td>
+    <td><div class="toc">${p.id === state.user.id ? `<span class="muted">You</span>` : `<button class="btn" data-acct="${p.id}" data-st="approved">Approve</button><button class="btn" data-acct="${p.id}" data-st="rejected">Reject</button>${p.status === "approved" ? `<button class="btn" data-acct="${p.id}" data-st="suspended">Suspend</button>` : ""}`}</div></td></tr>`).join("") || `<tr><td colspan="8" class="muted">No account requests yet.</td></tr>`}
+  </tbody></table></div>`;
+  const upd = async (id, patch) => {
+    const { error } = await sb.from("profiles").update({ ...patch, reviewed_by: state.user.id, reviewed_at: new Date().toISOString() }).eq("id", id);
+    if (error) alertBox(error.message); loadAccounts();
+  };
+  box.querySelectorAll("[data-acct]").forEach(b => b.onclick = () => upd(b.dataset.acct, { status: b.dataset.st }));
+  box.querySelectorAll("[data-role]").forEach(s => s.onchange = () => upd(s.dataset.role, { role: s.value }));
+}
+const alertBox = msg => { const b = $("#acctmsg"); if (b) { b.hidden = false; b.textContent = msg; } };
 const root = document.documentElement;
 const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
 function applyTheme(t) { if (t) root.dataset.theme = t; $("#theme").textContent = isDark() ? "☀ Light" : "☾ Dark"; }
@@ -123,6 +228,12 @@ const SYN = { uterine: ["endometrial", "womb", "uterus"], endometrial: ["uterine
 function index() {
   const I = [];
   const add = (aud, type, id, route, title, text, meta, status, warn) => I.push({ aud, type, id, route, title, text: (title + " " + text).toLowerCase(), meta, status, warn });
+  if (!state.proLoaded) {
+    D.diseases.forEach(d => add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient, "About this cancer", "DRAFT"));
+    D.leaflets.forEach(l => add("pt", "Information leaflet", l.id, "l." + l.id, l.title, l.audience + " " + (l.sections || []).flat(2).join(" "), l.version, l.approval));
+    D.glossary.forEach(([t, d]) => add("pt", "Glossary", t, "glossary", t, d, d, "DRAFT"));
+    return I;
+  }
   D.guidelines.forEach(g => add("pro", "Guideline", g.id, "g." + g.id, g.title, [orgs(g), dname(g.disease), g.domain.join(" "), g.summary, g.version].join(" "), `${orgs(g)} · ${g.version || "version not recorded"} · ${dname(g.disease)}`, g.status, g.superseded === "superseded" ? "Superseded guidance" : ""));
   D.recommendations.forEach(r => add("pro", "Recommendation", r.id, "g." + r.guideline, r.text, [r.stage, r.biomarker, r.setting, dname(r.disease)].join(" "), `${r.id} · ${dname(r.disease)} · ${r.stage}`, r.status));
   D.diseases.forEach(d => { add("pro", "Disease reference", d.id, "d." + d.id, d.name, d.short, "Disease page", "NOT VERIFIED"); add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient, "About this cancer", "DRAFT"); });
@@ -134,7 +245,7 @@ function index() {
   D.glossary.forEach(([t, d]) => add("pt", "Glossary", t, "glossary", t, d, d, "DRAFT"));
   return I;
 }
-const IDX = index();
+let IDX = [];
 function search(q) {
   const terms = q.toLowerCase().split(/[\s,]+/).filter(Boolean);
   if (!terms.length) return [];
@@ -582,17 +693,109 @@ V.search = () => {
   const block = (t, l) => l.length ? `<section class="section"><h2>${t} <span class="muted" style="font-size:.9rem">${l.length}</span></h2><div class="list">${l.map(resultRow).join("")}</div></section>` : "";
   return `<span class="eyebrow">Search</span><h1>Results for “${esc(state.q)}”</h1>
   <div class="chips">${[["all", "All audiences"], ["pro", "Professional clinical"], ["pt", "Patient education"]].map(([k, t]) => `<button class="chip" data-saud="${k}" aria-pressed="${aud === k}">${t}</button>`).join("")}</div>
+  ${!state.proLoaded ? `<p class="banner info">Showing patient education results. <a href="login.html?next=${encodeURIComponent("search.html?q=" + state.q)}">Sign in</a> as an approved healthcare professional to search guidelines, staging, protocols, drugs and trials.</p>` : ""}
   ${!res.length ? `<p class="muted">No results. Try a disease name, a drug, an organisation (ESGO, FIGO) or a stage such as IIIC.</p>` : ""}
   ${aud !== "pt" ? block("Professional clinical results", pro) : ""}${aud !== "pro" ? block("Patient education results", pt) : ""}`;
 };
-const notFound = () => `<h1>Record not found</h1><p><a href="${url(`home`)}">Return home</a></p>`;
+const notFound = () => `<h1>Record not found</h1><p><a href="index.html">Return home</a></p>`;
+
+/* ---------- views: welcome, accounts, governance ---------- */
+V.welcome = () => `<section class="hero"><span class="eyebrow">Gynaecological oncology · Malaysia</span>
+  <h1>DR ARVEEN — Evidence-Based Gynaecological Oncology.</h1>
+  <p>Clinical guidelines, staging, treatment protocols and trial evidence for healthcare professionals, and clear, reliable information for patients and the people who care for them.</p></section>
+  <div class="cols">
+    <a class="tile entry" href="professional.html"><span class="eyebrow">For healthcare professionals</span><b>Clinical reference</b><span>Guidelines, recommendations, FIGO staging, protocols, drug monographs, trials, calculators and education. Sign-in required: accounts are approved after we verify your professional registration.</span><span class="btn primary">${state.user ? "Open the clinical reference" : "Sign in"}</span></a>
+    <a class="tile entry" href="patients.html"><span class="eyebrow">For patients and caregivers</span><b>Patient Education Centre</b><span>Understand your diagnosis, prepare for treatment and appointments, and track side effects. No account needed.</span><span class="btn">Go to patient information</span></a>
+  </div>
+  <p class="muted"><a href="governance.html">How DR ARVEEN checks and approves its information</a></p>`;
+V.login = () => !sb ? `<h1>Sign in</h1>${notConfigured()}` : state.user ? `<h1>You're signed in</h1><p><a class="btn primary" href="professional.html">Open the clinical reference</a></p>` : `<span class="eyebrow">Healthcare professionals</span><h1>Sign in</h1>${loginForm()}`;
+V.register = () => !sb ? `<h1>Request an account</h1>${notConfigured()}` : `<span class="eyebrow">Healthcare professionals</span><h1>Request an account</h1>
+  <p class="prose muted">Accounts are for registered healthcare professionals. After you confirm your email, an administrator checks your registration with the relevant Malaysian board or council before approving access. Patients don't need an account.</p>
+  <form class="calc authbox" id="regf">
+    <label for="rg-name">Full name<input id="rg-name" type="text" autocomplete="name" required></label>
+    <label for="rg-email">Work email<input id="rg-email" type="email" autocomplete="email" required></label>
+    <label for="rg-pass">Password (at least 8 characters)<input id="rg-pass" type="password" autocomplete="new-password" required></label>
+    <label for="rg-prof">Profession<select id="rg-prof"><option>Doctor</option><option>Pharmacist</option><option>Nurse</option><option>Medical trainee</option><option>Other healthcare professional</option></select></label>
+    <label for="rg-body">Registering body<select id="rg-body"><option>Malaysian Medical Council (MMC)</option><option>Pharmacy Board Malaysia</option><option>Malaysia Nursing Board</option><option>Other</option></select></label>
+    <label for="rg-num">Registration number<input id="rg-num" type="text" required></label>
+    <label for="rg-inst">Hospital or institution<input id="rg-inst" type="text" required></label>
+    <label class="check" for="rg-agree"><input id="rg-agree" type="checkbox"> I confirm I am a registered healthcare professional, and I agree that DR ARVEEN stores these details to verify my registration, as described on the <a href="governance.html#privacy">governance page</a>.</label>
+    <p class="result err" id="autherr" hidden></p>
+    <div class="toc"><button class="btn primary" type="submit">Request account</button><a class="btn" href="login.html">I already have an account</a></div>
+  </form><p class="banner info" id="authok" hidden></p>`;
+V.reset = () => !sb ? `<h1>Reset password</h1>${notConfigured()}` : `<span class="eyebrow">Account</span><h1>Reset your password</h1>
+  ${state.user ? `<form class="calc authbox" id="newpassf"><label for="np-pass">New password (at least 8 characters)<input id="np-pass" type="password" autocomplete="new-password" required></label><p class="result err" id="autherr" hidden></p><div><button class="btn primary" type="submit">Save new password</button></div></form>`
+  : `<form class="calc authbox" id="resetf"><label for="rs-email">Email<input id="rs-email" type="email" autocomplete="email" required></label><p class="result err" id="autherr" hidden></p><div><button class="btn primary" type="submit">Send reset link</button></div></form>`}
+  <p class="banner info" id="authok" hidden></p>`;
+V.accounts = () => `<span class="eyebrow">Administration</span><h1>Account approvals</h1>
+  <p class="prose muted">Before approving, check the registration number on the relevant public register (MMC, Pharmacy Board or Nursing Board) and that the name matches. Every change is recorded in the account audit log.</p>
+  <p class="result err" id="acctmsg" hidden></p><div id="acctlist"><p class="muted">Loading account requests…</p></div>`;
+
+const GOV_PRO = [
+  ["Discovered", "A new or revised source is identified (surveillance, reviewer, user report).", "Editor", "Source, date found"],
+  ["Source retrieved", "The official document is obtained and its licence checked.", "Editor", "Source URL, access and licence status"],
+  ["Extracted", "Metadata and recommendations are entered; wording marked as quotation or ARVEEN paraphrase.", "Editor", "Fields entered, text type"],
+  ["Structured", "Linked to disease, stage, biomarker, trials and protocols.", "Editor", "Links"],
+  ["Clinically reviewed", "A clinician checks every field against the source.", "Clinical reviewer (not the editor)", "Reviewer name, date, comments"],
+  ["Approved", "Final sign-off. High-risk prescribing content needs a second clinician or pharmacist.", "Clinical lead (+ pharmacist for doses)", "Approver, date"],
+  ["Published", "Visible to approved professionals.", "Editor", "Version, publish date"],
+  ["Monitored", "Watched for new editions, corrections and withdrawals.", "Editor", "Last check date"],
+  ["Revised or superseded", "Updates go back through review. Superseded records stay visible with a warning.", "Clinical reviewer", "Change summary, affected records"]];
+const GOV_PT = [
+  ["Draft", "Written in plain language from approved clinical records only.", "Author", "Sources used, reading level"],
+  ["Editorial review", "Checks readability, structure, tone and cultural sensitivity.", "Editorial reviewer", "Comments"],
+  ["Clinical review", "Checks medical accuracy, risks and the 'when to seek help' section.", "Clinical reviewer", "Reviewer, date"],
+  ["Language review", "For translations: a qualified translator and a clinician fluent in the language.", "Language reviewer + clinician", "Translation version"],
+  ["Approved", "Final sign-off. Only now can 'Approved' appear on the leaflet or its PDF.", "Clinical lead", "Approver, date"],
+  ["Published", "Visible to everyone.", "Editor", "Version, publish date"],
+  ["Review due", "Scheduled re-check, or triggered by a guideline change.", "Editor", "Next review date"],
+  ["Revised or withdrawn", "Changes go back through review; outdated leaflets are withdrawn.", "Clinical lead", "Decision, date"]];
+const GOV_TYPES = [
+  ["Guideline record", "Clinical reviewer", "Metadata matches the official source; licence recorded"],
+  ["Recommendation", "Clinical reviewer", "Text matches source meaning; original grade and strength transcribed"],
+  ["Staging system", "Clinical reviewer", "Definitions checked against the staging publication; no mixing of versions"],
+  ["Treatment protocol (high risk)", "Two people: clinician and pharmacist", "Doses from an authoritative protocol, never a trial paper alone"],
+  ["Drug monograph", "Pharmacist", "Checked against official product information; NPRA status confirmed"],
+  ["Clinical trial", "Clinical reviewer", "Numbers taken from the full publication; report type recorded"],
+  ["Algorithm or calculator", "Clinician + tested", "Formula tested; source version recorded; regulatory status checked"],
+  ["Patient leaflet", "Editorial + clinical (+ language)", "Plain language; safety section clinically reviewed"],
+  ["Guideline update alert", "Clinical reviewer", "Decides whether linked records and leaflets must change"]];
+const GOV_LAUNCH = [
+  ["Clinical governance", "Name a clinical lead responsible for content, and reviewers for each content type. Record who approved what."],
+  ["Personal Data Protection Act 2010 (as amended)", "Accounts collect names, emails and registration numbers. You need a privacy notice, consent at registration, security safeguards, a retention period, and a process for access and correction requests. Check whether you must appoint a data protection officer and notify data breaches, and whether storing data with Supabase outside Malaysia meets the cross-border transfer rules."],
+  ["Supabase data processing terms", "Choose the Singapore region, accept Supabase's data processing agreement, and turn on multi-factor sign-in for administrator accounts."],
+  ["Medical Device Authority (MDA) Malaysia", "Calculators and decision pathways may count as medical-device software under the Medical Device Act 2012. Get MDA advice before presenting them as clinical decision support."],
+  ["Medicine advertising rules", "The Medicines (Advertisement and Sale) Act 1956 restricts advertising treatments for cancer to the public. Keep patient pages educational, never promotional, and get advice from the Medicine Advertisements Board if unsure."],
+  ["Malaysian Medical Council guidance", "A doctor-named site must follow MMC guidance on professional conduct and on how doctors may present information and services to the public."],
+  ["Copyright Act 1987 and source licences", "Link to guidelines and write original summaries. Get written permission before reproducing tables, figures or text (for example NCCN or FIGO material)."],
+  ["Terms of use and disclaimer", "Have a lawyer review the disclaimer, terms of use and privacy notice."],
+  ["Employer or institution approval", "If you work for a hospital or university, check its policies on external publications and use of its name."],
+  ["Professional indemnity", "Confirm with your indemnity provider that publishing clinical educational content is covered."],
+  ["Accessibility and security", "Check pages meet WCAG 2.1 AA; test that unapproved accounts cannot read professional content."]];
+const govTable = (head, rows) => `<div class="tablewrap"><table><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td>${i === 0 ? `<b>${esc(c)}</b>` : esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+V.governance = () => `<article class="detail"><div class="dhead"><span class="eyebrow">Governance</span><h1>How DR ARVEEN checks and approves information</h1>
+  <p class="prose muted">Every piece of content passes named review steps before it is published. This page lists those steps, who signs off, how professional accounts are approved, and the approvals needed before launch.</p></div>
+  <section class="section"><h2>1. Professional content workflow</h2>${govTable(["Stage", "What happens", "Who signs off", "What is recorded"], GOV_PRO)}</section>
+  <section class="section"><h2>2. Patient content workflow</h2>${govTable(["Stage", "What happens", "Who signs off", "What is recorded"], GOV_PT)}</section>
+  <section class="section"><h2>3. Sign-off by content type</h2>${govTable(["Content", "Required sign-off", "Checks"], GOV_TYPES)}</section>
+  <section class="section"><h2>4. Who can see what</h2>${govTable(["Area", "Access", "Why"], [["Patient Education Centre", "Everyone, no account", "Patients and caregivers need open access to reliable information"], ["Professional clinical reference", "Approved healthcare professionals only", "Doses, protocols and recommendations need clinical context and are not patient advice"], ["Account approvals", "Administrators only", "Verifying registrations and roles"], ["Editing content", "Editors and reviewers", "Separation between authoring and approval"]])}</section>
+  <section class="section"><h2>5. Professional account approval</h2><ol class="prose steps">
+    <li>The professional requests an account with name, work email, profession, registering body, registration number and institution.</li>
+    <li>They confirm their email address through the link sent to them.</li>
+    <li>An administrator checks the registration number on the public register of the Malaysian Medical Council, Pharmacy Board Malaysia or Malaysia Nursing Board, and that the name matches.</li>
+    <li>The administrator approves or rejects the request. The decision, reviewer and date are recorded in the audit log.</li>
+    <li>Approved accounts are re-checked every year; accounts are suspended if registration lapses or access is misused.</li></ol></section>
+  <section class="section" id="privacy"><h2>6. Privacy for account holders</h2><p class="prose">DR ARVEEN stores your name, email, profession, registering body, registration number and institution only to verify your registration and manage access. It does not store patient information. You can ask to see, correct or delete your details. Bookmarks, notes and side-effect tracker entries stay in your own browser and are not sent to DR ARVEEN.</p></section>
+  <section class="section"><h2>7. Approvals needed before public launch</h2>
+    <p class="banner">This checklist is a starting point, not legal advice. Confirm each item with a Malaysian lawyer and the relevant authority.</p>
+    ${govTable(["Approval", "What to do"], GOV_LAUNCH)}</section></article>`;
 
 /* ---------- router ---------- */
 function render() {
   const base = PAGE, arg = PARAMS.get("id") || "";
   renderNav();
   const view = V[base]; app.innerHTML = view ? view(arg) : notFound();
-  const h1 = app.querySelector("h1"); if (h1 && base !== "home" && base !== "pt") document.title = h1.textContent.trim() + " · DR ARVEEN";
+  const h1 = app.querySelector("h1"); if (h1 && !["home", "pt", "welcome"].includes(base)) document.title = h1.textContent.trim() + " · DR ARVEEN";
   $("#mq").value = base === "search" ? state.q : "";
   const hs = $("#hs"); if (hs) hs.onsubmit = e => { e.preventDefault(); state.q = $("#hq").value.trim(); go("search"); };
   app.querySelectorAll("[data-q]").forEach(c => c.onclick = () => { state.q = c.dataset.q; go("search"); });
@@ -605,7 +808,20 @@ function render() {
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
-  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker();
+  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth();
 }
-render();
+async function boot() {
+  renderNav();
+  app.innerHTML = `<p class="muted">Loading…</p>`;
+  try { await loadSession(); if (approved() && (GATED || PAGE === "search" || PAGE === "workspace")) await loadPro(); } catch (e) { console.error(e); }
+  IDX = index();
+  if ((GATED && !state.proLoaded) || (PAGE === "accounts" && !isAdmin())) {
+    renderNav();
+    app.innerHTML = PAGE === "accounts" && state.proLoaded ? `<h1>Administrators only</h1><p class="prose">Account approvals are limited to administrators.</p>` : gateView();
+    document.title = "Sign in · DR ARVEEN";
+    bindAuth(); return;
+  }
+  render();
+}
+boot();
 })();
