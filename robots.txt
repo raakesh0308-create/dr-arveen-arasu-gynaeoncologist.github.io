@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://raakesh0308-create.github.io/dr-arveen-arasu-gynaeoncologist.github.io/sitemap.xml

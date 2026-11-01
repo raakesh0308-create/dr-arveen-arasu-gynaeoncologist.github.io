@@ -66,6 +66,12 @@ Also turn on multi-factor sign-in for your Supabase dashboard account (**Account
 2. Check the registration number on the public register of the relevant body (Malaysian Medical Council, Pharmacy Board Malaysia or Malaysia Nursing Board), and that the name matches.
 3. Click **Approve** or **Reject**. You can also change roles (reader, editor, reviewer, admin) or suspend an account. Every change is saved in the `account_audit` table.
 
+## 8. Problem reports (upgrade 2)
+
+Every page has a "Report a problem with this page" form. Reports go into a `feedback` table that only administrators can read; they appear under **Reported problems** on the Accounts page.
+
+If you ran `setup.sql` before this feature was added, run `supabase/upgrade-2-feedback.sql` once in **SQL Editor → New query**. New projects get it automatically from `setup.sql`.
+
 ## Test the protection
 
 After setup, check all of these:

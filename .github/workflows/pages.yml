@@ -24,13 +24,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Check page scripts for syntax errors
-        run: node --check assets/app.js && node --check assets/patient-data.js && node --check assets/config.js
-      - name: Refuse to publish professional content
-        run: |
-          if [ -e assets/data.js ] || grep -q "pro_content" assets/patient-data.js; then
-            echo "Professional content must not be in the public site"; exit 1
-          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Safety checks (no professional content or secret keys, all pages present, scripts valid)
+        run: node tools/check.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

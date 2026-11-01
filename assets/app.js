@@ -37,7 +37,7 @@ const orgs = g => g.org.join(" / ");
 const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
 const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["governance", "How we check information"], ["about", "About"]];
 /* Each route name maps to its own HTML file; records use ?id= */
-const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", governance: "governance.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
+const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
@@ -51,7 +51,7 @@ function url(route) {
 const PARAMS = new URLSearchParams(location.search);
 const PAGE = document.body.dataset.page || PAGE_BY_FILE[location.pathname.split("/").pop()] || "welcome";
 const PT_PAGES = ["pt", "ptcancers", "ptd", "leaflets", "l", "tracker", "glossary"];
-const SHARED_PAGES = ["welcome", "login", "register", "reset", "governance", "workspace", "about", "sdm", "search"];
+const SHARED_PAGES = ["welcome", "login", "register", "reset", "governance", "privacy", "workspace", "about", "sdm", "search"];
 const PUBLIC_PAGES = [...PT_PAGES, ...SHARED_PAGES];
 const GATED = !PUBLIC_PAGES.includes(PAGE);
 if (PT_PAGES.includes(PAGE)) state.aud = "pt"; else if (!SHARED_PAGES.includes(PAGE)) state.aud = "pro";
@@ -69,8 +69,32 @@ function renderShell() {
     <button class="theme-btn" id="theme" type="button" aria-label="Switch light or dark mode">☾ Dark</button>
     <span class="acct" id="acct"></span>
   </div><nav class="mnav" id="nav" aria-label="Sections"></nav></div>`;
-  $("#foot").innerHTML = `<div class="in"><p><b>DR ARVEEN</b> — Advanced Reference and Verified Evidence Network for Gynaecological Oncology.</p>
-    <p>Educational reference only. It does not replace clinical assessment, an authorised prescription or your institution's protocols. Professional content is for registered healthcare professionals. <a href="governance.html">How content is checked and approved</a>.</p></div>`;
+  $("#foot").innerHTML = `<div class="in">
+    <section class="report" aria-labelledby="rp-h"><h2 id="rp-h" class="report-h">Report a problem with this page</h2>
+      <p class="muted">Found an error, an out-of-date statement or a broken link? Tell us. Don't include any patient's personal or medical details.</p>
+      <details><summary class="btn">Report a problem</summary>
+      <form class="calc authbox" id="reportf">
+        <label for="rp-cat">What kind of problem?<select id="rp-cat"><option>Clinical content may be wrong or out of date</option><option>Something is unclear</option><option>Broken link or page error</option><option>Accessibility problem</option><option>Other</option></select></label>
+        <label for="rp-msg">Describe the problem<textarea id="rp-msg" maxlength="2000" required></textarea></label>
+        <label for="rp-contact">Your email, if you'd like a reply (optional)<input id="rp-contact" type="email" maxlength="200" autocomplete="email"></label>
+        <p class="result err" id="rp-err" hidden></p><p class="banner info" id="rp-ok" hidden></p>
+        <div><button class="btn primary" type="submit">Send report</button></div>
+      </form></details></section>
+    <p><b>DR ARVEEN</b> — Advanced Reference and Verified Evidence Network for Gynaecological Oncology.</p>
+    <p>Educational reference only. It does not replace clinical assessment, an authorised prescription or your institution's protocols. Professional content is for registered healthcare professionals.</p>
+    <p class="footlinks"><a href="about.html">About and disclosures</a><a href="governance.html">How content is checked and approved</a><a href="privacy.html">Privacy notice</a><a href="patients.html">Patient Education Centre</a></p></div>
+    <div class="storage-note" id="storenote" hidden><p>DR ARVEEN keeps your settings, bookmarks, notes and tracker entries in this browser only. <a href="privacy.html">Privacy notice</a></p><button class="btn" type="button" id="storeok">OK</button></div>`;
+  if (!store.get("storeok", false)) { $("#storenote").hidden = false; $("#storeok").onclick = () => { store.set("storeok", true); $("#storenote").hidden = true; }; }
+  $("#reportf").onsubmit = async e => {
+    e.preventDefault();
+    const err = $("#rp-err"), ok = $("#rp-ok"); err.hidden = ok.hidden = true;
+    const message = $("#rp-msg").value.trim();
+    if (message.length < 5) { err.hidden = false; err.textContent = "Describe the problem in a few words."; return; }
+    if (!sb) { err.hidden = false; err.textContent = "Reporting isn't connected yet. Please try again later."; return; }
+    const { error } = await sb.from("feedback").insert({ page: (location.pathname.split("/").pop() || "index.html") + location.search, category: $("#rp-cat").value, message, contact: $("#rp-contact").value.trim() || null });
+    if (error) { err.hidden = false; err.textContent = "Your report couldn't be sent. Please try again later."; return; }
+    $("#reportf").reset(); ok.hidden = false; ok.textContent = "Thank you. Your report has been sent to the DR ARVEEN team.";
+  };
 }
 renderShell();
 function renderNav() {
@@ -164,7 +188,19 @@ function bindAuth() {
     if (error) return authErr(error.message);
     nf.hidden = true; authOk(`Password updated. <a href="professional.html">Continue</a>`);
   };
-  if (PAGE === "accounts" && isAdmin()) loadAccounts();
+  if (PAGE === "accounts" && isAdmin()) { loadAccounts(); loadFeedback(); }
+}
+async function loadFeedback() {
+  const box = $("#fblist"); if (!box) return;
+  const { data, error } = await sb.from("feedback").select("*").order("created_at", { ascending: false }).limit(200);
+  if (error) { box.innerHTML = `<p class="result err">Reports couldn't be loaded. Check that the feedback table from supabase/setup.sql exists.</p>`; return; }
+  box.innerHTML = `<div class="tablewrap"><table><thead><tr><th>Received</th><th>Page</th><th>Type</th><th>Report</th><th>Contact</th><th>Status</th></tr></thead><tbody>
+  ${data.map(f => `<tr><td class="mono">${esc((f.created_at || "").slice(0, 10))}</td><td>${/^[a-z0-9-]+\.html(\?[\w=&%.~-]*)?$/i.test(f.page || "") ? `<a href="${esc(f.page)}">${esc(f.page)}</a>` : esc(f.page)}</td><td>${esc(f.category)}</td><td style="max-width:40ch;white-space:pre-wrap">${esc(f.message)}</td><td>${esc(f.contact || "—")}</td>
+    <td>${f.status === "open" ? `<button class="btn" data-fb="${f.id}">Mark resolved</button>` : `<span class="pill ok">Resolved</span>`}</td></tr>`).join("") || `<tr><td colspan="6" class="muted">No reports yet.</td></tr>`}</tbody></table></div>`;
+  box.querySelectorAll("[data-fb]").forEach(b => b.onclick = async () => {
+    const { error } = await sb.from("feedback").update({ status: "resolved", resolved_by: state.user.id, resolved_at: new Date().toISOString() }).eq("id", b.dataset.fb);
+    if (error) alertBox(error.message); loadFeedback();
+  });
 }
 async function loadAccounts() {
   const box = $("#acctlist"); if (!box) return;
@@ -608,7 +644,36 @@ V.about = () => `<article class="detail prose" style="max-width:820px"><span cla
   <h2>Malaysian applicability labels</h2><div class="chips">${Object.keys(MY).map(myLabel).join(" ")}</div>
   <h2>Editorial workflow</h2><p><b>Professional content</b></p>${pipe(PRO_FLOW, "")}<p><b>Patient content</b></p>${pipe(PT_FLOW, "")}
   <h2>Copyright and licensing</h2><p>DR ARVEEN links to official sources and writes its own summaries. It does not reproduce restricted guidelines or proprietary pocket guides. Every imported item records its source and licence.</p>
-  <h2>Privacy</h2><p>This prototype stores bookmarks, notes and tracker entries only in your browser. Nothing is sent to a server or a third party.</p></article>`;
+  <h2>Who runs DR ARVEEN</h2><p class="todo">[To be completed by the owner: name, qualifications, registration body and number, and the institution, if any, that DR ARVEEN is affiliated with.]</p>
+  <h2>Clinical lead and reviewers</h2><p class="todo">[To be completed: the clinical lead responsible for content, and the reviewers for each content type, with their qualifications.]</p>
+  <h2>Funding</h2><p class="todo">[To be completed: how DR ARVEEN is funded. If it is self-funded, say so.]</p>
+  <h2>Advertising and sponsorship</h2><p>DR ARVEEN does not carry advertising and does not accept sponsorship that could influence its content. No pharmaceutical or device company reviews or approves content before publication.</p>
+  <h2>Conflicts of interest</h2><p class="todo">[To be completed: any financial or professional interests of the owner and reviewers (for example speaker fees, advisory boards, research funding). If there are none, write "None declared" and the date.]</p>
+  <h2>Corrections</h2><p>Use "Report a problem with this page" at the bottom of any page. Clinical errors are reviewed by a clinician, and corrections are recorded in each record's version history.</p>
+  <h2>Privacy</h2><p>See the <a href="privacy.html">privacy notice</a>.</p></article>`;
+
+V.privacy = () => `<article class="detail prose" style="max-width:820px"><span class="eyebrow">Privacy</span><h1>Privacy notice</h1>
+  <p class="banner">Draft for legal review. Have a Malaysian lawyer check this notice against the Personal Data Protection Act 2010 (as amended) before relying on it.</p>
+  <h2>Who is responsible</h2><p class="todo">[To be completed: the name and contact address of the person or organisation responsible for DR ARVEEN (the data user), and the data protection officer if one is appointed.]</p>
+  <h2>Patients and caregivers</h2><p>You don't need an account, and DR ARVEEN doesn't ask for your name or medical details. Bookmarks, notes, checklists and side-effect tracker entries stay in your own browser. They are not sent to DR ARVEEN or anyone else, and they are lost if you clear your browser data.</p>
+  <h2>Healthcare professional accounts</h2><p>When you request an account, DR ARVEEN collects your name, work email, profession, registering body, registration number, institution and password. The password is stored only in encrypted (hashed) form by our sign-in provider.</p>
+  <p>We use these details to verify your professional registration, decide whether to approve access, keep you signed in, and contact you about your account. We record who approved or changed each account, and when.</p>
+  <h2>Problem reports</h2><p>If you report a problem, we store the page address, your description and, if you give it, your email address. Please don't include any patient's personal or medical details.</p>
+  <h2>Where your data is stored</h2><p>Account details and problem reports are stored by Supabase, our database and sign-in provider, in its Singapore data centre. The website files are hosted by GitHub Pages. Fonts are loaded from Google Fonts and the sign-in code from the jsDelivr network, which can see your IP address when they deliver these files.</p>
+  <h2>How long we keep it</h2><p class="todo">[To be completed: for example, account details for as long as the account is active plus 12 months; problem reports for 24 months.]</p>
+  <h2>Your rights</h2><p>You can ask to see the personal data we hold about you, ask us to correct it, withdraw your consent and close your account. <span class="todo">[To be completed: how to contact us to make a request.]</span></p>
+  <h2>Cookies and browser storage</h2><p>DR ARVEEN uses no advertising or tracking cookies and no analytics. It uses your browser's storage only for your settings, saved items and, if you have an account, keeping you signed in.</p>
+  <h2>Changes to this notice</h2><p>We will update the date below when this notice changes. <span class="todo">[Last updated: to be completed]</span></p></article>`;
+
+/* Review details shown at the end of every record page */
+const REVIEW_SRC = { g: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "diseases" };
+function reviewBlock(rec) {
+  const by = rec.reviewer, last = rec.verifiedOn || rec.lastReview, next = rec.nextReview;
+  return `<aside class="reviewed" aria-label="Review information"><div><span class="eyebrow">Reviewed by</span><span>${by ? esc(by) : '<span class="na">Not yet reviewed</span>'}</span></div>
+    <div><span class="eyebrow">Last reviewed</span><span>${last ? esc(last) : '<span class="na">—</span>'}</span></div>
+    <div><span class="eyebrow">Next review due</span><span>${next ? esc(next) : '<span class="na">Set at first review</span>'}</span></div>
+    <div><span class="eyebrow">Status</span><span>${statusPill(rec.status || rec.approval || "NOT VERIFIED")}</span></div></aside>`;
+}
 
 /* ---------- views: patient ---------- */
 V.pt = () => `<div class="patient detail">${transBanner()}
@@ -729,7 +794,8 @@ V.reset = () => !sb ? `<h1>Reset password</h1>${notConfigured()}` : `<span class
   <p class="banner info" id="authok" hidden></p>`;
 V.accounts = () => `<span class="eyebrow">Administration</span><h1>Account approvals</h1>
   <p class="prose muted">Before approving, check the registration number on the relevant public register (MMC, Pharmacy Board or Nursing Board) and that the name matches. Every change is recorded in the account audit log.</p>
-  <p class="result err" id="acctmsg" hidden></p><div id="acctlist"><p class="muted">Loading account requests…</p></div>`;
+  <p class="result err" id="acctmsg" hidden></p><div id="acctlist"><p class="muted">Loading account requests…</p></div>
+  <section class="section"><h2>Reported problems</h2><p class="prose muted">Reports sent from "Report a problem with this page". Clinical reports need a clinician to review the record before you mark them resolved.</p><div id="fblist"><p class="muted">Loading reports…</p></div></section>`;
 
 const GOV_PRO = [
   ["Discovered", "A new or revised source is identified (surveillance, reviewer, user report).", "Editor", "Source, date found"],
@@ -796,6 +862,8 @@ function render() {
   renderNav();
   const view = V[base]; app.innerHTML = view ? view(arg) : notFound();
   const h1 = app.querySelector("h1"); if (h1 && !["home", "pt", "welcome"].includes(base)) document.title = h1.textContent.trim() + " · DR ARVEEN";
+  const rec = REVIEW_SRC[base] && (D[REVIEW_SRC[base]] || []).find(x => x.id === arg);
+  if (rec) app.insertAdjacentHTML("beforeend", reviewBlock(rec));
   $("#mq").value = base === "search" ? state.q : "";
   const hs = $("#hs"); if (hs) hs.onsubmit = e => { e.preventDefault(); state.q = $("#hq").value.trim(); go("search"); };
   app.querySelectorAll("[data-q]").forEach(c => c.onclick = () => { state.q = c.dataset.q; go("search"); });
