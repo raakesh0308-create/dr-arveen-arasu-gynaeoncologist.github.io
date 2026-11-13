@@ -176,25 +176,147 @@ window.ARVEEN_PUBLIC = {
    "id": "vaginal",
    "name": "Vaginal cancer",
    "patient": "Cancer that starts in the vagina. It is rare. Doctors first check that the cancer has not spread there from somewhere nearby.",
-   "patientSections": null
+   "patientSections": [
+    [
+     "What stage means",
+     [
+      "Stage 1 means the cancer is only in the wall of the vagina. Stage 2 means it has grown into the tissue next to the vagina. Stage 3 means it has reached the wall of the pelvis or nearby lymph nodes. Stage 4 means it has spread to the bladder, bowel or further.",
+      "Because vaginal cancer is rare, your care should be planned by a specialist gynaecological cancer team."
+     ]
+    ],
+    [
+     "Tests you may have",
+     [
+      "Examination of the vagina, sometimes under anaesthetic, and colposcopy.",
+      "A biopsy to confirm the diagnosis.",
+      "MRI of the pelvis, and CT or PET-CT scans.",
+      "Your doctors will also check that the cancer has not spread to the vagina from the cervix, womb or vulva."
+     ]
+    ],
+    [
+     "Treatment options",
+     [
+      "Radiotherapy is the main treatment for many vaginal cancers. It usually combines external beam radiotherapy and brachytherapy, sometimes with chemotherapy.",
+      "Surgery may be suitable for some small, early cancers.",
+      "Your team will explain the options that suit the position and size of your cancer."
+     ]
+    ],
+    [
+     "Living with and after cancer",
+     [
+      "Treatment can cause vaginal narrowing and dryness. Vaginal dilators and lubricants can help.",
+      "Ask about effects on your bowel, bladder and sex life, and about menopause if your ovaries are affected."
+     ]
+    ]
+   ]
   },
   {
    "id": "sarcoma",
    "name": "Uterine sarcomas",
    "patient": "Rare cancers that start in the muscle or supporting tissue of the womb, rather than its lining. They are treated differently from endometrial cancer.",
-   "patientSections": null
+   "patientSections": [
+    [
+     "What stage means",
+     [
+      "Uterine sarcomas are staged by whether the cancer is only in the womb, has spread within the pelvis, has spread into the tummy, or has spread to distant organs such as the lungs.",
+      "There are several types, such as leiomyosarcoma and endometrial stromal sarcoma. The type matters as much as the stage when planning treatment."
+     ]
+    ],
+    [
+     "Tests you may have",
+     [
+      "Ultrasound, MRI and CT scans.",
+      "A biopsy where possible. Sarcomas are sometimes only found after surgery for what was thought to be a fibroid.",
+      "Specialist review of the tissue by an expert pathologist."
+     ]
+    ],
+    [
+     "Treatment options",
+     [
+      "Surgery to remove the womb is the main treatment. Whether the ovaries are also removed depends on the type of sarcoma and your age.",
+      "Some people are offered chemotherapy, radiotherapy or hormone treatment, depending on the type and stage.",
+      "Because these cancers are rare, your treatment should be discussed by a team with sarcoma expertise."
+     ]
+    ],
+    [
+     "Living with and after cancer",
+     [
+      "Follow-up usually includes regular check-ups and scans.",
+      "Ask about menopause and fertility before surgery if they matter to you."
+     ]
+    ]
+   ]
   },
   {
    "id": "gtn",
    "name": "Gestational trophoblastic neoplasia",
    "patient": "Rare conditions that develop from cells that would normally form the placenta in pregnancy. Care is usually coordinated by a specialist centre, and hCG blood tests are used to monitor it.",
-   "patientSections": null
+   "patientSections": [
+    [
+     "What stage means",
+     [
+      "Gestational trophoblastic neoplasia (GTN) is given a stage based on where it has spread, and a risk score based on factors such as the hCG level and how long ago the pregnancy was.",
+      "The risk score helps decide which treatment is needed: a single chemotherapy medicine for lower-risk disease, or a combination for higher-risk disease."
+     ]
+    ],
+    [
+     "Tests you may have",
+     [
+      "Regular hCG blood or urine tests.",
+      "An ultrasound scan of the pelvis.",
+      "A chest X-ray or CT scan, and sometimes other scans."
+     ]
+    ],
+    [
+     "Treatment options",
+     [
+      "Most people are treated with chemotherapy. GTN usually responds very well to treatment.",
+      "Surgery is used in some situations.",
+      "Care is usually coordinated by a specialist centre with experience in GTN."
+     ]
+    ],
+    [
+     "Living with and after cancer",
+     [
+      "You will have hCG checks for some time after treatment to make sure the condition has not returned.",
+      "Your team will advise you about contraception and about when you can try for a pregnancy. Many people go on to have healthy pregnancies."
+     ]
+    ]
+   ]
   },
   {
    "id": "rare",
    "name": "Rare gynaecological malignancies",
    "patient": "Some gynaecological cancers are very rare. Your specialist team will explain what is known about your type and where specialist advice is available.",
-   "patientSections": null
+   "patientSections": [
+    [
+     "Rare cancers need specialist care",
+     [
+      "Some gynaecological cancers are very rare. Fewer doctors have seen them, so it is reasonable to ask whether your care is being discussed with a specialist centre or a rare cancer network."
+     ]
+    ],
+    [
+     "Tests you may have",
+     [
+      "Expert pathology review of your biopsy or surgery specimen is especially important, because the exact type guides treatment.",
+      "Scans to find out whether the cancer has spread."
+     ]
+    ],
+    [
+     "Treatment options",
+     [
+      "Treatment depends on the exact type and is often based on smaller studies than for common cancers. Ask your team how they reached their recommendation.",
+      "Ask whether a clinical trial might be suitable for you."
+     ]
+    ],
+    [
+     "Getting support",
+     [
+      "Patient groups for rare cancers can put you in touch with others who have the same condition.",
+      "It is your right to ask for a second opinion."
+     ]
+    ]
+   ]
   }
  ],
  "leaflets": [
@@ -296,7 +418,97 @@ window.ARVEEN_PUBLIC = {
     "What other options do I have?",
     "How will treatment affect my fertility or bring on menopause?",
     "Who do I call about side effects, day and night?"
-   ]
+   ],
+   "translations": {
+    "ms": {
+     "status": "DRAFT TRANSLATION",
+     "translator": null,
+     "languageReviewer": null,
+     "clinicalReviewer": null,
+     "title": "Memahami Kanser Serviks",
+     "audience": "Orang dewasa yang baru didiagnosis dengan kanser serviks, dan keluarga mereka",
+     "sections": [
+      [
+       "Ringkasan",
+       [
+        "Kanser serviks bermula di serviks, iaitu bahagian bawah rahim.",
+        "Kebanyakan kanser serviks berkaitan dengan jangkitan HPV yang berpanjangan.",
+        "Rawatan bergantung pada peringkat kanser, kesihatan anda secara keseluruhan dan apa yang penting bagi anda.",
+        "Pasukan rawatan anda ialah sumber nasihat utama anda. Butiran hubungan: [nombor hubungan pasukan rawatan — akan ditambah oleh hospital anda]."
+       ]
+      ],
+      [
+       "Apakah itu?",
+       [
+        "Serviks ialah leher rahim. Ia menghubungkan rahim dengan faraj.",
+        "Kanser berlaku apabila sel-sel di serviks membesar tanpa kawalan. Doktor mengesahkannya dengan mengambil biopsi (sampel tisu yang kecil) dan memeriksanya di bawah mikroskop."
+       ]
+      ],
+      [
+       "Mengapa ujian lanjut diperlukan?",
+       [
+        "Selepas diagnosis, imbasan seperti MRI atau CT menunjukkan saiz kanser dan sama ada ia telah merebak.",
+        "Keputusan ini menentukan peringkat kanser anda. Peringkat membantu pasukan anda merancang rawatan yang sesuai untuk anda."
+       ]
+      ],
+      [
+       "Apakah rawatan yang mungkin ditawarkan?",
+       [
+        "Pembedahan, radioterapi, kemoterapi atau gabungannya. Sesetengah orang ditawarkan imunoterapi.",
+        "Tidak semua rawatan sesuai untuk setiap orang. Pasukan anda akan menerangkan mengapa mereka mencadangkan rancangan tertentu dan apakah pilihan lain.",
+        "Anda boleh bertanya tentang ujian klinikal."
+       ]
+      ],
+      [
+       "Manfaat dan batasan",
+       [
+        "Matlamat dan manfaat rawatan berbeza bagi setiap orang. Tanyakan pasukan anda apakah matlamat rawatan anda.",
+        "Risalah ini tidak dapat memberitahu apa yang akan berlaku kepada anda secara peribadi."
+       ]
+      ],
+      [
+       "Risiko dan kesan sampingan",
+       [
+        "Setiap rawatan mempunyai kesan sampingannya sendiri. Pasukan anda akan memberikan maklumat khusus tentang rawatan anda.",
+        "Sesetengah kesan, seperti perubahan kesuburan, menopaus atau fungsi pundi kencing dan usus, boleh berpanjangan. Tanyakan tentangnya sebelum rawatan bermula."
+       ]
+      ],
+      [
+       "Bagaimana saya boleh bersedia?",
+       [
+        "Bawa senarai ubat-ubatan anda ke setiap temu janji.",
+        "Fikirkan siapa yang boleh menemani anda dan membantu dengan pengangkutan.",
+        "Jika anda ingin mempunyai anak pada masa hadapan, tanyakan tentang kesuburan sebelum rawatan bermula."
+       ]
+      ]
+     ],
+     "safety": {
+      "emergency": [
+       "Pendarahan faraj yang banyak dan tidak berhenti",
+       "Sesak nafas yang teruk atau sakit dada",
+       "Pengsan atau tidak sedarkan diri"
+      ],
+      "urgent": [
+       "Demam, atau berasa panas dan menggigil, semasa menerima kemoterapi",
+       "Sakit teruk yang baru",
+       "Tidak dapat membuang air kecil"
+      ],
+      "routine": [
+       "Soalan tentang keputusan ujian anda",
+       "Keletihan ringan",
+       "Kebimbangan tentang kerja, kewangan atau keluarga"
+      ],
+      "note": "Draf. Tahap dan perkataan perlu disemak oleh doktor sebelum diterbitkan. Di Malaysia, hubungi 999 jika berlaku kecemasan."
+     },
+     "questions": [
+      "Apakah peringkat kanser saya, dan apakah maksudnya bagi saya?",
+      "Apakah matlamat rawatan yang dicadangkan?",
+      "Apakah pilihan lain yang ada?",
+      "Bagaimanakah rawatan akan menjejaskan kesuburan saya atau menyebabkan menopaus?",
+      "Siapakah yang perlu saya hubungi tentang kesan sampingan, siang dan malam?"
+     ]
+    }
+   }
   },
   {
    "id": "PIL-TX-CHEMO",
@@ -1574,6 +1786,439 @@ window.ARVEEN_PUBLIC = {
    "reviewer": null,
    "lastReview": null,
    "nextReview": null
+  },
+  {
+   "id": "pain",
+   "title": "Managing pain",
+   "category": "Living with cancer",
+   "journey": "during",
+   "cancers": [],
+   "summary": "Why it matters to report pain, and how pain relief is used safely.",
+   "sections": [
+    [
+     "Tell your team about pain",
+     [
+      "Pain can usually be controlled well. Tell your team where it is, what it feels like, how strong it is, and what makes it better or worse.",
+      "Pain that is not controlled affects sleep, mood, eating and recovery, so it is worth treating."
+     ]
+    ],
+    [
+     "How pain relief is used",
+     [
+      "Your team will choose pain relief that suits the type and strength of your pain. It may be paracetamol, anti-inflammatory medicines, stronger medicines such as morphine, or medicines for nerve pain.",
+      "Taking pain relief regularly, as prescribed, often works better than waiting until pain is bad.",
+      "Strong pain relief can cause constipation and drowsiness. Ask about a laxative."
+     ]
+    ],
+    [
+     "Common worries",
+     [
+      "When strong pain relief is prescribed and monitored for cancer pain, the risk of addiction is low. Talk to your team if you are worried.",
+      "Do not change or stop pain medicines without talking to your team."
+     ]
+    ],
+    [
+     "Seek help urgently if",
+     [
+      "You have sudden severe pain, new pain in your back with weakness or numbness in your legs, or pain with a high temperature or vomiting."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "lymphoedema",
+   "title": "Lymphoedema (swelling of the legs)",
+   "category": "Living with cancer",
+   "journey": "after",
+   "cancers": [
+    "vulvar",
+    "cervical",
+    "endometrial",
+    "ovarian"
+   ],
+   "summary": "Why swelling can happen after lymph node surgery or radiotherapy, early signs, and what helps.",
+   "sections": [
+    [
+     "What it is",
+     [
+      "Lymphoedema is swelling caused by a build-up of fluid when lymph nodes have been removed or treated with radiotherapy.",
+      "In gynaecological cancer it usually affects one or both legs, and sometimes the lower tummy or genital area.",
+      "It can start months or even years after treatment."
+     ]
+    ],
+    [
+     "Early signs",
+     [
+      "A feeling of heaviness, tightness or aching in a leg.",
+      "Clothes, shoes or jewellery feeling tighter.",
+      "Swelling that is worse at the end of the day."
+     ]
+    ],
+    [
+     "What helps",
+     [
+      "Tell your team early. Treatment works best when started early, and they can refer you to a lymphoedema specialist if available.",
+      "Look after your skin: keep it clean and moisturised, and avoid cuts, insect bites and sunburn on the affected area.",
+      "Keep active. Gentle exercise helps fluid move.",
+      "Compression garments may be recommended. They need to be measured and fitted properly."
+     ]
+    ],
+    [
+     "Seek help urgently if",
+     [
+      "The leg becomes red, hot, painful and more swollen, especially with a high temperature or feeling unwell. This can be an infection (cellulitis) and needs prompt treatment.",
+      "One leg suddenly becomes painful and swollen, which can be a sign of a blood clot."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "bowel-bladder-after-rt",
+   "title": "Bowel and bladder changes after pelvic radiotherapy",
+   "category": "Living with cancer",
+   "journey": "after",
+   "cancers": [
+    "cervical",
+    "endometrial",
+    "vaginal",
+    "vulvar"
+   ],
+   "summary": "Longer-term bowel and bladder effects of pelvic radiotherapy, and why you should report them.",
+   "sections": [
+    [
+     "What can happen",
+     [
+      "Most side effects settle within weeks of finishing treatment. In some people, changes continue or start months or years later.",
+      "Bowel changes can include loose stools, urgency, wind, or bleeding from the back passage.",
+      "Bladder changes can include needing to pass urine more often or urgently, leaking, or blood in the urine."
+     ]
+    ],
+    [
+     "Why to report them",
+     [
+      "These effects can often be treated, so you do not have to put up with them.",
+      "New bleeding should always be checked, even if you have had radiotherapy, to find the cause."
+     ]
+    ],
+    [
+     "What may help",
+     [
+      "Your team may suggest changes to diet, medicines, pelvic floor exercises or referral to a specialist.",
+      "Do not cut out whole food groups without advice from your team or a dietitian."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "vaginal-dilators",
+   "title": "Using vaginal dilators after radiotherapy",
+   "category": "Living with cancer",
+   "journey": "after",
+   "cancers": [
+    "cervical",
+    "endometrial",
+    "vaginal"
+   ],
+   "summary": "Why dilators may be recommended after pelvic radiotherapy or brachytherapy, and how to use them.",
+   "sections": [
+    [
+     "Why they may be recommended",
+     [
+      "Radiotherapy can cause the walls of the vagina to stick together, narrow or shorten.",
+      "A dilator is a smooth, tube-shaped device. Using it regularly helps keep the vagina open and flexible, so internal examinations are more comfortable and sex remains possible if you want it."
+     ]
+    ],
+    [
+     "How to use one",
+     [
+      "Your team will tell you when to start and how often to use it. Follow their advice, because it varies.",
+      "Use plenty of water-based lubricant. Find a private, comfortable place and position.",
+      "Insert the dilator gently, as far as is comfortable, and hold it for the time your team recommends. Wash it afterwards with warm water and mild soap.",
+      "A little spotting can happen at first. Tell your team about heavy bleeding or pain."
+     ]
+    ],
+    [
+     "If you find it difficult",
+     [
+      "Many people feel embarrassed or upset using a dilator. That is normal. Your nurse can talk you through it and answer questions."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "neuropathy",
+   "title": "Numbness and tingling (peripheral neuropathy)",
+   "category": "Living with cancer",
+   "journey": "during",
+   "cancers": [],
+   "summary": "Nerve side effects of some chemotherapy medicines, why to report them early, and staying safe.",
+   "sections": [
+    [
+     "What it is",
+     [
+      "Some chemotherapy medicines, such as paclitaxel and cisplatin, can affect the nerves in the hands and feet.",
+      "You may notice numbness, tingling, pins and needles, burning, or difficulty with fine movements such as doing up buttons."
+     ]
+    ],
+    [
+     "Report it early",
+     [
+      "Tell your team as soon as you notice it. They may change your treatment to stop it getting worse.",
+      "It often improves slowly after treatment ends, but for some people it is long-lasting."
+     ]
+    ],
+    [
+     "Staying safe",
+     [
+      "Check bath water with your elbow or a thermometer, because you may not feel heat properly.",
+      "Wear well-fitting shoes and check your feet for injuries.",
+      "Take care on stairs and uneven ground, and use good lighting at night."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "infection-chemo",
+   "title": "Preventing infection during chemotherapy",
+   "category": "Living with cancer",
+   "journey": "during",
+   "cancers": [],
+   "summary": "Why chemotherapy raises the risk of infection, simple precautions, and when to call straight away.",
+   "sections": [
+    [
+     "Why it matters",
+     [
+      "Chemotherapy can lower the number of white blood cells that fight infection. An infection can then become serious very quickly.",
+      "Your team will tell you when in each cycle your blood counts are likely to be lowest."
+     ]
+    ],
+    [
+     "Simple precautions",
+     [
+      "Wash your hands often, especially before eating and after using the toilet.",
+      "Avoid close contact with people who have colds, flu, chickenpox or stomach bugs.",
+      "Prepare food safely: wash fruit and vegetables, cook meat and eggs thoroughly, and keep food chilled.",
+      "Keep your mouth clean with a soft toothbrush.",
+      "Ask your team before having any vaccine."
+     ]
+    ],
+    [
+     "Call your 24-hour number straight away if",
+     [
+      "You have a high temperature, feel hot and shivery, or suddenly feel very unwell, even if your temperature is normal. Do not wait until the next day.",
+      "Your team will tell you the temperature at which to call."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "hair-loss",
+   "title": "Hair loss",
+   "category": "Living with cancer",
+   "journey": "during",
+   "cancers": [],
+   "summary": "Which treatments cause hair loss, what to expect, and ways to cope.",
+   "sections": [
+    [
+     "Which treatments cause it",
+     [
+      "Some chemotherapy medicines cause hair thinning or complete hair loss, including eyebrows and eyelashes. Others cause little or none. Ask your team about your treatment.",
+      "Pelvic radiotherapy can cause loss of pubic hair, but not hair on your head."
+     ]
+    ],
+    [
+     "What to expect",
+     [
+      "With chemotherapy, hair usually starts to fall out a few weeks after treatment starts.",
+      "Hair usually grows back after treatment ends. It may be a different colour or texture at first."
+     ]
+    ],
+    [
+     "Ways to cope",
+     [
+      "Some people cut their hair short before treatment starts.",
+      "Scarves, hats, wigs and head coverings can help. Ask the hospital whether wig support is available.",
+      "Some centres offer scalp cooling, which can reduce hair loss with certain medicines. Ask whether it is available and suitable for you.",
+      "Protect your scalp from the sun."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "exercise",
+   "title": "Physical activity during and after treatment",
+   "category": "Living with cancer",
+   "journey": "after",
+   "cancers": [],
+   "summary": "Why staying active helps, and how to do it safely.",
+   "sections": [
+    [
+     "Why it helps",
+     [
+      "Regular activity can reduce tiredness, improve mood and sleep, and help you recover strength after treatment."
+     ]
+    ],
+    [
+     "Getting started",
+     [
+      "Start gently, for example with short walks, and build up slowly.",
+      "Do what you can on better days, and rest on harder days.",
+      "Choose activities you enjoy, such as walking, swimming once your team says it is safe, or gentle exercise classes."
+     ]
+    ],
+    [
+     "Check with your team first if",
+     [
+      "You have recently had surgery, have bone problems, have very low blood counts, feel dizzy or breathless, or have lymphoedema."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "palliative-care",
+   "title": "Palliative and supportive care",
+   "category": "Support",
+   "journey": "during",
+   "cancers": [],
+   "summary": "What palliative care is, and why it can help at any stage of illness.",
+   "sections": [
+    [
+     "What it is",
+     [
+      "Palliative care focuses on comfort and quality of life. It helps with pain and other symptoms, and with emotional, practical and spiritual needs.",
+      "It is not only for the end of life. It can be given at any stage, alongside treatments aimed at controlling the cancer."
+     ]
+    ],
+    [
+     "Who provides it",
+     [
+      "Your own doctors and nurses, supported by specialist palliative care teams in hospital, at home or in a hospice, depending on what is available where you live."
+     ]
+    ],
+    [
+     "How it can help",
+     [
+      "Controlling pain, sickness, breathlessness and other symptoms.",
+      "Supporting you and your family to plan ahead and make decisions that reflect what matters to you.",
+      "Ask your team for a referral if you think it would help."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "clinical-trials",
+   "title": "Clinical trials",
+   "category": "Treatment explained",
+   "journey": "preparing",
+   "cancers": [],
+   "summary": "What clinical trials are, how you are protected, and how to ask about them.",
+   "sections": [
+    [
+     "What a clinical trial is",
+     [
+      "A clinical trial is a research study that tests whether a new treatment, or a new way of using an existing treatment, is better than the current standard.",
+      "Many of today's standard treatments were proven in clinical trials."
+     ]
+    ],
+    [
+     "How you are protected",
+     [
+      "Trials are reviewed by ethics committees before they start. In Malaysia, clinical research is registered with the National Medical Research Register.",
+      "Taking part is always your choice. You can leave a trial at any time without it affecting your usual care."
+     ]
+    ],
+    [
+     "Things to ask",
+     [
+      "Is there a trial that might suit me?",
+      "What would taking part involve, and what are the possible risks and benefits?",
+      "What happens at the end of the trial?"
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "molar-pregnancy",
+   "title": "Molar pregnancy and gestational trophoblastic disease",
+   "category": "Treatment explained",
+   "journey": "diagnosed",
+   "cancers": [
+    "gtn"
+   ],
+   "summary": "What a molar pregnancy is, why hCG follow-up matters, and what happens if treatment is needed.",
+   "sections": [
+    [
+     "What it is",
+     [
+      "A molar pregnancy happens when the cells that would normally form the placenta grow abnormally. It is not caused by anything you did.",
+      "It is usually treated with a small procedure to remove the pregnancy tissue from the womb."
+     ]
+    ],
+    [
+     "Why follow-up matters",
+     [
+      "After treatment, your hCG (pregnancy hormone) level is checked regularly with blood or urine tests until it returns to normal and stays normal.",
+      "Your team will advise you about contraception and when it is safe to try for another pregnancy. Many people go on to have healthy pregnancies later."
+     ]
+    ],
+    [
+     "If further treatment is needed",
+     [
+      "If hCG does not fall as expected, the condition is called gestational trophoblastic neoplasia (GTN).",
+      "GTN usually responds very well to treatment, most often chemotherapy. Care is usually coordinated by a specialist centre."
+     ]
+    ],
+    [
+     "Looking after yourself",
+     [
+      "Losing a pregnancy in this way can be very upsetting. Support is available for you and your partner."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
   }
  ],
  "journey": [
@@ -1612,12 +2257,36 @@ window.ARVEEN_PUBLIC = {
    "genetic-testing"
   ],
   [
-   "Pain and fatigue",
+   "Pain",
+   "pain"
+  ],
+  [
+   "Tiredness",
    "fatigue"
   ],
   [
    "Nausea and eating",
    "nausea-eating"
+  ],
+  [
+   "Hair loss",
+   "hair-loss"
+  ],
+  [
+   "Numbness and tingling",
+   "neuropathy"
+  ],
+  [
+   "Avoiding infection",
+   "infection-chemo"
+  ],
+  [
+   "Leg swelling",
+   "lymphoedema"
+  ],
+  [
+   "Bowel and bladder changes",
+   "bowel-bladder-after-rt"
   ],
   [
    "Fertility",
@@ -1636,12 +2305,24 @@ window.ARVEEN_PUBLIC = {
    "emotional-wellbeing"
   ],
   [
+   "Staying active",
+   "exercise"
+  ],
+  [
    "Returning to work",
    "work-money"
   ],
   [
    "Supporting a loved one",
    "caregivers"
+  ],
+  [
+   "Clinical trials",
+   "clinical-trials"
+  ],
+  [
+   "Palliative care",
+   "palliative-care"
   ],
   [
    "Life after cancer",

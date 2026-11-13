@@ -126,7 +126,10 @@ async function loadSession() {
 async function loadPro() {
   const { data, error } = await sb.from("pro_content").select("key,data");
   if (error || !data?.length) return false;
-  D = { ...window.ARVEEN_PUBLIC, ...Object.fromEntries(data.map(r => [r.key, r.data])) };
+  const pro = Object.fromEntries(data.map(r => [r.key, r.data])), pub = window.ARVEEN_PUBLIC;
+  for (const k of ["leaflets", "articles", "glossary", "journey", "concerns", "sdmQuestions"]) delete pro[k]; // patient content always comes from the public file
+  if (pro.diseases) pro.diseases = pro.diseases.map(d => { const p = pub.diseases.find(x => x.id === d.id) || {}; return { ...d, patient: p.patient || d.patient, patientSections: p.patientSections || null }; });
+  D = { ...pub, ...pro };
   state.proLoaded = true; return true;
 }
 function renderAcct() {
@@ -305,6 +308,25 @@ function resultRow(r) {
 
 /* ---------- shared bits ---------- */
 const seedBanner = () => `<p class="banner">Prototype seed content. Every clinical record is <b>NOT VERIFIED</b>. Doses, numerical trial results and recommendation grades are not entered until a named reviewer verifies them against the source.</p>`;
+const LANG_NAMES = { en: "English", ms: "Bahasa Malaysia", zh: "中文", ta: "தமிழ்" };
+/* Fixed leaflet wording per language. Translated labels need the same language and clinical review as the leaflets themselves. */
+const LEAFLET_LABELS = {
+  en: { eyebrow: "Patient information leaflet", print: "Print or save as PDF", seekHelp: "When should I seek help?", emergency: "Emergency — seek emergency help now (call 999)",
+    urgent: "Urgent — contact your treating team promptly", routine: "Routine — discuss at your next appointment", questions: "Questions to ask your doctor",
+    further: "Further information", contact: "Treating team contact:", contactPh: "[to be added by your hospital]", glossary: "Medical glossary",
+    watermark: "DRAFT — NOT YET CLINICALLY REVIEWED — NOT FOR PATIENT USE", printDraft: "DRAFT — NOT APPROVED FOR PATIENT USE",
+    draftNote: "This leaflet is a draft. Printed copies are marked DRAFT on every page and must not be given to patients until it is approved.",
+    patientInfo: "Patient information", version: "Version", language: "Language", status: "Status", lastReviewed: "Last reviewed", nextReview: "Next review", printed: "Printed",
+    notYet: "not yet reviewed", notSet: "not set", otherLangs: "Other languages", draftTranslation: "" },
+  ms: { eyebrow: "Risalah maklumat pesakit", print: "Cetak atau simpan sebagai PDF", seekHelp: "Bilakah saya perlu mendapatkan bantuan?", emergency: "Kecemasan — dapatkan bantuan kecemasan sekarang (hubungi 999)",
+    urgent: "Segera — hubungi pasukan rawatan anda dengan segera", routine: "Biasa — bincangkan pada temu janji seterusnya", questions: "Soalan untuk ditanya kepada doktor anda",
+    further: "Maklumat lanjut", contact: "Hubungan pasukan rawatan:", contactPh: "[akan ditambah oleh hospital anda]", glossary: "Glosari perubatan (dalam bahasa Inggeris)",
+    watermark: "DRAF — BELUM DISEMAK OLEH DOKTOR — BUKAN UNTUK KEGUNAAN PESAKIT", printDraft: "DRAF — BELUM DILULUSKAN UNTUK KEGUNAAN PESAKIT",
+    draftNote: "Risalah ini ialah draf. Salinan bercetak ditanda DRAF pada setiap halaman dan tidak boleh diberikan kepada pesakit sehingga diluluskan.",
+    patientInfo: "Maklumat pesakit", version: "Versi", language: "Bahasa", status: "Status", lastReviewed: "Disemak terakhir", nextReview: "Semakan seterusnya", printed: "Dicetak",
+    notYet: "belum disemak", notSet: "belum ditetapkan", otherLangs: "Bahasa lain",
+    draftTranslation: "Draf terjemahan. Terjemahan ini belum disemak oleh penterjemah bertauliah dan doktor. Versi bahasa Inggeris kekal sebagai rujukan utama." }
+};
 const transBanner = () => state.lang === "en" ? "" : `<p class="banner info">Translation not yet available. English is shown. Any translation must pass qualified language and clinical review before it is labelled approved.</p>`;
 
 /* ---------- views: professional ---------- */
@@ -599,11 +621,29 @@ const PRO_FLOW = ["DISCOVERED", "SOURCE RETRIEVED", "EXTRACTED", "STRUCTURED", "
 const PT_FLOW = ["DRAFT", "EDITORIAL REVIEW", "CLINICAL REVIEW", "LANGUAGE REVIEW", "APPROVED", "PUBLISHED", "REVIEW DUE"];
 const pipe = (flow, at) => `<div class="pipeline">${flow.map((s, i) => `${i ? "<i>→</i>" : ""}<span class="${s === at ? "on" : ""}">${s}</span>`).join("")}</div>`;
 let genOut = "";
+/* Review status of every patient leaflet, article and cancer page, for the editorial team */
+function contentTracker() {
+  const rows = [
+    ...D.leaflets.map(l => ({ kind: "Leaflet", route: "l." + l.id, title: l.title, status: l.approval, reviewer: l.reviewer, last: l.lastReview, next: l.nextReview,
+      trans: l.translations ? Object.entries(l.translations).map(([lg, t]) => `${LANG_NAMES[lg]}: ${t.status}`).join("; ") : "None" })),
+    ...(D.articles || []).map(a => ({ kind: "Article", route: "a." + a.id, title: a.title, status: a.status, reviewer: a.reviewer, last: a.lastReview, next: a.nextReview, trans: "None" })),
+    ...D.diseases.map(d => ({ kind: "Cancer page", route: "ptd." + d.id, title: d.name, status: d.patientSections ? "DRAFT" : ["tubal", "peritoneal"].includes(d.id) ? "USES OVARIAN PAGE" : "NOT STARTED", reviewer: null, last: null, next: null, trans: "None" }))
+  ];
+  const count = s => rows.filter(r => r.status === s).length;
+  const today = new Date().toISOString().slice(0, 10);
+  return `<section class="section"><h2>Patient content review tracker</h2>
+  <div class="tracker-sum">${[["Total", rows.length], ["Draft", count("DRAFT")], ["Approved", count("APPROVED") + count("PUBLISHED")], ["Not started", count("NOT STARTED")], ["Review overdue", rows.filter(r => r.next && r.next < today).length]].map(([k, v]) => `<div><span class="eyebrow">${k}</span><b>${v}</b></div>`).join("")}</div>
+  <div class="tablewrap"><table><thead><tr><th>Type</th><th>Title</th><th>Status</th><th>Clinical reviewer</th><th>Last reviewed</th><th>Next review</th><th>Translations</th></tr></thead><tbody>
+  ${rows.map(r => `<tr><td>${r.kind}</td><td><a href="${url(r.route)}">${esc(r.title)}</a></td><td>${statusPill(r.status)}</td><td>${r.reviewer ? esc(r.reviewer) : '<span class="na">Unassigned</span>'}</td><td>${na(r.last)}</td><td>${r.next && r.next < today ? `<span class="pill bad">${esc(r.next)}</span>` : na(r.next)}</td><td style="font-size:.82rem">${esc(r.trans)}</td></tr>`).join("")}
+  </tbody></table></div>
+  <p class="muted" style="font-size:.84rem">To record a review, update the item in dr-arveen-content (status, reviewer, lastReview, nextReview), rebuild and publish. Only mark an item APPROVED after the clinical review is complete.</p></section>`;
+}
 V.admin = () => {
   const queue = [...D.guidelines.map(g => ({ t: g.title, k: "Guideline", at: "STRUCTURED", flow: PRO_FLOW })), ...D.protocols.map(p => ({ t: p.name, k: "Protocol · high-risk", at: "STRUCTURED", flow: PRO_FLOW })), ...D.leaflets.filter(l => l.approval === "DRAFT").map(l => ({ t: l.title, k: "Patient leaflet", at: "DRAFT", flow: PT_FLOW }))];
   return `<span class="eyebrow">Editorial and governance</span><h1>Editorial dashboard</h1>
   <p class="banner info">Prototype view. In production this area requires an editor or reviewer role, checked on the server, and every change is written to the audit log.</p>
   <section class="section"><h2>Review queue</h2><div class="list">${queue.slice(0, 8).map(q => `<div class="row"><span class="row-t">${esc(q.t)} <span class="pill">${q.k}</span></span>${pipe(q.flow, q.at)}<span class="row-m">Reviewer: <span class="na">Unassigned</span></span></div>`).join("")}</div><p class="muted">${queue.length} items in queue; first 8 shown.</p></section>
+  ${contentTracker()}
   <section class="section"><h2>Patient leaflet generator</h2>
   <p class="prose muted">Builds a draft from approved ARVEEN clinical records using the standard 13-section template. Output stays a draft until editorial, clinical and (if needed) language review are complete.</p>
   <form class="calc" id="gen"><div class="fields">
@@ -741,24 +781,28 @@ V.l = id => {
   const l = byId(D.leaflets, id); if (!l) return notFound();
   recent("Leaflet", l.id, l.title);
   if (!l.sections.length) return `<article class="patient leaflet"><span class="eyebrow">Patient information leaflet</span><h1>${esc(l.title)}</h1>${statusPill(l.approval)}<p class="muted">This leaflet has not been written yet.</p><a href="${url(`leaflets`)}">All leaflets</a></article>`;
-  const s = l.safety;
-  const approvedLeaflet = ["APPROVED", "PUBLISHED"].includes(l.approval);
+  const tr = state.lang !== "en" && l.translations && l.translations[state.lang];
+  const T = tr ? LEAFLET_LABELS[state.lang] || LEAFLET_LABELS.en : LEAFLET_LABELS.en;
+  const s = tr ? tr.safety : l.safety, sections = tr ? tr.sections : l.sections, questions = tr ? tr.questions : l.questions, title = tr ? tr.title : l.title;
+  const approvedLeaflet = ["APPROVED", "PUBLISHED"].includes(l.approval) && (!tr || tr.status === "APPROVED");
   const today = new Date().toISOString().slice(0, 10);
-  return `<article class="patient leaflet">${transBanner()}
-  <div class="print-only print-head"><b>DR ARVEEN</b> · Patient information · ${esc(l.id)} · Version ${esc(l.version)}<br>
-    Status: ${esc(l.approval)} · Last reviewed: ${esc(l.lastReview || "not yet reviewed")} · Next review: ${esc(l.nextReview || "not set")} · Printed: ${today}</div>
-  ${approvedLeaflet ? "" : `<p class="watermark">DRAFT — NOT YET CLINICALLY REVIEWED — NOT FOR PATIENT USE</p><div class="print-only print-draft" aria-hidden="true">DRAFT — NOT APPROVED FOR PATIENT USE</div>`}
-  <div class="dhead"><span class="eyebrow">Patient information leaflet</span><h1>${esc(l.title)}</h1><div class="actions">${bmBtn("Leaflet", l.id, l.title)}<button class="btn" type="button" data-print>Print or save as PDF</button></div>
-  ${approvedLeaflet ? "" : `<p class="muted no-print" style="font-size:.86rem">This leaflet is a draft. Printed copies are marked DRAFT on every page and must not be given to patients until it is approved.</p>`}</div>
-  ${l.sections.map(([h, ps]) => `<section><h2>${esc(h)}</h2>${ps.length > 1 ? `<ul>${ps.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : `<p>${esc(ps[0])}</p>`}</section>`).join("")}
-  <section><h2>When should I seek help?</h2><div class="safety">
-    <div class="em"><b>Emergency — seek emergency help now (call 999)</b><ul>${s.emergency.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
-    <div class="ur"><b>Urgent — contact your treating team promptly</b><ul>${s.urgent.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
-    <div class="ro"><b>Routine — discuss at your next appointment</b><ul>${s.routine.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+  const langBanner = tr ? `<p class="banner" lang="${state.lang}">${esc(T.draftTranslation)} <button class="btn" type="button" data-showlang="en">Show the English version</button></p>` : transBanner();
+  return `<article class="patient leaflet" lang="${tr ? state.lang : "en"}">${langBanner}
+  <div class="print-only print-head"><b>DR ARVEEN</b> · ${esc(T.patientInfo)} · ${esc(l.id)} · ${esc(T.version)} ${esc(l.version)}${tr ? ` · ${esc(T.language)}: ${esc(LANG_NAMES[state.lang])} (${esc(tr.status)})` : ""}<br>
+    ${esc(T.status)}: ${esc(l.approval)} · ${esc(T.lastReviewed)}: ${esc(l.lastReview || T.notYet)} · ${esc(T.nextReview)}: ${esc(l.nextReview || T.notSet)} · ${esc(T.printed)}: ${today}</div>
+  ${approvedLeaflet ? "" : `<p class="watermark">${esc(T.watermark)}</p><div class="print-only print-draft" aria-hidden="true">${esc(T.printDraft)}</div>`}
+  <div class="dhead"><span class="eyebrow">${esc(T.eyebrow)}</span><h1>${esc(title)}</h1><div class="actions">${bmBtn("Leaflet", l.id, l.title)}<button class="btn" type="button" data-print>${esc(T.print)}</button></div>
+  ${approvedLeaflet ? "" : `<p class="muted no-print" style="font-size:.86rem">${esc(T.draftNote)}</p>`}</div>
+  ${sectionsHtml(sections)}
+  <section><h2>${esc(T.seekHelp)}</h2><div class="safety">
+    <div class="em"><b>${esc(T.emergency)}</b><ul>${s.emergency.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+    <div class="ur"><b>${esc(T.urgent)}</b><ul>${s.urgent.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+    <div class="ro"><b>${esc(T.routine)}</b><ul>${s.routine.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
     <p class="muted" style="font-size:.84rem">${esc(s.note)}</p></div></section>
-  <section><h2>Questions to ask your doctor</h2><ul>${l.questions.map(q => `<li>${esc(q)}</li>`).join("")}</ul></section>
-  <section><h2>Further information</h2><p>Treating team contact: <b>[to be added by your hospital]</b>. See also the <a href="${url(`glossary`)}">medical glossary</a>.</p></section>
-  <section><h2>Editorial information</h2><div class="kv">${[["Leaflet ID", `<span class="mono">${l.id}</span>`], ["Intended audience", esc(l.audience)], ["Author", esc(l.author)], ["Clinical reviewer", l.reviewer ? esc(l.reviewer) : '<span class="na">Not yet assigned</span>'], ["Publication date", na(l.pubDate)], ["Last review", na(l.lastReview)], ["Next review", na(l.nextReview)], ["Version", esc(l.version)], ["Source records", l.sources.map(x => `<a href="${url(`${x.startsWith("G-") ? "g." : "s."}${x}`)}">${x}</a>`).join(", ")], ["Jurisdiction", esc(l.jurisdiction)], ["Language", esc(l.language)], ["Translation status", esc(l.translation)], ["Approval status", statusPill(l.approval)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div></section>
+  <section><h2>${esc(T.questions)}</h2><ul>${questions.map(q => `<li>${esc(q)}</li>`).join("")}</ul></section>
+  <section><h2>${esc(T.further)}</h2><p>${esc(T.contact)} <b>${esc(T.contactPh)}</b>. <a href="${url(`glossary`)}">${esc(T.glossary)}</a>.</p></section>
+  ${l.translations ? `<section class="no-print"><h2>${esc(T.otherLangs)}</h2><div class="chips"><button class="chip" type="button" data-showlang="en" ${!tr ? 'aria-pressed="true"' : ""}>English</button>${Object.entries(l.translations).map(([lg, t]) => `<button class="chip" type="button" data-showlang="${lg}" lang="${lg}" ${tr && state.lang === lg ? 'aria-pressed="true"' : ""}>${esc(LANG_NAMES[lg])} · ${esc(t.status)}</button>`).join("")}</div></section>` : ""}
+  <section lang="en"><h2>Editorial information</h2><div class="kv">${[["Leaflet ID", `<span class="mono">${l.id}</span>`], ["Intended audience", esc(l.audience)], ["Author", esc(l.author)], ["Clinical reviewer", l.reviewer ? esc(l.reviewer) : '<span class="na">Not yet assigned</span>'], ["Publication date", na(l.pubDate)], ["Last review", na(l.lastReview)], ["Next review", na(l.nextReview)], ["Version", esc(l.version)], ["Source records", l.sources.map(x => `<a href="${url(`${x.startsWith("G-") ? "g." : "s."}${x}`)}">${x}</a>`).join(", ")], ["Jurisdiction", esc(l.jurisdiction)], ["Language", esc(l.language)], ["Translation status", esc(l.translation)], ["Approval status", statusPill(l.approval)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div></section>
   <p class="print-only print-foot">This leaflet gives general information. It does not replace advice from your own treating team, who know your situation. In an emergency in Malaysia, call 999. Online version: ${esc(location.href.split("#")[0])}</p></article>`;
 };
 V.sdm = () => {
@@ -912,6 +956,7 @@ function render() {
   const hs = $("#hs"); if (hs) hs.onsubmit = e => { e.preventDefault(); state.q = $("#hq").value.trim(); go("search"); };
   app.querySelectorAll("[data-q]").forEach(c => c.onclick = () => { state.q = c.dataset.q; go("search"); });
   app.querySelectorAll("[data-print]").forEach(b => b.onclick = () => window.print());
+  app.querySelectorAll("[data-showlang]").forEach(b => b.onclick = () => { state.lang = b.dataset.showlang; store.set("lang", state.lang); $("#lang").value = state.lang; render(); });
   app.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { store.set("dmode", b.dataset.mode); render(); });
   app.querySelectorAll("[data-td]").forEach(b => b.onclick = () => { state.filters.trialDisease = b.dataset.td; render(); });
   app.querySelectorAll("[data-saud]").forEach(b => b.onclick = () => { state.filters.saud = b.dataset.saud; render(); });

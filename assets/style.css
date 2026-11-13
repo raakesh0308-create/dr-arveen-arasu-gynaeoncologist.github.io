@@ -245,3 +245,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--teal) }
 .plist { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 68ch }
 a.chip { display: inline-block }
 a.chip[aria-current="page"] { background: var(--lav-soft); border-color: var(--lav) }
+/* Upgrade 5: content tracker summary */
+.tracker-sum { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) }
+.tracker-sum > div { display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px }
+.tracker-sum b { font: 700 1.5rem var(--f-display); font-variant-numeric: tabular-nums }
