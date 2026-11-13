@@ -1,7 +1,7 @@
 /* Layout: two-tier navy masthead (brand + audience switch, then section nav), one content column with list/detail views. */
 :root {
   --navy: #0e5e6f; --navy-2: #1a7486; --teal: #0e7c86; --teal-soft: #e0f3f4; --on-accent: #ffffff;
-  --lav: #5f4dbf; --lav-soft: #eeeafb; --lav-line: #b9a7f0;
+  --lav: #5f4dbf; --lav-soft: #eeeafb; --lav-line: #b9a7f0; --field: #76859a;
   --bg: #f7f8fc; --surface: #ffffff; --line: #dee3ec; --fg: #15222e; --muted: #586878;
   --ok: #1f7a4a; --ok-bg: #e5f3eb; --warn: #8a5a00; --warn-bg: #fdf2dc; --bad: #a3312c; --bad-bg: #fbe6e4; --info-bg: #eeeafb;
   --mast-fg: #ffffff; --mast-muted: #c2e2e8;
@@ -12,13 +12,13 @@
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --navy: #0a3440; --navy-2: #124a58; --teal: #3cc8cf; --teal-soft: #0f3438; --on-accent: #04222a;
-  --lav: #c3b4f5; --lav-soft: #2a2350; --lav-line: #b9a7f0;
+  --lav: #c3b4f5; --lav-soft: #2a2350; --lav-line: #b9a7f0; --field: #62798f;
   --bg: #0d1520; --surface: #142030; --line: #273650; --fg: #e6ecf4; --muted: #9aaac0;
   --ok: #6fd19c; --ok-bg: #143324; --warn: #f0c060; --warn-bg: #3a2d10; --bad: #f08a80; --bad-bg: #3d1a18; --info-bg: #241f42;
   --mast-fg: #ffffff; --mast-muted: #9bc6cf; color-scheme: dark } }
 :root[data-theme="dark"] {
   --navy: #0a3440; --navy-2: #124a58; --teal: #3cc8cf; --teal-soft: #0f3438; --on-accent: #04222a;
-  --lav: #c3b4f5; --lav-soft: #2a2350; --lav-line: #b9a7f0;
+  --lav: #c3b4f5; --lav-soft: #2a2350; --lav-line: #b9a7f0; --field: #62798f;
   --bg: #0d1520; --surface: #142030; --line: #273650; --fg: #e6ecf4; --muted: #9aaac0;
   --ok: #6fd19c; --ok-bg: #143324; --warn: #f0c060; --warn-bg: #3a2d10; --bad: #f08a80; --bad-bg: #3d1a18; --info-bg: #241f42;
   --mast-fg: #ffffff; --mast-muted: #9bc6cf; color-scheme: dark }
@@ -48,7 +48,7 @@ p { margin: 0 } .prose { max-width: 68ch }
 .msearch button { border: 0; background: var(--teal); color: var(--on-accent); padding: 0 14px; border-radius: 0 var(--r) var(--r) 0; font: inherit; font-weight: 600; cursor: pointer }
 .aud { display: flex; border: 1px solid var(--navy-2); border-radius: var(--r); overflow: hidden }
 .aud a { border: 0; background: transparent; color: var(--mast-muted); padding: 7px 11px; font: 600 .74rem var(--f-body); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; text-decoration: none }
-.aud a[aria-pressed="true"] { background: var(--teal); color: var(--on-accent) }
+.aud a[aria-current="page"] { background: var(--teal); color: var(--on-accent) }
 .lang { background: var(--navy-2); color: var(--mast-fg); border: 0; border-radius: var(--r); padding: 7px 8px; font: inherit; font-size: .8rem }
 .mnav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px }
 .mnav a { color: var(--mast-muted); text-decoration: none; padding: 9px 11px; white-space: nowrap; font-size: .86rem; border-bottom: 2px solid transparent }
@@ -65,7 +65,7 @@ main { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 2
 .hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); max-width: 22ch }
 .hero p { max-width: 62ch; color: var(--muted); font-size: 1.05rem }
 .bigsearch { display: flex; max-width: 760px; box-shadow: 0 1px 0 var(--line) }
-.bigsearch input { flex: 1; min-width: 0; padding: 14px 16px; font: inherit; font-size: 1rem; border: 1px solid var(--line); border-right: 0; border-radius: var(--r) 0 0 var(--r); background: var(--surface); color: var(--fg) }
+.bigsearch input { flex: 1; min-width: 0; padding: 14px 16px; font: inherit; font-size: 1rem; border: 1px solid var(--field); border-right: 0; border-radius: var(--r) 0 0 var(--r); background: var(--surface); color: var(--fg) }
 .bigsearch button { padding: 0 20px; border: 0; background: var(--navy); color: #fff; font: 600 .95rem var(--f-body); border-radius: 0 var(--r) var(--r) 0; cursor: pointer }
 :root[data-theme="dark"] .bigsearch button { background: var(--teal); color: var(--on-accent) }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bigsearch button { background: var(--teal); color: var(--on-accent) } }
@@ -95,7 +95,7 @@ a.row:hover { background: var(--teal-soft) }
 @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr) } }
 .filters { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px }
 .filters label { display: grid; gap: 4px; font-size: .8rem; font-weight: 600; color: var(--muted) }
-select, input[type="text"], input[type="number"], textarea { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 7px 9px; width: 100%; min-width: 0 }
+select, input[type="text"], input[type="number"], textarea { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--field); border-radius: var(--r); padding: 7px 9px; width: 100%; min-width: 0 }
 textarea { min-height: 80px; resize: vertical }
 .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 7px 12px; border-radius: var(--r); font: 500 .86rem var(--f-body); cursor: pointer; text-decoration: none }
 .btn:hover { border-color: var(--teal) }
@@ -122,11 +122,11 @@ th { background: var(--bg); font-weight: 600; font-size: .78rem; color: var(--mu
 /* Staging tree */
 .stage { border-top: 1px solid var(--line) }
 .stage:first-child { border-top: 0 }
-.stage summary { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 12px; padding: 10px 14px; cursor: pointer; list-style: none }
+.stage summary, .stage .sum { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 12px; padding: 10px 14px; cursor: pointer; list-style: none }
 .stage summary::-webkit-details-marker { display: none }
-.stage summary .code { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; color: var(--teal) }
+.stage summary .code, .stage .sum .code { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; color: var(--teal) }
 .stage .kids { padding-left: 28px; border-left: 2px solid var(--teal-soft); margin-left: 22px }
-.stage.leaf summary { cursor: default }
+.stage.leaf .sum { cursor: default }
 
 /* Algorithm */
 .algo { display: grid; gap: 10px; max-width: 760px }
@@ -185,7 +185,7 @@ noscript p { max-width: 1240px; margin: 24px auto; padding-inline: 16px }
 .tile.entry .btn { justify-self: start; margin-top: 4px }
 .authbox { max-width: 520px }
 .authbox label { display: grid; gap: 4px; font-size: .84rem; font-weight: 600; color: var(--muted) }
-.authbox input[type="email"], .authbox input[type="password"] { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 7px 9px; width: 100% }
+.authbox input[type="email"], .authbox input[type="password"] { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--field); border-radius: var(--r); padding: 7px 9px; width: 100% }
 .authbox label.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; color: var(--fg) }
 .steps { display: grid; gap: 6px; padding-left: 22px; margin: 0 }
 /* Upgrade 2: review details, problem reports, footer links, storage notice, skip link */
@@ -201,9 +201,39 @@ footer details > summary { list-style: none; cursor: pointer; width: fit-content
 footer details > summary::-webkit-details-marker { display: none }
 footer details[open] > summary { margin-bottom: 10px }
 footer .report label { display: grid; gap: 4px; font-size: .84rem; font-weight: 600; color: var(--muted) }
-footer .report input[type="email"] { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 7px 9px; width: 100% }
+footer .report input[type="email"] { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--field); border-radius: var(--r); padding: 7px 9px; width: 100% }
 .footlinks { display: flex; flex-wrap: wrap; gap: 6px 18px }
 .storage-note { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 20; max-width: 640px; margin-inline: auto; display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.18); font-size: .86rem }
 .storage-note[hidden] { display: none }
 /* Small screens: the masthead scrolls away instead of covering half the screen */
 @media (max-width: 760px) { .mast { position: static } html { scroll-padding-top: 0 } .aud a { padding: 6px 8px; font-size: .68rem } }
+
+/* Checkbox and radio borders follow the field colour */
+input[type="checkbox"], input[type="radio"] { accent-color: var(--teal) }
+
+/* Print: always light, no site chrome, A4, drafts marked on every page */
+.print-only { display: none }
+@media print {
+  @page { size: A4; margin: 16mm 15mm 18mm }
+  :root, :root[data-theme="dark"], :root:not([data-theme="light"]) {
+    --navy: #0e5e6f; --navy-2: #1a7486; --teal: #0e7c86; --teal-soft: #e0f3f4; --on-accent: #ffffff; --lav: #5f4dbf; --lav-soft: #eeeafb; --field: #76859a;
+    --bg: #ffffff; --surface: #ffffff; --line: #c9d1dc; --fg: #000000; --muted: #3f4b57;
+    --ok: #1f7a4a; --ok-bg: #e5f3eb; --warn: #6b4600; --warn-bg: #fdf2dc; --bad: #8f2420; --bad-bg: #fbe6e4; --info-bg: #eeeafb; color-scheme: light }
+  body { font-size: 11pt; background: #fff }
+  .mast, #foot, .skip-link, .storage-note, .no-print, .dhead .actions, .btn, [data-bm], .banner.info, .reviewed { display: none !important }
+  main { padding: 0 !important; max-width: none !important; display: block !important }
+  .print-only { display: block }
+  .print-head { border-bottom: 2px solid #0e5e6f; padding-bottom: 6px; margin-bottom: 12px; font-size: 9pt; color: #3f4b57 }
+  .print-head b { color: #0e5e6f; letter-spacing: .08em; font-size: 11pt }
+  .print-draft { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font: 700 9pt sans-serif; letter-spacing: .1em; color: #8f2420; border-top: 1px solid #8f2420; padding-top: 3px }
+  .print-foot { margin-top: 18px; padding-top: 8px; border-top: 1px solid #c9d1dc; font-size: 8.5pt; color: #3f4b57 }
+  .leaflet { max-width: none; gap: 14px }
+  .leaflet section, .safety > div, .kv > div, tr, li { break-inside: avoid }
+  h1, h2, h3 { break-after: avoid; color: #0e5e6f }
+  .safety .em, .safety .ur, .safety .ro { border: 1.5px solid currentColor; -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  .watermark { -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  a { color: inherit; text-decoration: none }
+  .checklist input[type="checkbox"] { -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  .tablewrap { overflow: visible; border: 0 }
+  .tablewrap td .btn { display: none }
+}

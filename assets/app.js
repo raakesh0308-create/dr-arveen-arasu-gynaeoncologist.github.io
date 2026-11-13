@@ -66,7 +66,7 @@ function renderShell() {
     <form class="msearch" id="msearch" role="search" action="search.html"><input id="mq" name="q" type="search" aria-label="Search DR ARVEEN"><button type="submit">Search</button></form>
     <div class="aud" role="group" aria-label="Audience"><a id="aud-pro" href="professional.html">For healthcare professionals</a><a id="aud-pt" href="patients.html">For patients and caregivers</a></div>
     <select class="lang" id="lang" aria-label="Language"><option value="en">English</option><option value="ms">Bahasa Malaysia</option><option value="zh">中文</option><option value="ta">தமிழ்</option></select>
-    <button class="theme-btn" id="theme" type="button" aria-label="Switch light or dark mode">☾ Dark</button>
+    <button class="theme-btn" id="theme" type="button" title="Switch light or dark mode">☾ Dark</button>
     <span class="acct" id="acct"></span>
   </div><nav class="mnav" id="nav" aria-label="Sections"></nav></div>`;
   $("#foot").innerHTML = `<div class="in">
@@ -77,7 +77,7 @@ function renderShell() {
         <label for="rp-cat">What kind of problem?<select id="rp-cat"><option>Clinical content may be wrong or out of date</option><option>Something is unclear</option><option>Broken link or page error</option><option>Accessibility problem</option><option>Other</option></select></label>
         <label for="rp-msg">Describe the problem<textarea id="rp-msg" maxlength="2000" required></textarea></label>
         <label for="rp-contact">Your email, if you'd like a reply (optional)<input id="rp-contact" type="email" maxlength="200" autocomplete="email"></label>
-        <p class="result err" id="rp-err" hidden></p><p class="banner info" id="rp-ok" hidden></p>
+        <p class="result err" role="alert" id="rp-err" hidden></p><p class="banner info" id="rp-ok" role="status" hidden></p>
         <div><button class="btn primary" type="submit">Send report</button></div>
       </form></details></section>
     <p><b>DR ARVEEN</b> — Advanced Reference and Verified Evidence Network for Gynaecological Oncology.</p>
@@ -103,8 +103,8 @@ function renderNav() {
   const map = { g: "guidelines", recs: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "ptcancers" };
   const cur = map[PAGE] || PAGE;
   $("#nav").innerHTML = items.map(([r, t]) => `<a href="${url(r)}" ${r === cur ? 'aria-current="page"' : ""}>${t}</a>`).join("");
-  $("#aud-pro").setAttribute("aria-pressed", state.aud === "pro");
-  $("#aud-pt").setAttribute("aria-pressed", state.aud === "pt");
+  state.aud === "pro" ? $("#aud-pro").setAttribute("aria-current", "page") : $("#aud-pro").removeAttribute("aria-current");
+  state.aud === "pt" ? $("#aud-pt").setAttribute("aria-current", "page") : $("#aud-pt").removeAttribute("aria-current");
   $("#tagline").textContent = state.aud === "pro" ? "Evidence. Guidelines. Clinical Excellence." : "Understand Your Diagnosis. Navigate Your Care.";
   $("#mq").placeholder = state.aud === "pro" ? "Search a cancer, guideline, drug, trial or stage" : "Search for your cancer, treatment, test or question";
 }
@@ -143,7 +143,7 @@ const loginForm = () => `<form class="calc authbox" id="loginf"><h2>Sign in</h2>
   <p class="muted">Professional content is for registered healthcare professionals with an approved DR ARVEEN account.</p>
   <label for="li-email">Email<input id="li-email" type="email" autocomplete="email" required></label>
   <label for="li-pass">Password<input id="li-pass" type="password" autocomplete="current-password" required></label>
-  <p class="result err" id="autherr" hidden></p>
+  <p class="result err" role="alert" id="autherr" hidden></p>
   <div class="toc"><button class="btn primary" type="submit">Sign in</button><a class="btn" href="register.html">Request an account</a><a class="btn" href="reset-password.html">Forgot password</a></div></form>`;
 function gateView() {
   if (!sb) return `<h1>Healthcare professionals</h1>${notConfigured()}`;
@@ -193,7 +193,7 @@ function bindAuth() {
 async function loadFeedback() {
   const box = $("#fblist"); if (!box) return;
   const { data, error } = await sb.from("feedback").select("*").order("created_at", { ascending: false }).limit(200);
-  if (error) { box.innerHTML = `<p class="result err">Reports couldn't be loaded. Check that the feedback table from supabase/setup.sql exists.</p>`; return; }
+  if (error) { box.innerHTML = `<p class="result err" role="alert">Reports couldn't be loaded. Check that the feedback table from supabase/setup.sql exists.</p>`; return; }
   box.innerHTML = `<div class="tablewrap"><table><thead><tr><th>Received</th><th>Page</th><th>Type</th><th>Report</th><th>Contact</th><th>Status</th></tr></thead><tbody>
   ${data.map(f => `<tr><td class="mono">${esc((f.created_at || "").slice(0, 10))}</td><td>${/^[a-z0-9-]+\.html(\?[\w=&%.~-]*)?$/i.test(f.page || "") ? `<a href="${esc(f.page)}">${esc(f.page)}</a>` : esc(f.page)}</td><td>${esc(f.category)}</td><td style="max-width:40ch;white-space:pre-wrap">${esc(f.message)}</td><td>${esc(f.contact || "—")}</td>
     <td>${f.status === "open" ? `<button class="btn" data-fb="${f.id}">Mark resolved</button>` : `<span class="pill ok">Resolved</span>`}</td></tr>`).join("") || `<tr><td colspan="6" class="muted">No reports yet.</td></tr>`}</tbody></table></div>`;
@@ -205,7 +205,7 @@ async function loadFeedback() {
 async function loadAccounts() {
   const box = $("#acctlist"); if (!box) return;
   const { data, error } = await sb.from("profiles").select("*").order("created_at", { ascending: false });
-  if (error) { box.innerHTML = `<p class="result err">${esc(error.message)}</p>`; return; }
+  if (error) { box.innerHTML = `<p class="result err" role="alert">${esc(error.message)}</p>`; return; }
   const pill = s => `<span class="pill ${s === "approved" ? "ok" : s === "pending" ? "warn" : "bad"}">${esc(s)}</span>`;
   box.innerHTML = `<div class="tablewrap"><table><thead><tr><th>Name and email</th><th>Profession</th><th>Registration</th><th>Institution</th><th>Requested</th><th>Status</th><th>Role</th><th>Action</th></tr></thead><tbody>
   ${data.map(p => `<tr><td><b>${esc(p.full_name)}</b><br><span class="muted">${esc(p.email)}</span></td><td>${esc(p.profession)}</td><td>${esc(p.registration_body)}<br><span class="mono">${esc(p.registration_number)}</span></td><td>${esc(p.institution)}</td>
@@ -427,7 +427,7 @@ V.staging = () => `<span class="eyebrow">Staging module</span><h1>Staging system
   <p><a class="btn" href="${url(`education`)}">Practise with staging exercises →</a></p>`;
 function stageTree(list) {
   return list.map(x => x.sub ? `<details class="stage" open><summary><span class="code">${esc(x.s)}</span><span>${esc(x.d)}</span></summary><div class="kids">${stageTree(x.sub)}</div></details>`
-    : `<div class="stage leaf"><summary><span class="code">${esc(x.s)}</span><span>${esc(x.d)}</span></summary></div>`).join("");
+    : `<div class="stage leaf"><div class="sum"><span class="code">${esc(x.s)}</span><span>${esc(x.d)}</span></div></div>`).join("");
 }
 V.s = id => {
   const s = byId(D.staging, id); if (!s) return notFound();
@@ -506,7 +506,7 @@ V.algorithms = () => {
   <div class="row-m">${statusPill(a.status)} <span>Source: <a href="${url(`g.${a.source}`)}">${esc(a.source)}</a> (version Update 2023, not verified)</span><span>Verification date: <span class="na">Not yet verified</span></span></div>
   <p class="banner info">Educational pathway. Where information is missing it says so instead of forcing a conclusion. It does not select treatment.</p>
   <p class="prose"><b>Entry criteria:</b> ${esc(a.entry)}</p>
-  <div class="algo">${steps}<div><button class="btn" id="algoreset">Start again</button></div></div>
+  <div class="algo" aria-live="polite">${steps}<div><button class="btn" id="algoreset">Start again</button></div></div>
   <p class="muted">Further pathways planned: suspected ovarian malignancy, suspected endometrial malignancy, endometrial risk stratification, suspected recurrence, biomarker-directed selection.</p>`;
 };
 
@@ -573,7 +573,7 @@ V.updates = () => `<span class="eyebrow">Guideline update intelligence</span><h1
 V.education = () => `<span class="eyebrow">Postgraduate education</span><h1>Staging exercises</h1>
   <p class="banner info">Educational exercises. They are not a validated clinical decision-support tool. Answers follow the ARVEEN paraphrase of each FIGO version, which is NOT VERIFIED.</p>
   <div class="cols quiz">${D.quiz.map(q => { const s = byId(D.staging, q.system); return `<div class="calc" data-quiz="${q.id}"><span class="eyebrow">${esc(s.authority)} ${esc(s.version)} · ${dname(s.cancer)}</span><p><b>${esc(q.q)}</b></p>
-    <div style="display:grid;gap:6px">${q.options.map((o, i) => `<button class="btn opt" data-qi="${i}">${esc(o)}</button>`).join("")}</div><p class="why muted" hidden>${esc(q.why)} <a href="${url(`s.${s.id}`)}">Reference: ${esc(s.authority)} ${esc(s.version)}</a></p></div>` }).join("")}</div>`;
+    <div style="display:grid;gap:6px">${q.options.map((o, i) => `<button class="btn opt" data-qi="${i}">${esc(o)}</button>`).join("")}</div><p class="why muted" role="status" hidden>${esc(q.why)} <a href="${url(`s.${s.id}`)}">Reference: ${esc(s.authority)} ${esc(s.version)}</a></p></div>` }).join("")}</div>`;
 function bindQuiz() {
   app.querySelectorAll("[data-quiz]").forEach(c => c.onclick = e => {
     const b = e.target.closest("[data-qi]"); if (!b) return;
@@ -707,8 +707,14 @@ V.l = id => {
   recent("Leaflet", l.id, l.title);
   if (!l.sections.length) return `<article class="patient leaflet"><span class="eyebrow">Patient information leaflet</span><h1>${esc(l.title)}</h1>${statusPill(l.approval)}<p class="muted">This leaflet has not been written yet.</p><a href="${url(`leaflets`)}">All leaflets</a></article>`;
   const s = l.safety;
-  return `<article class="patient leaflet">${transBanner()}<p class="watermark">DRAFT — NOT YET CLINICALLY REVIEWED</p>
-  <div class="dhead"><span class="eyebrow">Patient information leaflet</span><h1>${esc(l.title)}</h1><div class="actions">${bmBtn("Leaflet", l.id, l.title)}</div></div>
+  const approvedLeaflet = ["APPROVED", "PUBLISHED"].includes(l.approval);
+  const today = new Date().toISOString().slice(0, 10);
+  return `<article class="patient leaflet">${transBanner()}
+  <div class="print-only print-head"><b>DR ARVEEN</b> · Patient information · ${esc(l.id)} · Version ${esc(l.version)}<br>
+    Status: ${esc(l.approval)} · Last reviewed: ${esc(l.lastReview || "not yet reviewed")} · Next review: ${esc(l.nextReview || "not set")} · Printed: ${today}</div>
+  ${approvedLeaflet ? "" : `<p class="watermark">DRAFT — NOT YET CLINICALLY REVIEWED — NOT FOR PATIENT USE</p><div class="print-only print-draft" aria-hidden="true">DRAFT — NOT APPROVED FOR PATIENT USE</div>`}
+  <div class="dhead"><span class="eyebrow">Patient information leaflet</span><h1>${esc(l.title)}</h1><div class="actions">${bmBtn("Leaflet", l.id, l.title)}<button class="btn" type="button" data-print>Print or save as PDF</button></div>
+  ${approvedLeaflet ? "" : `<p class="muted no-print" style="font-size:.86rem">This leaflet is a draft. Printed copies are marked DRAFT on every page and must not be given to patients until it is approved.</p>`}</div>
   ${l.sections.map(([h, ps]) => `<section><h2>${esc(h)}</h2>${ps.length > 1 ? `<ul>${ps.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : `<p>${esc(ps[0])}</p>`}</section>`).join("")}
   <section><h2>When should I seek help?</h2><div class="safety">
     <div class="em"><b>Emergency — seek emergency help now (call 999)</b><ul>${s.emergency.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
@@ -717,11 +723,13 @@ V.l = id => {
     <p class="muted" style="font-size:.84rem">${esc(s.note)}</p></div></section>
   <section><h2>Questions to ask your doctor</h2><ul>${l.questions.map(q => `<li>${esc(q)}</li>`).join("")}</ul></section>
   <section><h2>Further information</h2><p>Treating team contact: <b>[to be added by your hospital]</b>. See also the <a href="${url(`glossary`)}">medical glossary</a>.</p></section>
-  <section><h2>Editorial information</h2><div class="kv">${[["Leaflet ID", `<span class="mono">${l.id}</span>`], ["Intended audience", esc(l.audience)], ["Author", esc(l.author)], ["Clinical reviewer", l.reviewer ? esc(l.reviewer) : '<span class="na">Not yet assigned</span>'], ["Publication date", na(l.pubDate)], ["Last review", na(l.lastReview)], ["Next review", na(l.nextReview)], ["Version", esc(l.version)], ["Source records", l.sources.map(x => `<a href="${url(`${x.startsWith("G-") ? "g." : "s."}${x}`)}">${x}</a>`).join(", ")], ["Jurisdiction", esc(l.jurisdiction)], ["Language", esc(l.language)], ["Translation status", esc(l.translation)], ["Approval status", statusPill(l.approval)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div></section></article>`;
+  <section><h2>Editorial information</h2><div class="kv">${[["Leaflet ID", `<span class="mono">${l.id}</span>`], ["Intended audience", esc(l.audience)], ["Author", esc(l.author)], ["Clinical reviewer", l.reviewer ? esc(l.reviewer) : '<span class="na">Not yet assigned</span>'], ["Publication date", na(l.pubDate)], ["Last review", na(l.lastReview)], ["Next review", na(l.nextReview)], ["Version", esc(l.version)], ["Source records", l.sources.map(x => `<a href="${url(`${x.startsWith("G-") ? "g." : "s."}${x}`)}">${x}</a>`).join(", ")], ["Jurisdiction", esc(l.jurisdiction)], ["Language", esc(l.language)], ["Translation status", esc(l.translation)], ["Approval status", statusPill(l.approval)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div></section>
+  <p class="print-only print-foot">This leaflet gives general information. It does not replace advice from your own treating team, who know your situation. In an emergency in Malaysia, call 999. Online version: ${esc(location.href.split("#")[0])}</p></article>`;
 };
 V.sdm = () => {
   const done = store.get("sdmq", []), ws = store.get("ws", {});
   return `<div class="patient detail"><span class="eyebrow">Shared decision-making</span><h1>Prepare for your appointment</h1>
+  <div class="no-print"><button class="btn" type="button" data-print>Print this checklist</button></div>
   <p class="banner info">These tools help you talk with your treating team. They do not recommend a treatment. Anything you type stays only on this device.</p>
   <div class="cols"><section class="section"><h2>Questions for my oncologist</h2><div class="checklist">${D.sdmQuestions.map((q, i) => `<label for="sq${i}"><input type="checkbox" id="sq${i}" data-sq="${i}" ${done.includes(i) ? "checked" : ""}> ${esc(q)}</label>`).join("")}</div></section>
   <section class="section"><h2>Treatment discussion worksheet</h2><form class="calc" id="ws">${[["goals", "What matters most to me"], ["benefits", "Benefits my team described"], ["risks", "Risks and side effects I want to understand"], ["alts", "Other options we discussed"], ["unsure", "Things I am still unsure about"]].map(([k, t]) => `<label for="ws-${k}">${t}<textarea id="ws-${k}" data-ws="${k}">${esc(ws[k] || "")}</textarea></label>`).join("")}</form></section></div>
@@ -734,6 +742,7 @@ function bindSdm() {
 V.tracker = () => {
   const rows = store.get("fx", []);
   return `<div class="patient detail"><span class="eyebrow">Shared decision-making</span><h1>Side-effect tracker</h1>
+  <div class="no-print"><button class="btn" type="button" data-print>Print my entries</button></div>
   <p class="banner info">Record how you feel so you can describe changes accurately to your team. This does not assess how serious a symptom is. If you are worried, contact your treating team. In an emergency call 999.</p>
   <form class="calc" id="fxf"><div class="fields">
     <label for="fx-date">Date<input id="fx-date" type="text" value="${new Date().toISOString().slice(0, 10)}"></label>
@@ -785,16 +794,16 @@ V.register = () => !sb ? `<h1>Request an account</h1>${notConfigured()}` : `<spa
     <label for="rg-num">Registration number<input id="rg-num" type="text" required></label>
     <label for="rg-inst">Hospital or institution<input id="rg-inst" type="text" required></label>
     <label class="check" for="rg-agree"><input id="rg-agree" type="checkbox"> I confirm I am a registered healthcare professional, and I agree that DR ARVEEN stores these details to verify my registration, as described on the <a href="governance.html#privacy">governance page</a>.</label>
-    <p class="result err" id="autherr" hidden></p>
+    <p class="result err" role="alert" id="autherr" hidden></p>
     <div class="toc"><button class="btn primary" type="submit">Request account</button><a class="btn" href="login.html">I already have an account</a></div>
-  </form><p class="banner info" id="authok" hidden></p>`;
+  </form><p class="banner info" id="authok" role="status" hidden></p>`;
 V.reset = () => !sb ? `<h1>Reset password</h1>${notConfigured()}` : `<span class="eyebrow">Account</span><h1>Reset your password</h1>
-  ${state.user ? `<form class="calc authbox" id="newpassf"><label for="np-pass">New password (at least 8 characters)<input id="np-pass" type="password" autocomplete="new-password" required></label><p class="result err" id="autherr" hidden></p><div><button class="btn primary" type="submit">Save new password</button></div></form>`
-  : `<form class="calc authbox" id="resetf"><label for="rs-email">Email<input id="rs-email" type="email" autocomplete="email" required></label><p class="result err" id="autherr" hidden></p><div><button class="btn primary" type="submit">Send reset link</button></div></form>`}
-  <p class="banner info" id="authok" hidden></p>`;
+  ${state.user ? `<form class="calc authbox" id="newpassf"><label for="np-pass">New password (at least 8 characters)<input id="np-pass" type="password" autocomplete="new-password" required></label><p class="result err" role="alert" id="autherr" hidden></p><div><button class="btn primary" type="submit">Save new password</button></div></form>`
+  : `<form class="calc authbox" id="resetf"><label for="rs-email">Email<input id="rs-email" type="email" autocomplete="email" required></label><p class="result err" role="alert" id="autherr" hidden></p><div><button class="btn primary" type="submit">Send reset link</button></div></form>`}
+  <p class="banner info" id="authok" role="status" hidden></p>`;
 V.accounts = () => `<span class="eyebrow">Administration</span><h1>Account approvals</h1>
   <p class="prose muted">Before approving, check the registration number on the relevant public register (MMC, Pharmacy Board or Nursing Board) and that the name matches. Every change is recorded in the account audit log.</p>
-  <p class="result err" id="acctmsg" hidden></p><div id="acctlist"><p class="muted">Loading account requests…</p></div>
+  <p class="result err" role="alert" id="acctmsg" hidden></p><div id="acctlist"><p class="muted">Loading account requests…</p></div>
   <section class="section"><h2>Reported problems</h2><p class="prose muted">Reports sent from "Report a problem with this page". Clinical reports need a clinician to review the record before you mark them resolved.</p><div id="fblist"><p class="muted">Loading reports…</p></div></section>`;
 
 const GOV_PRO = [
@@ -867,6 +876,7 @@ function render() {
   $("#mq").value = base === "search" ? state.q : "";
   const hs = $("#hs"); if (hs) hs.onsubmit = e => { e.preventDefault(); state.q = $("#hq").value.trim(); go("search"); };
   app.querySelectorAll("[data-q]").forEach(c => c.onclick = () => { state.q = c.dataset.q; go("search"); });
+  app.querySelectorAll("[data-print]").forEach(b => b.onclick = () => window.print());
   app.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { store.set("dmode", b.dataset.mode); render(); });
   app.querySelectorAll("[data-td]").forEach(b => b.onclick = () => { state.filters.trialDisease = b.dataset.td; render(); });
   app.querySelectorAll("[data-saud]").forEach(b => b.onclick = () => { state.filters.saud = b.dataset.saud; render(); });

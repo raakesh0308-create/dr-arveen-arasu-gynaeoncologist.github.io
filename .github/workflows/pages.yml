@@ -29,6 +29,8 @@ jobs:
           node-version: 20
       - name: Safety checks (no professional content or secret keys, all pages present, scripts valid)
         run: node tools/check.mjs
+      - name: Colour contrast meets WCAG AA in light and dark mode
+        run: node tools/contrast.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
