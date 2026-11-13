@@ -333,7 +333,7 @@ window.ARVEEN_PUBLIC = {
    "version": "0.1 draft",
    "jurisdiction": "Malaysia",
    "language": "English",
-   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "translation": "Bahasa Malaysia: DRAFT TRANSLATION; Mandarin and Tamil not started",
    "approval": "DRAFT",
    "sources": [
     "G-ESGO-CX-2023",
@@ -524,7 +524,7 @@ window.ARVEEN_PUBLIC = {
    "version": "0.1 draft",
    "jurisdiction": "Malaysia",
    "language": "English",
-   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "translation": "Bahasa Malaysia: DRAFT TRANSLATION; Mandarin and Tamil not started",
    "approval": "DRAFT",
    "sources": [],
    "sections": [
@@ -632,7 +632,122 @@ window.ARVEEN_PUBLIC = {
     "Who do I call, day and night, if I feel unwell?",
     "Will this treatment affect my fertility or bring on menopause?",
     "Which other medicines or supplements should I avoid?"
-   ]
+   ],
+   "translations": {
+    "ms": {
+     "status": "DRAFT TRANSLATION",
+     "translator": null,
+     "languageReviewer": null,
+     "clinicalReviewer": null,
+     "title": "Memahami Kemoterapi",
+     "sections": [
+      [
+       "Ringkasan",
+       [
+        "Kemoterapi menggunakan ubat untuk memusnahkan sel kanser atau menghentikan pertumbuhannya.",
+        "Ia biasanya diberikan dalam kitaran: hari rawatan diikuti tempoh rehat supaya badan anda dapat pulih.",
+        "Kesan sampingan bergantung pada ubat yang anda terima. Pasukan anda akan memberitahu apa yang dijangka daripada rawatan anda.",
+        "Sesetengah kesan sampingan memerlukan bantuan segera. Simpan nombor hubungan 24 jam pasukan rawatan anda bersama anda."
+       ]
+      ],
+      [
+       "Apakah itu?",
+       [
+        "Ubat kemoterapi bergerak melalui aliran darah, jadi ia boleh sampai kepada sel kanser di banyak bahagian badan.",
+        "Bagi kanser ginekologi, kemoterapi biasanya diberikan melalui titisan ke dalam vena (intravena). Sesetengah rawatan dalam bentuk tablet.",
+        "Anda mungkin menerima satu ubat atau gabungan beberapa ubat. Setiap gabungan dipanggil regimen."
+       ]
+      ],
+      [
+       "Mengapa ia mungkin dicadangkan?",
+       [
+        "Sebelum pembedahan, untuk mengecilkan kanser dan memudahkan pembedahan.",
+        "Selepas pembedahan, untuk mengurangkan risiko kanser berulang.",
+        "Bersama radioterapi (kemoradioterapi), supaya radioterapi lebih berkesan.",
+        "Bagi kanser yang telah merebak atau berulang, untuk mengawalnya dan melegakan gejala.",
+        "Pasukan anda akan menerangkan matlamat rawatan anda. Tanyakan jika anda tidak pasti."
+       ]
+      ],
+      [
+       "Apakah yang akan berlaku?",
+       [
+        "Sebelum setiap kitaran, anda akan menjalani ujian darah untuk memastikan badan anda bersedia.",
+        "Pada hari rawatan, anda biasanya akan ke unit rawatan harian. Titisan boleh mengambil masa kurang daripada sejam hingga beberapa jam.",
+        "Anda mungkin diberi ubat terlebih dahulu untuk mencegah loya atau tindak balas alahan.",
+        "Sesetengah orang dipasang tiub halus (PICC line atau port) di dalam vena supaya titisan lebih mudah diberikan. Pasukan anda akan membincangkannya jika perlu.",
+        "Bilangan kitaran dan kekerapannya bergantung pada rancangan rawatan anda."
+       ]
+      ],
+      [
+       "Manfaat dan batasan",
+       [
+        "Kemoterapi boleh mengecilkan atau memusnahkan kanser, mengurangkan risiko berulang, atau mengawal gejala.",
+        "Ia tidak berkesan dengan cara yang sama untuk semua orang. Pasukan anda akan memantau tindak balas anda melalui pemeriksaan, imbasan atau ujian darah.",
+        "Risalah ini tidak dapat memberitahu sejauh mana rawatan akan berkesan untuk anda secara peribadi."
+       ]
+      ],
+      [
+       "Risiko dan kesan sampingan",
+       [
+        "Keletihan sangat biasa.",
+        "Rasa loya atau muntah. Ubat anti-loya biasanya membantu, jadi ambillah seperti yang ditetapkan.",
+        "Rambut menipis atau gugur dengan sesetengah ubat. Rambut biasanya tumbuh semula selepas rawatan.",
+        "Bilangan sel darah putih yang rendah, yang menjadikan jangkitan lebih mudah berlaku dan lebih serius.",
+        "Kebas atau kesemutan pada tangan dan kaki (neuropati) dengan sesetengah ubat. Beritahu pasukan anda lebih awal.",
+        "Mulut luka, perubahan rasa, sembelit atau cirit-birit.",
+        "Sesetengah ubat boleh menjejaskan kesuburan atau menyebabkan menopaus awal. Tanyakan tentang perkara ini sebelum rawatan bermula.",
+        "Anda tidak boleh hamil semasa rawatan. Tanyakan pasukan anda tentang kontraseptif."
+       ]
+      ],
+      [
+       "Bagaimana saya boleh bersedia?",
+       [
+        "Minta nama regimen anda dan senarai bertulis kesan sampingannya.",
+        "Bawa senarai semua ubat anda, termasuk ubat herba dan tradisional, kerana sesetengahnya boleh berinteraksi dengan kemoterapi.",
+        "Jalani pemeriksaan pergigian jika boleh, kerana masalah mulut lebih sukar dirawat semasa kemoterapi.",
+        "Aturkan pengangkutan dan seseorang untuk menemani anda pada hari rawatan jika boleh.",
+        "Beli termometer supaya anda boleh memeriksa suhu badan jika berasa tidak sihat."
+       ]
+      ],
+      [
+       "Pemulihan dan penjagaan diri",
+       [
+        "Berehat apabila perlu, dan cuba aktiviti ringan seperti berjalan sebentar pada hari yang lebih baik.",
+        "Makan dalam hidangan kecil dengan kerap dan minum air secukupnya melainkan pasukan anda memberitahu sebaliknya.",
+        "Cuci tangan dengan kerap dan elakkan orang yang mempunyai jangkitan jika boleh.",
+        "Catat kesan sampingan dalam diari. Penjejak kesan sampingan DR ARVEEN boleh membantu."
+       ]
+      ]
+     ],
+     "safety": {
+      "emergency": [
+       "Kesukaran bernafas, sakit dada, atau bengkak pada muka atau tekak",
+       "Pengsan, sawan, atau menjadi keliru atau sangat mengantuk"
+      ],
+      "urgent": [
+       "Suhu badan tinggi, atau berasa panas dan menggigil, atau tiba-tiba berasa sangat tidak sihat walaupun suhu normal: hubungi nombor 24 jam anda dengan segera, kerana ini boleh menjadi tanda jangkitan serius",
+       "Muntah dan tidak dapat menahan minuman",
+       "Cirit-birit yang tidak reda dengan ubat yang diberikan",
+       "Pendarahan atau lebam yang luar biasa",
+       "Sakit, kemerahan atau bengkak di sekitar tiub atau port anda"
+      ],
+      "routine": [
+       "Keletihan ringan",
+       "Soalan tentang pemakanan, kerja atau senaman",
+       "Kesemutan ringan pada jari tangan atau kaki (beritahu pasukan anda pada lawatan seterusnya)"
+      ],
+      "note": "Draf. Suhu dan gejala yang memerlukan tindakan segera mesti disahkan oleh pasukan rawatan anda sendiri. Di Malaysia, hubungi 999 jika berlaku kecemasan."
+     },
+     "questions": [
+      "Apakah matlamat kemoterapi saya?",
+      "Ubat apakah yang akan saya terima, dan berapa kitaran?",
+      "Apakah kesan sampingan yang paling mungkin dengan regimen saya?",
+      "Siapakah yang perlu saya hubungi, siang dan malam, jika saya berasa tidak sihat?",
+      "Adakah rawatan ini akan menjejaskan kesuburan saya atau menyebabkan menopaus?",
+      "Ubat atau makanan tambahan apakah yang perlu saya elakkan?"
+     ]
+    }
+   }
   },
   {
    "id": "PIL-TX-RT",
@@ -648,7 +763,7 @@ window.ARVEEN_PUBLIC = {
    "version": "0.1 draft",
    "jurisdiction": "Malaysia",
    "language": "English",
-   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "translation": "Bahasa Malaysia: DRAFT TRANSLATION; Mandarin and Tamil not started",
    "approval": "DRAFT",
    "sources": [
     "G-ESGO-CX-2023"
@@ -753,7 +868,117 @@ window.ARVEEN_PUBLIC = {
     "Which side effects should I report straight away?",
     "Will this affect my fertility, menopause or sex life?",
     "Will I also have chemotherapy or brachytherapy?"
-   ]
+   ],
+   "translations": {
+    "ms": {
+     "status": "DRAFT TRANSLATION",
+     "translator": null,
+     "languageReviewer": null,
+     "clinicalReviewer": null,
+     "title": "Bersedia untuk Radioterapi",
+     "sections": [
+      [
+       "Ringkasan",
+       [
+        "Radioterapi menggunakan sinar-X bertenaga tinggi untuk memusnahkan sel kanser di kawasan yang tepat.",
+        "Radioterapi pancaran luar diberikan oleh mesin di luar badan anda. Ia tidak menyakitkan dan anda tidak dapat merasainya.",
+        "Rawatan biasanya diberikan pada hari bekerja selama beberapa minggu. Pasukan anda akan memberitahu jadual tepat anda.",
+        "Anda tidak menjadi radioaktif selepas radioterapi pancaran luar. Anda selamat berada dekat dengan orang lain, termasuk kanak-kanak."
+       ]
+      ],
+      [
+       "Apakah itu?",
+       [
+        "Mesin yang dipanggil pemecut linear menghalakan pancaran sinaran ke kawasan yang dirawat, seperti pelvis.",
+        "Setiap rawatan harian mengambil masa beberapa minit sahaja, tetapi anda mungkin berada di jabatan lebih lama semasa pasukan meletakkan kedudukan anda.",
+        "Bagi sesetengah kanser, radioterapi digabungkan dengan kemoterapi (kemoradioterapi) atau diikuti dengan radioterapi dalaman (brakiterapi)."
+       ]
+      ],
+      [
+       "Mengapa ia mungkin dicadangkan?",
+       [
+        "Sebagai rawatan utama, kadangkala sebagai ganti pembedahan.",
+        "Selepas pembedahan, untuk mengurangkan risiko kanser berulang di pelvis.",
+        "Untuk mengawal gejala seperti sakit atau pendarahan.",
+        "Pasukan anda akan menerangkan mengapa radioterapi dicadangkan untuk anda dan apakah pilihan lain."
+       ]
+      ],
+      [
+       "Apakah yang akan berlaku?",
+       [
+        "Perancangan: anda akan menjalani imbasan CT dalam kedudukan yang sama seperti semasa rawatan. Sesetengah pusat membuat beberapa titik kecil kekal pada kulit supaya kedudukan anda sama setiap hari.",
+        "Anda mungkin diminta untuk mempunyai pundi kencing yang penuh dengan selesa atau usus yang kosong untuk perancangan dan rawatan. Ikut arahan pasukan anda sendiri kerana ia berbeza antara pusat.",
+        "Rawatan: anda berbaring diam di atas katil rawatan sementara mesin bergerak di sekeliling anda. Kakitangan akan keluar dari bilik tetapi boleh melihat dan mendengar anda sepanjang masa.",
+        "Anda akan berjumpa pasukan dengan kerap semasa rawatan untuk memeriksa kesan sampingan."
+       ]
+      ],
+      [
+       "Manfaat dan batasan",
+       [
+        "Radioterapi boleh memusnahkan sel kanser, mengurangkan risiko kanser berulang, atau melegakan gejala.",
+        "Sesetengah kesan sampingan bertambah semasa rawatan dan beberapa minggu selepas tamat, kemudian biasanya reda.",
+        "Beberapa kesan boleh berpanjangan. Pasukan anda akan membincangkannya sebelum anda bersetuju dengan rawatan."
+       ]
+      ],
+      [
+       "Risiko dan kesan sampingan",
+       [
+        "Keletihan, yang sering bertambah semasa rawatan.",
+        "Najis lembik atau cirit-birit, angin dan kekejangan perut.",
+        "Perlu membuang air kecil dengan lebih kerap atau segera, atau rasa pedih.",
+        "Kulit sakit di kawasan rawatan dan di sekitar vulva dan faraj.",
+        "Kesan jangka panjang yang mungkin termasuk perubahan tabiat usus atau pundi kencing, penyempitan atau kekeringan faraj, dan bengkak pada kaki (limfedema).",
+        "Jika ovari anda berada di kawasan rawatan dan anda belum menopaus, radioterapi biasanya akan menyebabkan menopaus dan ketidaksuburan. Tanyakan tentang pilihan kesuburan dan menopaus sebelum rawatan."
+       ]
+      ],
+      [
+       "Bagaimana saya boleh bersedia?",
+       [
+        "Tanyakan berapa banyak rawatan yang akan anda terima dan berapa lama setiap lawatan.",
+        "Rancang pengangkutan untuk lawatan harian. Tanyakan hospital sama ada bantuan pengangkutan atau penginapan tersedia.",
+        "Tanyakan tentang persediaan pundi kencing dan usus, dan berlatih sebelum perancangan jika boleh.",
+        "Tanyakan sama ada anda perlu menggunakan dilator faraj selepas rawatan, dan bila hendak bermula."
+       ]
+      ],
+      [
+       "Pemulihan dan penjagaan diri",
+       [
+        "Minum air secukupnya melainkan diberitahu sebaliknya, dan tanyakan pasukan anda sebelum mengubah pemakanan.",
+        "Basuh kawasan rawatan dengan lembut menggunakan air dan sabun lembut tanpa pewangi, kemudian tepuk hingga kering. Tanyakan sebelum menggunakan sebarang krim.",
+        "Pakai seluar dalam kapas yang longgar.",
+        "Kesan sampingan biasanya memuncak menjelang akhir rawatan dan bertambah baik dalam minggu-minggu berikutnya."
+       ]
+      ]
+     ],
+     "safety": {
+      "emergency": [
+       "Pendarahan banyak dari faraj atau dubur",
+       "Sakit perut yang teruk bersama muntah",
+       "Kesukaran bernafas atau sakit dada"
+      ],
+      "urgent": [
+       "Cirit-birit berkali-kali sehari, atau bersama rasa pening atau hendak pengsan",
+       "Suhu badan tinggi atau berasa panas dan menggigil, terutamanya jika anda juga menerima kemoterapi",
+       "Tidak dapat membuang air kecil, atau ada darah dalam air kencing",
+       "Kulit yang pecah, berair atau sangat sakit"
+      ],
+      "routine": [
+       "Keletihan ringan",
+       "Kemerahan kulit yang ringan",
+       "Soalan tentang seks, menopaus atau dilator"
+      ],
+      "note": "Draf. Kriteria bantuan segera mesti disahkan oleh pasukan radioterapi anda sendiri. Di Malaysia, hubungi 999 jika berlaku kecemasan."
+     },
+     "questions": [
+      "Apakah matlamat radioterapi saya?",
+      "Berapa banyak rawatan yang akan saya terima?",
+      "Bagaimanakah saya perlu menyediakan pundi kencing dan usus saya?",
+      "Kesan sampingan apakah yang perlu saya laporkan dengan segera?",
+      "Adakah ini akan menjejaskan kesuburan, menopaus atau kehidupan seks saya?",
+      "Adakah saya juga akan menerima kemoterapi atau brakiterapi?"
+     ]
+    }
+   }
   },
   {
    "id": "PIL-TX-BT",
@@ -769,7 +994,7 @@ window.ARVEEN_PUBLIC = {
    "version": "0.1 draft",
    "jurisdiction": "Malaysia",
    "language": "English",
-   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "translation": "Bahasa Malaysia: DRAFT TRANSLATION; Mandarin and Tamil not started",
    "approval": "DRAFT",
    "sources": [
     "G-ESGO-CX-2023"
@@ -866,7 +1091,109 @@ window.ARVEEN_PUBLIC = {
     "How should I prepare?",
     "Should I use a vaginal dilator afterwards, and how?",
     "When can I have sex again?"
-   ]
+   ],
+   "translations": {
+    "ms": {
+     "status": "DRAFT TRANSLATION",
+     "translator": null,
+     "languageReviewer": null,
+     "clinicalReviewer": null,
+     "title": "Memahami Brakiterapi",
+     "sections": [
+      [
+       "Ringkasan",
+       [
+        "Brakiterapi ialah radioterapi yang diberikan dari dalam badan, sangat dekat dengan kanser.",
+        "Oleh sebab sumber sinaran diletakkan dekat dengan tumor, dos yang tinggi sampai kepada kanser manakala organ berdekatan menerima dos yang lebih rendah.",
+        "Bagi kanser serviks, ia biasanya diberikan selepas radioterapi pancaran luar. Selepas histerektomi untuk kanser rahim, ia mungkin diberikan ke bahagian atas faraj.",
+        "Dengan jenis yang paling kerap digunakan (kadar dos tinggi), sumber dikeluarkan selepas setiap rawatan, jadi anda tidak radioaktif selepas itu. Sahkan perkara ini dengan pasukan anda."
+       ]
+      ],
+      [
+       "Apakah itu?",
+       [
+        "Aplikator kecil diletakkan di dalam faraj, dan kadangkala ke dalam rahim atau tisu di sekitar serviks.",
+        "Aplikator disambungkan kepada mesin yang menghantar sumber radioaktif yang sangat kecil ke dalamnya selama beberapa minit, kemudian menariknya semula.",
+        "Imbasan (MRI atau CT) sering dibuat dengan aplikator di tempatnya supaya rawatan dapat dirancang dengan tepat."
+       ]
+      ],
+      [
+       "Mengapa ia mungkin dicadangkan?",
+       [
+        "Bagi kanser serviks, brakiterapi ialah bahagian penting rawatan bertujuan menyembuhkan bersama kemoradioterapi.",
+        "Selepas pembedahan untuk sesetengah kanser rahim (endometrium), untuk mengurangkan risiko kanser berulang di bahagian atas faraj.",
+        "Pasukan anda akan menerangkan mengapa ia dicadangkan untuk anda."
+       ]
+      ],
+      [
+       "Apakah yang akan berlaku?",
+       [
+        "Bagi kanser serviks, aplikator biasanya dipasang di bawah bius atau sedasi. Anda mungkin tinggal di hospital semasa rawatan dirancang dan diberikan.",
+        "Bagi rawatan bahagian atas faraj selepas histerektomi, silinder licin diletakkan di dalam faraj. Ini biasanya mengambil masa beberapa minit dan tidak memerlukan bius.",
+        "Anda biasanya akan menerima beberapa rawatan. Pasukan anda akan memberitahu berapa banyak dan jaraknya.",
+        "Pasukan anda sendiri akan memberi arahan tentang makan, minum dan persediaan pundi kencing."
+       ]
+      ],
+      [
+       "Manfaat dan batasan",
+       [
+        "Brakiterapi membolehkan dos yang tinggi sampai kepada kanser, yang meningkatkan peluang untuk mengawalnya.",
+        "Ia digunakan bersama rawatan lain, biasanya bukan secara bersendirian bagi kanser serviks.",
+        "Sesetengah kesan sampingan boleh muncul berbulan-bulan atau bertahun-tahun kemudian."
+       ]
+      ],
+      [
+       "Risiko dan kesan sampingan",
+       [
+        "Rasa tidak selesa atau kekejangan semasa aplikator di tempatnya. Minta ubat tahan sakit jika perlu.",
+        "Pendarahan ringan atau lelehan selama beberapa hari.",
+        "Kerengsaan pundi kencing dan perlu membuang air kecil lebih kerap.",
+        "Najis lembik.",
+        "Kesan kemudian boleh termasuk penyempitan, kekeringan atau pemendekan faraj, dan perubahan tabiat usus atau pundi kencing. Menggunakan dilator faraj, jika disyorkan oleh pasukan anda, boleh membantu."
+       ]
+      ],
+      [
+       "Bagaimana saya boleh bersedia?",
+       [
+        "Tanyakan sama ada anda memerlukan bius dan sama ada anda akan bermalam di hospital.",
+        "Minta seseorang membawa anda pulang, terutamanya selepas bius.",
+        "Tanyakan tentang dilator faraj dan bila hendak mula menggunakannya."
+       ]
+      ],
+      [
+       "Pemulihan dan penjagaan diri",
+       [
+        "Berehat pada hari rawatan.",
+        "Minum air secukupnya melainkan diberitahu sebaliknya.",
+        "Tanyakan pasukan anda bila selamat untuk melakukan hubungan seks semula. Hubungan seks yang lembut, atau penggunaan dilator, boleh membantu mengekalkan kesihatan faraj selepas rawatan."
+       ]
+      ]
+     ],
+     "safety": {
+      "emergency": [
+       "Pendarahan faraj yang banyak",
+       "Kesukaran bernafas atau sakit dada"
+      ],
+      "urgent": [
+       "Suhu badan tinggi atau berasa panas dan menggigil",
+       "Sakit teruk yang tidak terkawal dengan ubat tahan sakit anda",
+       "Tidak dapat membuang air kecil"
+      ],
+      "routine": [
+       "Lelehan atau tompokan darah yang ringan",
+       "Soalan tentang dilator atau seks"
+      ],
+      "note": "Draf. Kriteria bantuan segera mesti disahkan oleh pasukan rawatan anda sendiri. Di Malaysia, hubungi 999 jika berlaku kecemasan."
+     },
+     "questions": [
+      "Berapa banyak rawatan brakiterapi yang akan saya terima?",
+      "Adakah saya memerlukan bius, dan adakah saya akan tinggal di hospital?",
+      "Bagaimanakah saya perlu bersedia?",
+      "Patutkah saya menggunakan dilator faraj selepas itu, dan bagaimana?",
+      "Bilakah saya boleh melakukan hubungan seks semula?"
+     ]
+    }
+   }
   },
   {
    "id": "PIL-SX-HYST",
@@ -882,7 +1209,7 @@ window.ARVEEN_PUBLIC = {
    "version": "0.1 draft",
    "jurisdiction": "Malaysia",
    "language": "English",
-   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "translation": "Bahasa Malaysia: DRAFT TRANSLATION; Mandarin and Tamil not started",
    "approval": "DRAFT",
    "sources": [],
    "sections": [
@@ -988,7 +1315,120 @@ window.ARVEEN_PUBLIC = {
     "How long will I be in hospital, and how long will recovery take?",
     "Will I go through menopause, and what can help?",
     "When will I get my results, and will I need more treatment?"
-   ]
+   ],
+   "translations": {
+    "ms": {
+     "status": "DRAFT TRANSLATION",
+     "translator": null,
+     "languageReviewer": null,
+     "clinicalReviewer": null,
+     "title": "Menjalani Histerektomi untuk Kanser Ginekologi",
+     "sections": [
+      [
+       "Ringkasan",
+       [
+        "Histerektomi ialah pembedahan untuk membuang rahim, biasanya termasuk serviks.",
+        "Bagi kanser, ovari dan tiub fallopio sering dibuang juga, dan kadangkala nodus limfa atau tisu lain.",
+        "Selepas histerektomi, anda tidak akan datang haid dan tidak boleh hamil.",
+        "Jika ovari anda dibuang sebelum menopaus, anda akan mengalami menopaus serta-merta."
+       ]
+      ],
+      [
+       "Apakah itu?",
+       [
+        "Histerektomi total: membuang rahim dan serviks.",
+        "Histerektomi radikal: membuang rahim, serviks, tisu di sekitar serviks dan bahagian atas faraj. Ia digunakan untuk sesetengah kanser serviks.",
+        "Salpingo-ooforektomi dua hala: membuang kedua-dua ovari dan tiub fallopio.",
+        "Penilaian nodus limfa: membuang sebahagian nodus limfa, kadangkala hanya nodus pertama yang menerima saliran daripada kanser (nodus limfa sentinel), untuk memeriksa sama ada kanser telah merebak."
+       ]
+      ],
+      [
+       "Mengapa ia mungkin dicadangkan?",
+       [
+        "Untuk membuang kanser.",
+        "Untuk mengetahui dengan tepat sejauh mana kanser telah merebak (penentuan peringkat), yang membimbing rawatan lanjut.",
+        "Pakar bedah anda akan menerangkan pembedahan yang dicadangkan, sebabnya, dan apakah pilihan lain."
+       ]
+      ],
+      [
+       "Apakah yang akan berlaku?",
+       [
+        "Sebelum: anda akan menjalani ujian untuk memastikan anda cergas untuk pembedahan, dan perbincangan tentang pembedahan serta persetujuan.",
+        "Pembedahan dilakukan di bawah bius am. Ia mungkin dilakukan melalui hirisan di perut (pembedahan terbuka), melalui hirisan kecil menggunakan kamera (pembedahan lubang kunci atau laparoskopi), atau dengan bantuan robot. Pakar bedah anda akan menerangkan pendekatan yang sesuai untuk kanser anda.",
+        "Selepas: anda akan diberi ubat tahan sakit dan mungkin mempunyai titisan dan kateter air kencing untuk seketika.",
+        "Tempoh tinggal di hospital bergantung pada jenis pembedahan dan pemulihan anda."
+       ]
+      ],
+      [
+       "Manfaat dan batasan",
+       [
+        "Pembedahan boleh membuang kanser sepenuhnya bagi kebanyakan kanser peringkat awal.",
+        "Tisu yang dibuang akan diperiksa di makmal. Keputusannya mungkin menunjukkan anda memerlukan rawatan lanjut.",
+        "Pakar bedah anda tidak selalu dapat mengetahui sepenuhnya tahap kanser sebelum pembedahan."
+       ]
+      ],
+      [
+       "Risiko dan kesan sampingan",
+       [
+        "Sakit dan keletihan semasa pemulihan.",
+        "Pendarahan, jangkitan pada luka, pundi kencing atau dada.",
+        "Darah beku di kaki atau paru-paru. Anda mungkin diberi suntikan atau stoking untuk mengurangkan risiko ini.",
+        "Kecederaan pada pundi kencing, usus atau tiub dari buah pinggang (ureter). Ini jarang berlaku tetapi boleh menjadi serius.",
+        "Selepas histerektomi radikal, sesetengah orang mengalami masalah mengosongkan pundi kencing buat seketika.",
+        "Jika nodus limfa dibuang, bengkak pada kaki (limfedema) boleh berlaku.",
+        "Gejala menopaus jika ovari anda dibuang sebelum menopaus."
+       ]
+      ],
+      [
+       "Bagaimana saya boleh bersedia?",
+       [
+        "Berhenti merokok jika anda merokok, dan kekal aktif sebanyak mungkin.",
+        "Beritahu pasukan anda tentang semua ubat anda, terutamanya ubat pencair darah. Jangan berhenti mengambil sebarang ubat melainkan pasukan anda menyuruh.",
+        "Hospital anda akan memberitahu bila perlu berhenti makan dan minum sebelum pembedahan. Ikut arahan mereka dengan tepat.",
+        "Aturkan bantuan di rumah untuk minggu-minggu pertama.",
+        "Jika anda belum menopaus, tanyakan tentang kesan membuang ovari dan tentang kesuburan."
+       ]
+      ],
+      [
+       "Pemulihan dan penjagaan diri",
+       [
+        "Berjalan sedikit setiap hari tidak lama selepas pembedahan, seperti yang dinasihatkan oleh pasukan anda.",
+        "Elakkan mengangkat barang berat dan aktiviti berat untuk tempoh yang disyorkan oleh pasukan anda.",
+        "Tanyakan pasukan anda bila anda boleh memandu, kembali bekerja dan melakukan hubungan seks semula.",
+        "Pastikan luka anda bersih dan kering, dan perhatikan tanda-tanda jangkitan."
+       ]
+      ]
+     ],
+     "safety": {
+      "emergency": [
+       "Pendarahan banyak dari faraj atau luka",
+       "Sakit dada atau sesak nafas secara tiba-tiba",
+       "Pengsan"
+      ],
+      "urgent": [
+       "Suhu badan tinggi atau berasa panas dan menggigil",
+       "Sakit perut yang semakin teruk, atau sakit yang tidak terkawal dengan ubat tahan sakit",
+       "Luka yang merah, panas, bengkak atau berair",
+       "Sakit atau bengkak pada sebelah kaki",
+       "Tidak dapat membuang air kecil, atau air kencing atau najis keluar melalui faraj"
+      ],
+      "routine": [
+       "Soalan tentang kembali bekerja, memandu atau seks",
+       "Gejala menopaus",
+       "Keletihan"
+      ],
+      "note": "Draf. Kriteria bantuan segera mesti disahkan oleh pasukan pembedahan anda sendiri. Di Malaysia, hubungi 999 jika berlaku kecemasan."
+     },
+     "questions": [
+      "Apakah jenis histerektomi yang akan saya jalani, dan mengapa?",
+      "Adakah ovari dan nodus limfa saya akan dibuang?",
+      "Adakah pembedahan terbuka atau lubang kunci?",
+      "Berapa lama saya akan berada di hospital, dan berapa lama pemulihan?",
+      "Adakah saya akan mengalami menopaus, dan apakah yang boleh membantu?",
+      "Bilakah saya akan mendapat keputusan, dan adakah saya memerlukan rawatan lanjut?"
+     ]
+    }
+   }
   },
   {
    "id": "PIL-OV-001",
@@ -1004,7 +1444,7 @@ window.ARVEEN_PUBLIC = {
    "version": "0.1 draft",
    "jurisdiction": "Malaysia",
    "language": "English",
-   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "translation": "Bahasa Malaysia: DRAFT TRANSLATION; Mandarin and Tamil not started",
    "approval": "DRAFT",
    "sources": [
     "G-ESMO-OV-2023",
@@ -1102,7 +1542,109 @@ window.ARVEEN_PUBLIC = {
     "Should I have genetic testing, and what will it mean for my family?",
     "Will I be offered maintenance treatment?",
     "What symptoms should I report straight away?"
-   ]
+   ],
+   "translations": {
+    "ms": {
+     "status": "DRAFT TRANSLATION",
+     "translator": null,
+     "languageReviewer": null,
+     "clinicalReviewer": null,
+     "title": "Memahami Kanser Ovari",
+     "sections": [
+      [
+       "Ringkasan",
+       [
+        "Kanser ovari bermula di ovari, tiub fallopio atau lapisan perut (peritoneum). Ketiga-tiganya dirawat dengan cara yang serupa.",
+        "Terdapat beberapa jenis. Yang paling biasa ialah kanser serous gred tinggi.",
+        "Rawatan biasanya melibatkan pembedahan dan kemoterapi. Sesetengah orang kemudiannya menerima rawatan penyelenggaraan.",
+        "Ramai orang ditawarkan ujian genetik, kerana keputusannya boleh membimbing rawatan dan penting untuk ahli keluarga."
+       ]
+      ],
+      [
+       "Apakah itu?",
+       [
+        "Kanser berlaku apabila sel membesar tanpa kawalan. Dalam kanser ovari, ini sering bermula di tiub fallopio dan merebak ke ovari dan lapisan perut.",
+        "Gejala mungkin tidak jelas: perut kembung yang berterusan, cepat berasa kenyang, sakit perut atau pelvis, dan perlu membuang air kecil lebih kerap.",
+        "Doktor mengesahkan diagnosis dengan memeriksa tisu atau cecair di bawah mikroskop."
+       ]
+      ],
+      [
+       "Mengapa ujian lanjut diperlukan?",
+       [
+        "Ujian darah yang dipanggil CA-125, imbasan ultrabunyi dan imbasan CT membantu menunjukkan sejauh mana kanser telah merebak.",
+        "Keputusan ini menentukan peringkat kanser anda, dari 1 (hanya di ovari atau tiub) hingga 4 (merebak ke bahagian badan yang jauh).",
+        "Ujian pada tumor dan ujian genetik pada darah anda mungkin mencari perubahan seperti BRCA1 atau BRCA2. Ini boleh menjejaskan rawatan yang ditawarkan."
+       ]
+      ],
+      [
+       "Apakah rawatan yang mungkin ditawarkan?",
+       [
+        "Pembedahan untuk membuang seberapa banyak kanser yang mungkin. Ini boleh dilakukan sebelum atau selepas kemoterapi.",
+        "Kemoterapi, biasanya diberikan melalui titisan setiap beberapa minggu.",
+        "Rawatan penyelenggaraan selepas kemoterapi bagi sesetengah orang, seperti tablet yang dipanggil perencat PARP atau ubat titisan yang menjejaskan bekalan darah ke kanser.",
+        "Pasukan anda akan menerangkan rawatan yang sesuai untuk anda dan sebabnya."
+       ]
+      ],
+      [
+       "Manfaat dan batasan",
+       [
+        "Matlamat rawatan bergantung pada peringkat dan jenis kanser. Tanyakan pasukan anda apakah matlamat rawatan anda.",
+        "Kanser ovari boleh berulang selepas rawatan. Jika ia berulang, terdapat rawatan lanjut yang boleh membantu mengawalnya.",
+        "Risalah ini tidak dapat memberitahu apa yang akan berlaku kepada anda secara peribadi."
+       ]
+      ],
+      [
+       "Risiko dan kesan sampingan",
+       [
+        "Setiap rawatan mempunyai kesan sampingannya sendiri. Lihat risalah tentang kemoterapi dan histerektomi.",
+        "Membuang kedua-dua ovari menyebabkan menopaus jika anda belum mengalaminya.",
+        "Tablet penyelenggaraan boleh menyebabkan keletihan, loya dan perubahan bilangan sel darah, jadi anda akan menjalani ujian darah dengan kerap."
+       ]
+      ],
+      [
+       "Bagaimana saya boleh bersedia?",
+       [
+        "Tulis soalan anda sebelum temu janji, dan bawa seseorang bersama jika boleh.",
+        "Tanyakan sama ada ujian genetik disyorkan untuk anda dan apakah maksud keputusannya bagi keluarga anda.",
+        "Tanyakan tentang kesuburan sebelum rawatan jika mempunyai anak pada masa hadapan penting bagi anda."
+       ]
+      ],
+      [
+       "Pemulihan dan penjagaan diri",
+       [
+        "Pemulihan daripada pembedahan dan kemoterapi mengambil masa. Bersikap baik terhadap diri sendiri dan terima bantuan.",
+        "Aktiviti ringan, pemakanan yang baik dan rehat boleh membantu mengatasi keletihan.",
+        "Kumpulan sokongan dan kaunseling boleh membantu anda dan keluarga."
+       ]
+      ]
+     ],
+     "safety": {
+      "emergency": [
+       "Sakit perut yang teruk bersama muntah dan tidak dapat membuang air besar atau kentut",
+       "Kesukaran bernafas atau sakit dada"
+      ],
+      "urgent": [
+       "Suhu badan tinggi atau berasa panas dan menggigil semasa kemoterapi",
+       "Perut semakin membengkak atau sesak nafas",
+       "Sakit atau bengkak pada sebelah kaki",
+       "Muntah yang tidak berhenti"
+      ],
+      "routine": [
+       "Soalan tentang ujian genetik",
+       "Keletihan atau perasaan murung",
+       "Soalan tentang pemakanan"
+      ],
+      "note": "Draf. Kriteria bantuan segera mesti disahkan oleh pasukan rawatan anda sendiri. Di Malaysia, hubungi 999 jika berlaku kecemasan."
+     },
+     "questions": [
+      "Apakah jenis dan peringkat kanser ovari saya?",
+      "Adakah saya akan menjalani pembedahan atau kemoterapi terlebih dahulu?",
+      "Patutkah saya menjalani ujian genetik, dan apakah maksudnya bagi keluarga saya?",
+      "Adakah saya akan ditawarkan rawatan penyelenggaraan?",
+      "Gejala apakah yang perlu saya laporkan dengan segera?"
+     ]
+    }
+   }
   },
   {
    "id": "PIL-TX-IO",
@@ -1118,7 +1660,7 @@ window.ARVEEN_PUBLIC = {
    "version": "0.1 draft",
    "jurisdiction": "Malaysia",
    "language": "English",
-   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "translation": "Bahasa Malaysia: DRAFT TRANSLATION; Mandarin and Tamil not started",
    "approval": "DRAFT",
    "sources": [],
    "sections": [
@@ -1217,7 +1759,113 @@ window.ARVEEN_PUBLIC = {
     "How long will I have treatment?",
     "Which side effects should I report straight away?",
     "Who do I call out of hours, and what should I tell other doctors?"
-   ]
+   ],
+   "translations": {
+    "ms": {
+     "status": "DRAFT TRANSLATION",
+     "translator": null,
+     "languageReviewer": null,
+     "clinicalReviewer": null,
+     "title": "Memahami Imunoterapi",
+     "sections": [
+      [
+       "Ringkasan",
+       [
+        "Imunoterapi membantu sistem imun anda sendiri mengenal pasti dan menyerang sel kanser.",
+        "Ia berfungsi secara berbeza daripada kemoterapi dan mempunyai kesan sampingan yang berbeza.",
+        "Kesan sampingan berlaku apabila sistem imun turut menjejaskan organ yang sihat. Ia boleh bermula pada bila-bila masa, malah berbulan-bulan selepas rawatan tamat.",
+        "Sentiasa beritahu mana-mana doktor, jururawat atau ahli farmasi yang merawat anda bahawa anda pernah menerima imunoterapi."
+       ]
+      ],
+      [
+       "Apakah itu?",
+       [
+        "Ubat yang digunakan untuk kanser ginekologi dipanggil perencat titik semak imun. Ubat ini melepaskan 'brek' yang digunakan oleh sel kanser untuk bersembunyi daripada sistem imun.",
+        "Ia diberikan melalui titisan ke dalam vena, biasanya setiap beberapa minggu, kadangkala bersama kemoterapi.",
+        "Ujian pada tumor anda (contohnya untuk mismatch repair atau PD-L1) mungkin membantu menentukan sama ada imunoterapi sesuai."
+       ]
+      ],
+      [
+       "Mengapa ia mungkin dicadangkan?",
+       [
+        "Bagi sesetengah kanser serviks dan endometrium, terutamanya apabila kanser telah merebak atau berulang.",
+        "Kadangkala bersama kemoterapi atau kemoradioterapi.",
+        "Pasukan anda akan menerangkan mengapa ia dicadangkan, dan sama ada ia tersedia dan dibiayai di tempat anda dirawat."
+       ]
+      ],
+      [
+       "Apakah yang akan berlaku?",
+       [
+        "Anda akan menjalani ujian darah sebelum setiap rawatan, termasuk pemeriksaan hati, buah pinggang dan tiroid.",
+        "Setiap titisan biasanya mengambil masa kurang daripada sejam, tetapi keseluruhan lawatan boleh lebih lama.",
+        "Anda akan diberi kad amaran. Bawa kad itu bersama anda pada setiap masa."
+       ]
+      ],
+      [
+       "Manfaat dan batasan",
+       [
+        "Bagi sesetengah orang, imunoterapi boleh mengawal kanser untuk jangka masa yang panjang.",
+        "Ia tidak berkesan untuk semua orang, dan mungkin mengambil masa untuk melihat sama ada ia berkesan.",
+        "Risalah ini tidak dapat memberitahu sejauh mana ia akan berkesan untuk anda secara peribadi."
+       ]
+      ],
+      [
+       "Risiko dan kesan sampingan",
+       [
+        "Keletihan, ruam kulit dan gatal adalah biasa.",
+        "Radang usus (kolitis): cirit-birit, sakit perut, darah atau lendir dalam najis.",
+        "Radang paru-paru (pneumonitis): batuk baharu atau sesak nafas.",
+        "Radang hati: kulit atau mata kuning, air kencing gelap.",
+        "Perubahan pada kelenjar hormon seperti tiroid, menyebabkan keletihan, perubahan berat badan atau rasa panas atau sejuk.",
+        "Kurang kerap, organ lain seperti buah pinggang, jantung, saraf atau mata boleh terjejas.",
+        "Kebanyakan kesan sampingan boleh dirawat, selalunya dengan steroid, jika dilaporkan awal."
+       ]
+      ],
+      [
+       "Bagaimana saya boleh bersedia?",
+       [
+        "Beritahu pasukan anda tentang sebarang penyakit autoimun yang anda hidapi, seperti penyakit tiroid, lupus atau artritis reumatoid.",
+        "Beritahu pasukan anda tentang semua ubat, makanan tambahan dan ubat tradisional.",
+        "Simpan kad amaran dan nombor hubungan 24 jam anda bersama anda."
+       ]
+      ],
+      [
+       "Pemulihan dan penjagaan diri",
+       [
+        "Catat sebarang gejala baharu dalam diari, walaupun kecil.",
+        "Jangan rawat cirit-birit baharu dengan ubat yang dibeli di farmasi sebelum bercakap dengan pasukan anda.",
+        "Kekal aktif dan makan dengan baik setakat yang anda mampu."
+       ]
+      ]
+     ],
+     "safety": {
+      "emergency": [
+       "Sesak nafas yang teruk atau sakit dada",
+       "Pengsan, sawan atau keliru"
+      ],
+      "urgent": [
+       "Cirit-birit, atau lebih kerap membuang air besar daripada biasa, atau darah dalam najis",
+       "Batuk baharu atau sesak nafas",
+       "Kulit atau mata kuning, atau air kencing gelap",
+       "Sakit kepala yang teruk, perubahan penglihatan, atau berasa sangat lemah atau pening",
+       "Ruam yang meluas atau melepuh",
+       "Suhu badan tinggi atau berasa tidak sihat"
+      ],
+      "routine": [
+       "Gatal atau ruam yang ringan",
+       "Keletihan ringan"
+      ],
+      "note": "Draf. Kesan sampingan imunoterapi boleh bermula berbulan-bulan selepas rawatan tamat. Hubungi pasukan rawatan anda tentang sebarang gejala baharu. Di Malaysia, hubungi 999 jika berlaku kecemasan."
+     },
+     "questions": [
+      "Mengapa imunoterapi dicadangkan untuk saya?",
+      "Adakah saya akan menerimanya bersama kemoterapi?",
+      "Berapa lama saya akan menerima rawatan?",
+      "Kesan sampingan apakah yang perlu saya laporkan dengan segera?",
+      "Siapakah yang perlu saya hubungi di luar waktu pejabat, dan apakah yang perlu saya beritahu doktor lain?"
+     ]
+    }
+   }
   }
  ],
  "articles": [

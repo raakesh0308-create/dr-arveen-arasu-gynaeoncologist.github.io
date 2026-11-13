@@ -433,13 +433,18 @@ V.d = id => {
     "Malaysian applicability": [MY["intl-not-verified"][0] + " for all linked recommendations."],
     "Patient education links": [`<a href="${url(`ptd.${d.id}`)}">Patient page: ${esc(d.name)}</a>`, ...D.leaflets.filter(l => l.disease === id).map(l => `<a href="${url(`l.${l.id}`)}">${esc(l.title)}</a>`)]
   };
-  const quick = ["Staging", "Systemic therapy", "Pivotal trials", "Current guideline references", "Malaysian applicability", "Patient education links"];
+  const quick = ["Staging", "Management by stage and subtype", "Systemic therapy", "Pivotal trials", "Current guideline references", "Malaysian applicability", "Clinical pearls", "Patient education links"];
   const secs = mode === "quick" ? quick : DTEMPLATE;
+  const ref = d.reference || {};
+  const body = s => { const txt = ref[s] || [], lk = linked[s] || [];
+    if (!txt.length && !lk.length) return `<span class="na" style="font-size:.86rem">Content not yet authored. Requires source-linked authoring and clinical review.</span>`;
+    return `${txt.length ? `<ul class="plist" style="font-size:.92rem">${txt.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${lk.length ? `<div style="display:grid;gap:4px;font-size:.9rem">${lk.map(x => `<span>${x}</span>`).join("")}</div>` : ""}`; };
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Disease reference</span><h1>${esc(d.name)}</h1><p class="prose muted">${esc(d.short)}</p>
     <div class="actions"><button class="btn" data-mode="quick" aria-pressed="${mode === "quick"}">Quick reference</button><button class="btn" data-mode="comp" aria-pressed="${mode !== "quick"}">Comprehensive reference</button>${bmBtn("Disease", d.id, d.name)}</div></div>
-  ${mode !== "quick" ? `<p class="banner info">Comprehensive reference uses the standard 24-section template. Sections without authored, source-linked content say so instead of showing unverified text.</p>` : ""}
+  ${d.reference ? `<p class="banner"><span class="pill teal">ARVEEN educational summary</span> ${statusPill("NOT VERIFIED")} Written for education and awaiting clinical review against the cited guidelines. No doses are given. Do not use for prescribing.</p>` : ""}
+  ${mode !== "quick" ? `<p class="banner info">Comprehensive reference uses the standard 24-section template.</p>` : ""}
   <div class="list">${secs.map((s, i) => `<div class="row"><span class="row-t">${mode !== "quick" ? `<span class="mono muted">${String(DTEMPLATE.indexOf(s) + 1).padStart(2, "0")}</span>` : ""} ${s}</span>
-    ${linked[s]?.length ? `<div style="display:grid;gap:4px;font-size:.9rem">${linked[s].map(x => `<span>${x}</span>`).join("")}</div>` : `<span class="na" style="font-size:.86rem">Content not yet authored. Requires source-linked authoring and clinical review.</span>`}</div>`).join("")}</div>
+    ${body(s)}</div>`).join("")}</div>
   ${noteBox("d-" + d.id)}</article>`;
 };
 
@@ -489,7 +494,7 @@ V.dr = id => {
   const W = `<span class="withheld">not entered · verify against product information</span>`;
   const pr = D.protocols.filter(p => p.components.some(c => c.drug === id));
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Drug monograph</span><h1>${esc(d.name)}</h1><div class="row-m"><span class="pill teal">ARVEEN educational summary</span> ${statusPill("NOT VERIFIED")} ${myLabel("regulatory")}</div><div class="actions">${bmBtn("Drug", d.id, d.name)}</div></div>
-  <div class="kv">${[["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", W], ["Administration", W], ["Contraindications", W], ["Drug interactions", W], ["Hepatic considerations", W], ["Pregnancy and breastfeeding", W], ["Fertility considerations", W], ["Monitoring", W], ["Dose modifications", W], ["Patient counselling", W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
+  <div class="kv">${[["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", `<span class="withheld">withheld · doses only from verified product information or protocol</span>`], ["Administration", d.admin ? esc(d.admin) : W], ["Contraindications", d.contra ? esc(d.contra) : W], ["Drug interactions", d.interactions ? esc(d.interactions) : W], ["Hepatic considerations", d.hepatic ? esc(d.hepatic) : W], ["Pregnancy and breastfeeding", d.pregnancy ? esc(d.pregnancy) : W], ["Fertility considerations", d.fertility ? esc(d.fertility) : W], ["Monitoring", d.monitoring ? esc(d.monitoring) : W], ["Dose modifications", `<span class="withheld">withheld · per verified protocol only</span>`], ["Patient counselling", d.counselling ? esc(d.counselling) : W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
   ${noteBox(d.id)}</article>`;
 };
 
@@ -497,7 +502,7 @@ V.trials = () => {
   const f = state.filters.trialDisease || "";
   const list = D.trials.filter(t => !f || t.disease === f);
   return `<span class="eyebrow">Clinical trials and evidence</span><h1>Clinical trials</h1>
-  <p class="banner">Numerical outcomes (hazard ratios, medians, response rates) are <b>not entered</b> until verified against the full publication. Registry IDs and citations are seed values awaiting verification.</p>
+  <p class="banner">Outcomes are entered from the published abstracts on PubMed, with the PubMed ID on each trial page. They are <b>PARTIALLY VERIFIED</b> until a clinical reviewer checks them against the full paper. Subgroup and interim results are labelled as such.</p>
   <div class="chips"><button class="chip" data-td="" aria-pressed="${!f}">All</button>${[...new Set(D.trials.map(t => t.disease))].map(d => `<button class="chip" data-td="${d}" aria-pressed="${f === d}">${dname(d)}</button>`).join("")}</div>
   <div class="tablewrap"><table><thead><tr><th>Trial</th><th>Registration</th><th>Phase / design</th><th>Intervention vs comparator</th><th>Primary endpoint</th><th>Report type</th></tr></thead><tbody>
   ${list.map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)}</div></td><td class="mono">${esc(t.reg)}</td><td>${esc(t.phase)}<div class="muted" style="font-size:.78rem">${esc(t.design)}</div></td><td>${esc(t.intervention)}<div class="muted">vs ${esc(t.comparator)}</div></td><td>${esc(t.primary)}</td><td>${esc(t.pubType)}</td></tr>`).join("")}
@@ -508,9 +513,12 @@ V.t = id => {
   recent("Trial", t.id, t.name);
   const N = `<span class="withheld">not entered · pending verification</span>`;
   const recs = D.recommendations.filter(r => r.trials.includes(id));
-  return `<article class="detail"><div class="dhead"><span class="eyebrow">Clinical trial · ${dname(t.disease)}</span><h1>${esc(t.name)}</h1><div class="row-m"><span class="mono">${esc(t.reg)}</span> ${statusPill("NOT VERIFIED")}</div><div class="actions">${bmBtn("Trial", t.id, t.name)}${/^NCT\d{8}$/.test(t.reg) ? `<a class="btn" target="_blank" rel="noopener" href="https://clinicaltrials.gov/study/${t.reg}">Registry record ↗</a>` : ""}</div></div>
-  <div class="kv">${[["Study design", esc(t.design)], ["Phase", esc(t.phase)], ["Population", esc(t.population)], ["Intervention", esc(t.intervention)], ["Comparator", esc(t.comparator)], ["Primary endpoint", esc(t.primary)], ["Secondary endpoints", N], ["Overall survival", N], ["Progression-free survival", N], ["Major adverse events", N], ["Follow-up", N], ["Limitations", N], ["Publication", esc(t.pub)], ["Report type", esc(t.pubType)], ["Cited by ARVEEN recommendations", recs.map(r => `<a href="${url(`g.${r.guideline}`)}">${r.id}</a>`).join(", ") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
-  <section class="section"><h2>Evidence appraisal</h2><p class="prose na">Not yet written. An appraisal will cover the studied population, comparator, principal outcomes, limitations and applicability, without overstating subgroup or exploratory findings.</p></section>
+  const o = t.outcome || {}; const f = v => v ? esc(v) : N;
+  const pmids = String(o.pmid || "").split(/;\s*/).filter(Boolean);
+  return `<article class="detail"><div class="dhead"><span class="eyebrow">Clinical trial · ${dname(t.disease)}</span><h1>${esc(t.name)}</h1><div class="row-m"><span class="mono">${esc(t.reg)}</span> ${statusPill(o.status || "NOT VERIFIED")}</div><div class="actions">${bmBtn("Trial", t.id, t.name)}${/^NCT\d{8}$/.test(t.reg) ? `<a class="btn" target="_blank" rel="noopener" href="https://clinicaltrials.gov/study/${t.reg}">Registry record ↗</a>` : ""}</div></div>
+  <div class="kv">${[["Study design", esc(t.design)], ["Phase", esc(t.phase)], ["Population", esc(t.population)], ["Intervention", esc(t.intervention)], ["Comparator", esc(t.comparator)], ["Primary endpoint", esc(t.primary)], ["Patients", f(o.n)], ["Trial regimen (as published, not a protocol)", f(o.regimen)], ["Progression-free / disease-free outcome", f(o.pfs)], ["Overall survival", f(o.os)], ["Other outcomes", o.other ? esc(o.other) : na(null)], ["Major adverse events", f(o.ae)], ["Follow-up", f(o.followUp)], ["Limitations", f(o.limitations)], ["Publication", esc(t.pub)], ["Report type", esc(t.pubType)], ["Source", pmids.length ? pmids.map(p => `<a href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(p)}/" target="_blank" rel="noopener">PubMed ${esc(p)} ↗</a>`).join(" · ") + (o.doi ? ` <span class="mono muted">doi ${esc(o.doi)}</span>` : "") : N], ["Cited by ARVEEN recommendations", recs.map(r => `<a href="${url(`g.${r.guideline}`)}">${r.id}</a>`).join(", ") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
+  ${o.note ? `<p class="banner">${esc(o.note)}</p>` : ""}
+  <section class="section"><h2>Evidence appraisal</h2>${o.limitations ? `<p class="prose">Population: ${esc(t.population)}. Comparator: ${esc(t.comparator)}. Main limitation: ${esc(o.limitations)}</p><p class="prose muted">A full appraisal (applicability to current Malaysian practice, risk of bias, interpretation of subgroups) is pending clinical review.</p>` : `<p class="prose na">Not yet written.</p>`}</section>
   ${noteBox(t.id)}</article>`;
 };
 
