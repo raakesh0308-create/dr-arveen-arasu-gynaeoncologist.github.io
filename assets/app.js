@@ -307,7 +307,25 @@ function resultRow(r) {
 }
 
 /* ---------- shared bits ---------- */
-const seedBanner = () => `<p class="banner">Prototype seed content. Every clinical record is <b>NOT VERIFIED</b>. Doses, numerical trial results and recommendation grades are not entered until a named reviewer verifies them against the source.</p>`;
+const seedBanner = () => `<p class="banner">Content is awaiting clinical review. Trial results come from published abstracts (<b>PARTIALLY VERIFIED</b>); other records are <b>NOT VERIFIED</b> until a named reviewer checks them. Doses and recommendation grades are not shown until verified.</p>`;
+/* One-line headline result for a trial, taken from its primary endpoint */
+function headline(t) {
+  const o = t.outcome; if (!o) return "";
+  const txt = /overall survival/i.test(t.primary || "") && !/progression|disease-free|failure-free|recurrence/i.test(t.primary || "") ? (o.os || o.pfs) : (o.pfs && !/^not reported/i.test(o.pfs) ? o.pfs : o.os);
+  const first = String(txt || "").split(/(?<=\))\.\s|(?<=\d)\.\s(?=[A-Z])/)[0];
+  return first.length > 170 ? first.slice(0, 167) + "…" : first;
+}
+/* Review progress across professional records */
+function verificationSummary() {
+  const recs = [
+    ...D.guidelines.map(g => g.status), ...D.recommendations.map(r => r.status), ...D.staging.map(() => "NOT VERIFIED"),
+    ...D.protocols.map(p => p.status), ...D.drugs.map(() => "NOT VERIFIED"), ...D.trials.map(t => t.outcome?.status || "NOT VERIFIED"),
+    ...D.diseases.filter(d => d.reference).map(() => "NOT VERIFIED")
+  ];
+  const n = s => recs.filter(x => x === s).length;
+  const ver = n("VERIFIED AGAINST SOURCE") + n("CLINICALLY REVIEWED") + n("APPROVED"), part = n("PARTIALLY VERIFIED"), tot = recs.length;
+  return { tot, ver, part, not: tot - ver - part };
+}
 const LANG_NAMES = { en: "English", ms: "Bahasa Malaysia", zh: "中文", ta: "தமிழ்" };
 /* Fixed leaflet wording per language. Translated labels need the same language and clinical review as the leaflets themselves. */
 const LEAFLET_LABELS = {
@@ -339,9 +357,23 @@ V.home = () => `
     <form class="bigsearch" id="hs"><input id="hq" type="search" aria-label="Search" placeholder="Search a cancer, guideline, treatment, biomarker, drug, or clinical question."><button>Search</button></form>
     <div class="chips">${["Ovarian cancer", "FIGO 2023 endometrial staging", "Recurrent cervical cancer", "Carboplatin and paclitaxel", "Sentinel lymph node", "BRCA1 and BRCA2", "Endometrial molecular classification"].map(s => `<button class="chip" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>
   </section>
-  ${seedBanner()}
-  <section class="section"><div class="section-h"><h2>Browse by disease</h2><a href="${url(`diseases`)}">All diseases</a></div>
-    <div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`d.${d.id}`)}"><b>${esc(d.name)}</b><span>${esc(d.short)}</span></a>`).join("")}</div></section>
+  ${(() => { const v = verificationSummary(); const pct = x => (100 * x / v.tot).toFixed(1); return `<section class="section progress-panel" aria-label="Review progress">
+    <div class="section-h"><h2>Review progress</h2><span class="muted">${v.tot} professional records</span></div>
+    <div class="vbar" role="img" aria-label="${v.ver} verified, ${v.part} partially verified, ${v.not} not yet verified"><span class="v-ok" style="width:${pct(v.ver)}%"></span><span class="v-part" style="width:${pct(v.part)}%"></span><span class="v-not" style="width:${pct(v.not)}%"></span></div>
+    <div class="vlegend"><span><i class="v-ok"></i>Verified ${v.ver}</span><span><i class="v-part"></i>Partially verified ${v.part}</span><span><i class="v-not"></i>Not yet verified ${v.not}</span>${isAdmin() ? `<a href="${url(`admin`)}">Open the review tracker</a>` : ""}</div>
+    <p class="muted" style="font-size:.84rem">Doses and recommendation grades are shown only after verification. Check every record's status label before relying on it.</p></section>`; })()}
+  <section class="section"><div class="section-h"><h2>Disease hubs</h2><a href="${url(`diseases`)}">All diseases</a></div>
+    <div class="grid">${D.diseases.map(d => { const nt = D.trials.filter(t => t.disease === d.id).length, ng = D.guidelines.filter(g => g.disease === d.id).length, ns = D.staging.filter(s => s.cancer === d.id && !s.superseded).length;
+      return `<a class="tile hub" href="${url(`d.${d.id}`)}"><b>${esc(d.name)}</b><span>${esc(d.short)}</span><span class="hubmeta">${[ng && `${ng} guideline${ng > 1 ? "s" : ""}`, ns && `${ns} staging`, nt && `${nt} trial${nt > 1 ? "s" : ""}`, d.reference && "24-section reference"].filter(Boolean).join(" · ") || "Reference in progress"}</span></a>`; }).join("")}</div></section>
+  <section class="section"><div class="section-h"><h2>Key evidence</h2><a href="${url(`trials`)}">All trials</a></div>
+    <div class="tablewrap"><table><thead><tr><th>Trial</th><th>Question</th><th>Headline result</th><th>Status</th></tr></thead><tbody>
+    ${D.trials.filter(t => t.outcome).map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)}</div></td><td style="font-size:.86rem">${esc(t.intervention)} vs ${esc(t.comparator)}</td><td style="font-size:.86rem">${esc(headline(t))}</td><td>${statusPill(t.outcome.status)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Trial results load from the database. If this is empty, the latest seed.sql has not been run.</td></tr>`}
+    </tbody></table></div></section>
+  <section class="section"><h2>Clinical tools</h2><div class="grid">
+    <a class="tile" href="${url(`calculators`)}"><b>Calculators</b><span>BSA, BMI, Cockcroft–Gault, CKD-EPI 2021, Calvert dose support.</span></a>
+    <a class="tile" href="${url(`staging`)}"><b>Staging systems</b><span>${D.staging.filter(s => !s.superseded).length} current FIGO systems with searchable criteria.</span></a>
+    <a class="tile" href="${url(`algorithms`)}"><b>Clinical pathways</b><span>Step-by-step work-up that shows missing information.</span></a>
+    <a class="tile" href="${url(`education`)}"><b>Staging exercises</b><span>${D.quiz.length} questions with explanations.</span></a></div></section>
   <section class="section"><h2>Browse by resource</h2>
     <div class="grid">${[["guidelines", "Clinical guidelines", D.guidelines.length + " records"], ["staging", "Staging systems", D.staging.length + " systems"], ["protocols", "Treatment protocols", D.protocols.length + " regimens"], ["algorithms", "Clinical algorithms", D.algorithms.length + " pathway"], ["drugs", "Drug monographs", D.drugs.length + " drugs"], ["trials", "Clinical trials", D.trials.length + " trials"], ["compare", "Guideline comparisons", "By clinical question"], ["calculators", "Calculators", "BSA, BMI, renal function, Calvert"], ["education", "Educational resources", "Staging exercises"], ["updates", "Recent updates", D.updates.length + " surveillance items"]].map(([r, t, s]) => `<a class="tile" href="${url(`${r}`)}"><b>${t}</b><span>${s}</span></a>`).join("")}</div></section>
   <section class="section"><div class="section-h"><h2>Recent updates</h2><a href="${url(`updates`)}">All updates</a></div>${updatesTable(D.updates.slice(0, 3))}</section>
@@ -441,6 +473,12 @@ V.d = id => {
     return `${txt.length ? `<ul class="plist" style="font-size:.92rem">${txt.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${lk.length ? `<div style="display:grid;gap:4px;font-size:.9rem">${lk.map(x => `<span>${x}</span>`).join("")}</div>` : ""}`; };
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Disease reference</span><h1>${esc(d.name)}</h1><p class="prose muted">${esc(d.short)}</p>
     <div class="actions"><button class="btn" data-mode="quick" aria-pressed="${mode === "quick"}">Quick reference</button><button class="btn" data-mode="comp" aria-pressed="${mode !== "quick"}">Comprehensive reference</button>${bmBtn("Disease", d.id, d.name)}</div></div>
+  <section class="glance" aria-label="At a glance">
+    <div><span class="eyebrow">Staging</span>${st.filter(s => !s.superseded).map(s => `<a href="${url(`s.${s.id}`)}">${esc(s.authority)} ${esc(s.version)}</a>`).join("") || `<span class="na">Not entered</span>`}</div>
+    <div><span class="eyebrow">Key trials</span>${tr.length ? tr.map(t => `<a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a>${t.outcome ? `<span class="glance-res">${esc(headline(t))}</span>` : ""}`).join("") : `<span class="na">None entered</span>`}</div>
+    <div><span class="eyebrow">Guidelines</span>${gl.map(g => `<a href="${url(`g.${g.id}`)}">${esc(orgs(g))} ${esc(g.version || "")}</a>`).join("") || `<span class="na">None entered</span>`}</div>
+    <div><span class="eyebrow">For patients</span><a href="${url(`ptd.${d.id}`)}">Patient page</a>${D.leaflets.filter(l => l.disease === id && (l.sections || []).length).map(l => `<a href="${url(`l.${l.id}`)}">${esc(l.title)}</a>`).join("")}</div>
+  </section>
   ${d.reference ? `<p class="banner"><span class="pill teal">ARVEEN educational summary</span> ${statusPill("NOT VERIFIED")} Written for education and awaiting clinical review against the cited guidelines. No doses are given. Do not use for prescribing.</p>` : ""}
   ${mode !== "quick" ? `<p class="banner info">Comprehensive reference uses the standard 24-section template.</p>` : ""}
   <div class="list">${secs.map((s, i) => `<div class="row"><span class="row-t">${mode !== "quick" ? `<span class="mono muted">${String(DTEMPLATE.indexOf(s) + 1).padStart(2, "0")}</span>` : ""} ${s}</span>
@@ -504,8 +542,8 @@ V.trials = () => {
   return `<span class="eyebrow">Clinical trials and evidence</span><h1>Clinical trials</h1>
   <p class="banner">Outcomes are entered from the published abstracts on PubMed, with the PubMed ID on each trial page. They are <b>PARTIALLY VERIFIED</b> until a clinical reviewer checks them against the full paper. Subgroup and interim results are labelled as such.</p>
   <div class="chips"><button class="chip" data-td="" aria-pressed="${!f}">All</button>${[...new Set(D.trials.map(t => t.disease))].map(d => `<button class="chip" data-td="${d}" aria-pressed="${f === d}">${dname(d)}</button>`).join("")}</div>
-  <div class="tablewrap"><table><thead><tr><th>Trial</th><th>Registration</th><th>Phase / design</th><th>Intervention vs comparator</th><th>Primary endpoint</th><th>Report type</th></tr></thead><tbody>
-  ${list.map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)}</div></td><td class="mono">${esc(t.reg)}</td><td>${esc(t.phase)}<div class="muted" style="font-size:.78rem">${esc(t.design)}</div></td><td>${esc(t.intervention)}<div class="muted">vs ${esc(t.comparator)}</div></td><td>${esc(t.primary)}</td><td>${esc(t.pubType)}</td></tr>`).join("")}
+  <div class="tablewrap"><table><thead><tr><th>Trial</th><th>Intervention vs comparator</th><th>Primary endpoint</th><th>Headline result</th><th>Source</th></tr></thead><tbody>
+  ${list.map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)} · Phase ${esc(t.phase)}</div><div class="mono muted" style="font-size:.74rem">${esc(t.reg)}</div></td><td>${esc(t.intervention)}<div class="muted">vs ${esc(t.comparator)}</div></td><td>${esc(t.primary)}</td><td style="font-size:.86rem">${t.outcome ? esc(headline(t)) : '<span class="na">Not entered</span>'}</td><td style="font-size:.82rem">${esc(t.pub)}<div>${statusPill(t.outcome?.status || "NOT VERIFIED")}</div></td></tr>`).join("")}
   </tbody></table></div>`;
 };
 V.t = id => {
