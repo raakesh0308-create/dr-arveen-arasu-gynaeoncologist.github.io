@@ -7,52 +7,194 @@ window.ARVEEN_PUBLIC = {
   {
    "id": "cervical",
    "name": "Cervical cancer",
-   "patient": "Cancer that starts in the cervix, the lower part of the womb that opens into the vagina. Most cervical cancers are linked to a long-lasting infection with high-risk types of human papillomavirus (HPV)."
+   "patient": "Cancer that starts in the cervix, the lower part of the womb that opens into the vagina. Most cervical cancers are linked to a long-lasting infection with high-risk types of human papillomavirus (HPV).",
+   "patientSections": [
+    [
+     "What stage means",
+     [
+      "The stage describes how far the cancer has grown or spread. It ranges from stage 1 (only in the cervix) to stage 4 (spread to nearby organs such as the bladder or bowel, or to distant parts of the body).",
+      "Within each stage there are smaller groups, for example by tumour size. Your team uses the stage to recommend treatment."
+     ]
+    ],
+    [
+     "Tests you may have",
+     [
+      "Examination of the pelvis, sometimes under anaesthetic.",
+      "Colposcopy and biopsy to confirm the diagnosis.",
+      "An MRI scan of the pelvis to see the size of the tumour.",
+      "CT or PET-CT scans to check lymph nodes and other parts of the body."
+     ]
+    ],
+    [
+     "Treatment options",
+     [
+      "Very early cancers may be treated with surgery, such as a cone biopsy or hysterectomy. Some may be suitable for fertility-sparing surgery.",
+      "Larger or more advanced cancers are usually treated with chemotherapy and radiotherapy together (chemoradiotherapy), followed by brachytherapy.",
+      "If the cancer has spread or come back, chemotherapy, immunotherapy and other medicines may be used.",
+      "Your team will explain the options that are right for you."
+     ]
+    ],
+    [
+     "Living with and after cancer",
+     [
+      "Treatment can affect fertility, bring on menopause and change your sex life. Help is available for all of these.",
+      "You will have regular follow-up appointments. Report new symptoms between visits."
+     ]
+    ]
+   ]
   },
   {
    "id": "ovarian",
    "name": "Ovarian cancer",
-   "patient": "Cancer that starts in the ovaries. Doctors often group it with fallopian tube and primary peritoneal cancer because they behave in similar ways and are treated in similar ways."
+   "patient": "Cancer that starts in the ovaries. Doctors often group it with fallopian tube and primary peritoneal cancer because they behave in similar ways and are treated in similar ways.",
+   "patientSections": [
+    [
+     "What stage means",
+     [
+      "Stage 1 means the cancer is only in the ovaries or fallopian tubes. Stage 2 means it has spread within the pelvis. Stage 3 means it has spread to the lining of the tummy or lymph nodes. Stage 4 means it has spread further, for example to the lungs or liver.",
+      "Many ovarian cancers are found at stage 3 because early symptoms are vague."
+     ]
+    ],
+    [
+     "Tests you may have",
+     [
+      "A CA-125 blood test.",
+      "Ultrasound and CT scans.",
+      "A biopsy or fluid sample to confirm the type of cancer.",
+      "Genetic tests, such as for BRCA1 and BRCA2."
+     ]
+    ],
+    [
+     "Treatment options",
+     [
+      "Surgery to remove as much cancer as possible, before or after chemotherapy.",
+      "Chemotherapy, usually given every few weeks.",
+      "Maintenance treatment for some people after chemotherapy, such as PARP inhibitor tablets.",
+      "If cancer comes back, further surgery or other medicines may be offered."
+     ]
+    ],
+    [
+     "Living with and after cancer",
+     [
+      "Treatment often brings on menopause. Ask about what can help.",
+      "Genetic results may matter for your family. A genetic counsellor can help you talk to relatives.",
+      "Follow-up includes check-ups and sometimes CA-125 blood tests."
+     ]
+    ]
+   ]
   },
   {
    "id": "tubal",
    "name": "Fallopian tube cancer",
-   "patient": "Cancer that starts in a fallopian tube, the tube that connects an ovary to the womb. It is usually treated in the same way as ovarian cancer."
+   "patient": "Cancer that starts in a fallopian tube, the tube that connects an ovary to the womb. It is usually treated in the same way as ovarian cancer.",
+   "patientSections": null
   },
   {
    "id": "peritoneal",
    "name": "Primary peritoneal cancer",
-   "patient": "Cancer that starts in the peritoneum, the thin lining inside the abdomen. It is usually treated in the same way as ovarian cancer."
+   "patient": "Cancer that starts in the peritoneum, the thin lining inside the abdomen. It is usually treated in the same way as ovarian cancer.",
+   "patientSections": null
   },
   {
    "id": "endometrial",
    "name": "Endometrial cancer",
-   "patient": "Cancer that starts in the lining of the womb (the endometrium). The most common early sign is bleeding after the menopause, or unusual bleeding before it."
+   "patient": "Cancer that starts in the lining of the womb (the endometrium). The most common early sign is bleeding after the menopause, or unusual bleeding before it.",
+   "patientSections": [
+    [
+     "What stage means",
+     [
+      "Stage 1 means the cancer is only in the womb. Stage 2 means it has spread to the cervix. Stage 3 means it has spread outside the womb within the pelvis or to lymph nodes. Stage 4 means it has spread to the bladder, bowel or further.",
+      "The type of cancer cells and tests on the tumour also help your team understand the risk of the cancer coming back."
+     ]
+    ],
+    [
+     "Tests you may have",
+     [
+      "A vaginal ultrasound scan to look at the lining of the womb.",
+      "A sample of the womb lining (endometrial biopsy), sometimes with a camera test (hysteroscopy).",
+      "MRI or CT scans.",
+      "Tests on the tumour, such as for mismatch repair. These can also show whether you might have Lynch syndrome, an inherited condition."
+     ]
+    ],
+    [
+     "Treatment options",
+     [
+      "The main treatment is usually surgery to remove the womb, cervix, ovaries and fallopian tubes, sometimes with lymph nodes.",
+      "Depending on the results, you may be offered brachytherapy, external radiotherapy, chemotherapy or a combination.",
+      "If the cancer has spread or come back, chemotherapy, immunotherapy or hormone treatment may be used.",
+      "For a very small number of younger people with early, low-risk cancer, hormone treatment to preserve fertility may be discussed."
+     ]
+    ],
+    [
+     "Living with and after cancer",
+     [
+      "Surgery brings on menopause if you had not reached it. Ask about what can help.",
+      "Keeping active and a healthy weight is good for your general health.",
+      "Report any new vaginal bleeding to your team."
+     ]
+    ]
+   ]
   },
   {
    "id": "vulvar",
    "name": "Vulvar cancer",
-   "patient": "Cancer of the vulva, the outer part of the female genitals. Signs can include itching, soreness, a lump, an ulcer or a change in skin colour that does not go away."
+   "patient": "Cancer of the vulva, the outer part of the female genitals. Signs can include itching, soreness, a lump, an ulcer or a change in skin colour that does not go away.",
+   "patientSections": [
+    [
+     "What stage means",
+     [
+      "The stage depends on the size of the cancer, whether it has spread to nearby areas such as the vagina or anus, and whether lymph nodes in the groin are affected."
+     ]
+    ],
+    [
+     "Tests you may have",
+     [
+      "Examination and a biopsy of the affected skin.",
+      "Ultrasound or other scans of the groin lymph nodes.",
+      "CT, MRI or PET-CT scans in some situations."
+     ]
+    ],
+    [
+     "Treatment options",
+     [
+      "Surgery to remove the cancer with a border of healthy tissue.",
+      "Removal of the first lymph nodes the cancer drains to (sentinel lymph nodes), or more groin lymph nodes.",
+      "Radiotherapy, sometimes with chemotherapy, for some cancers."
+     ]
+    ],
+    [
+     "Living with and after cancer",
+     [
+      "Surgery can change how the vulva looks and feels. A specialist nurse can help with wound care, body image and sex.",
+      "Leg swelling (lymphoedema) can happen after lymph node removal. Ask about early signs and treatment.",
+      "Check the area regularly and report new lumps, sores or changes."
+     ]
+    ]
+   ]
   },
   {
    "id": "vaginal",
    "name": "Vaginal cancer",
-   "patient": "Cancer that starts in the vagina. It is rare. Doctors first check that the cancer has not spread there from somewhere nearby."
+   "patient": "Cancer that starts in the vagina. It is rare. Doctors first check that the cancer has not spread there from somewhere nearby.",
+   "patientSections": null
   },
   {
    "id": "sarcoma",
    "name": "Uterine sarcomas",
-   "patient": "Rare cancers that start in the muscle or supporting tissue of the womb, rather than its lining. They are treated differently from endometrial cancer."
+   "patient": "Rare cancers that start in the muscle or supporting tissue of the womb, rather than its lining. They are treated differently from endometrial cancer.",
+   "patientSections": null
   },
   {
    "id": "gtn",
    "name": "Gestational trophoblastic neoplasia",
-   "patient": "Rare conditions that develop from cells that would normally form the placenta in pregnancy. Care is usually coordinated by a specialist centre, and hCG blood tests are used to monitor it."
+   "patient": "Rare conditions that develop from cells that would normally form the placenta in pregnancy. Care is usually coordinated by a specialist centre, and hCG blood tests are used to monitor it.",
+   "patientSections": null
   },
   {
    "id": "rare",
    "name": "Rare gynaecological malignancies",
-   "patient": "Some gynaecological cancers are very rare. Your specialist team will explain what is known about your type and where specialist advice is available."
+   "patient": "Some gynaecological cancers are very rare. Your specialist team will explain what is known about your type and where specialist advice is available.",
+   "patientSections": null
   }
  ],
  "leaflets": [
@@ -160,68 +302,1351 @@ window.ARVEEN_PUBLIC = {
    "id": "PIL-TX-CHEMO",
    "title": "Understanding Chemotherapy",
    "disease": null,
-   "audience": "Adults starting chemotherapy for a gynaecological cancer",
-   "author": "Not assigned",
+   "journey": "during",
+   "audience": "Adults starting chemotherapy for a gynaecological cancer, and their families",
+   "author": "DR ARVEEN editorial team (draft)",
    "reviewer": null,
-   "version": "Not started",
-   "approval": "NOT STARTED",
-   "sections": []
+   "pubDate": null,
+   "lastReview": null,
+   "nextReview": null,
+   "version": "0.1 draft",
+   "jurisdiction": "Malaysia",
+   "language": "English",
+   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "approval": "DRAFT",
+   "sources": [],
+   "sections": [
+    [
+     "At a glance",
+     [
+      "Chemotherapy uses medicines to destroy cancer cells or stop them growing.",
+      "It is usually given in cycles: a treatment day followed by a rest period so your body can recover.",
+      "Side effects depend on which medicines you have. Your team will tell you what to expect from your treatment.",
+      "Some side effects need help straight away. Keep your treating team's 24-hour contact number with you."
+     ]
+    ],
+    [
+     "What is it?",
+     [
+      "Chemotherapy medicines travel through the bloodstream, so they can reach cancer cells in many parts of the body.",
+      "For gynaecological cancers, chemotherapy is usually given as a drip into a vein (intravenous). Some treatments are tablets.",
+      "You may have one medicine or a combination. Each combination is called a regimen."
+     ]
+    ],
+    [
+     "Why might it be recommended?",
+     [
+      "Before surgery, to shrink a cancer and make the operation easier.",
+      "After surgery, to lower the chance of the cancer coming back.",
+      "With radiotherapy (chemoradiotherapy), to make the radiotherapy work better.",
+      "For cancer that has spread or come back, to control it and ease symptoms.",
+      "Your team will explain the aim of your treatment. Ask if you are not sure."
+     ]
+    ],
+    [
+     "What will happen?",
+     [
+      "Before each cycle you will have a blood test to check that your body is ready.",
+      "On treatment days you will usually visit a day unit. The drip can take from less than an hour to several hours.",
+      "You may be given medicines beforehand to prevent sickness or allergic reactions.",
+      "Some people have a thin tube (a PICC line or port) placed in a vein so the drip is easier to give. Your team will discuss this if it is needed.",
+      "How many cycles you have, and how often, depends on your treatment plan."
+     ]
+    ],
+    [
+     "Benefits and limitations",
+     [
+      "Chemotherapy can shrink or destroy cancer, lower the risk of it coming back, or control symptoms.",
+      "It does not work the same way for everyone. Your team will check how you are responding with examinations, scans or blood tests.",
+      "This leaflet cannot tell you how well treatment will work for you personally."
+     ]
+    ],
+    [
+     "Risks and side effects",
+     [
+      "Tiredness (fatigue) is very common.",
+      "Feeling or being sick. Anti-sickness medicines usually help, so take them as prescribed.",
+      "Hair thinning or hair loss with some medicines. Hair usually grows back after treatment.",
+      "A lower white blood cell count, which makes infections more likely and more serious.",
+      "Numbness or tingling in the hands and feet (neuropathy) with some medicines. Tell your team early.",
+      "Sore mouth, changes in taste, constipation or diarrhoea.",
+      "Some medicines can affect fertility or bring on early menopause. Ask about this before treatment starts.",
+      "You must not become pregnant during treatment. Ask your team about contraception."
+     ]
+    ],
+    [
+     "How can I prepare?",
+     [
+      "Ask for the name of your regimen and a written list of its side effects.",
+      "Bring a list of all your medicines, including herbal and traditional remedies, because some can interact with chemotherapy.",
+      "Have a dental check-up if you can, because mouth problems are harder to treat during chemotherapy.",
+      "Arrange transport and someone to keep you company on treatment days if possible.",
+      "Buy a thermometer so you can check your temperature if you feel unwell."
+     ]
+    ],
+    [
+     "Recovery and self-care",
+     [
+      "Rest when you need to, and try gentle activity such as short walks on better days.",
+      "Eat small meals often and drink plenty of fluids unless your team has told you otherwise.",
+      "Wash your hands often and avoid people with infections when you can.",
+      "Keep a diary of side effects. The DR ARVEEN side-effect tracker can help."
+     ]
+    ]
+   ],
+   "safety": {
+    "emergency": [
+     "Difficulty breathing, chest pain, or swelling of the face or throat",
+     "Collapse, fits, or becoming confused or very drowsy"
+    ],
+    "urgent": [
+     "A high temperature, or feeling hot and shivery, or suddenly feeling very unwell, even if your temperature is normal: call your 24-hour contact number straight away, because this can be a sign of a serious infection",
+     "Being sick and unable to keep fluids down",
+     "Diarrhoea that does not settle with the medicines you were given",
+     "Unusual bleeding or bruising",
+     "Pain, redness or swelling around your line or port"
+    ],
+    "routine": [
+     "Mild tiredness",
+     "Questions about diet, work or exercise",
+     "Mild tingling in fingers or toes (tell your team at your next visit)"
+    ],
+    "note": "Draft. The temperature and symptoms that need urgent action must be confirmed by your own treating team. In Malaysia, call 999 in an emergency."
+   },
+   "questions": [
+    "What is the aim of my chemotherapy?",
+    "Which medicines will I have, and how many cycles?",
+    "What side effects are most likely with my regimen?",
+    "Who do I call, day and night, if I feel unwell?",
+    "Will this treatment affect my fertility or bring on menopause?",
+    "Which other medicines or supplements should I avoid?"
+   ]
   },
   {
    "id": "PIL-TX-RT",
    "title": "Preparing for Radiotherapy",
    "disease": null,
-   "audience": "Adults starting pelvic radiotherapy",
-   "author": "Not assigned",
+   "journey": "preparing",
+   "audience": "Adults having external beam radiotherapy to the pelvis for a gynaecological cancer",
+   "author": "DR ARVEEN editorial team (draft)",
    "reviewer": null,
-   "version": "Not started",
-   "approval": "NOT STARTED",
-   "sections": []
+   "pubDate": null,
+   "lastReview": null,
+   "nextReview": null,
+   "version": "0.1 draft",
+   "jurisdiction": "Malaysia",
+   "language": "English",
+   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "approval": "DRAFT",
+   "sources": [
+    "G-ESGO-CX-2023"
+   ],
+   "sections": [
+    [
+     "At a glance",
+     [
+      "Radiotherapy uses high-energy X-rays to destroy cancer cells in a precise area.",
+      "External beam radiotherapy is given by a machine outside your body. It does not hurt and you cannot feel it.",
+      "Treatment is usually given on weekdays over several weeks. Your team will tell you your exact schedule.",
+      "You are not radioactive after external beam radiotherapy. It is safe to be close to other people, including children."
+     ]
+    ],
+    [
+     "What is it?",
+     [
+      "A machine called a linear accelerator aims radiation beams at the area to be treated, such as the pelvis.",
+      "Each daily treatment takes only a few minutes, but you may be in the department longer while the team positions you.",
+      "For some cancers, radiotherapy is combined with chemotherapy (chemoradiotherapy) or followed by internal radiotherapy (brachytherapy)."
+     ]
+    ],
+    [
+     "Why might it be recommended?",
+     [
+      "As the main treatment, sometimes instead of surgery.",
+      "After surgery, to lower the chance of the cancer coming back in the pelvis.",
+      "To control symptoms such as pain or bleeding.",
+      "Your team will explain why radiotherapy is recommended for you and what the alternatives are."
+     ]
+    ],
+    [
+     "What will happen?",
+     [
+      "Planning: you will have a CT scan in the position you will be treated in. Some centres make a few tiny permanent dots on your skin so you can be lined up the same way each day.",
+      "You may be asked to have a comfortably full bladder or an empty bowel for planning and treatment. Follow your own team's instructions, because they differ between centres.",
+      "Treatment: you lie still on the treatment couch while the machine moves around you. The staff leave the room but can see and hear you all the time.",
+      "You will see the team regularly during treatment to check on side effects."
+     ]
+    ],
+    [
+     "Benefits and limitations",
+     [
+      "Radiotherapy can destroy cancer cells, lower the risk of the cancer coming back, or ease symptoms.",
+      "Some side effects build up during treatment and for a few weeks after it ends, then usually settle.",
+      "A few effects can be long-term. Your team will discuss these with you before you agree to treatment."
+     ]
+    ],
+    [
+     "Risks and side effects",
+     [
+      "Tiredness, which often builds up during treatment.",
+      "Loose stools or diarrhoea, wind and tummy cramps.",
+      "Needing to pass urine more often or urgently, or a stinging feeling.",
+      "Soreness of the skin in the treatment area and around the vulva and vagina.",
+      "Possible long-term effects include changes to bowel or bladder habits, narrowing or dryness of the vagina, and swelling of the legs (lymphoedema).",
+      "If your ovaries are in the treatment area and you have not reached menopause, radiotherapy will usually bring on menopause and cause infertility. Ask about fertility and menopause options before treatment."
+     ]
+    ],
+    [
+     "How can I prepare?",
+     [
+      "Ask how many treatments you will have and how long each visit takes.",
+      "Plan transport for daily visits. Ask the hospital whether help with transport or accommodation is available.",
+      "Ask about bladder and bowel preparation, and practise it before planning if you can.",
+      "Ask whether you should use a vaginal dilator after treatment, and when to start."
+     ]
+    ],
+    [
+     "Recovery and self-care",
+     [
+      "Drink plenty of fluids unless told otherwise, and ask your team before changing your diet.",
+      "Wash the treatment area gently with water and a mild unperfumed soap, and pat dry. Ask before using any creams.",
+      "Wear loose cotton underwear.",
+      "Side effects usually peak near the end of treatment and improve over the following weeks."
+     ]
+    ]
+   ],
+   "safety": {
+    "emergency": [
+     "Heavy bleeding from the vagina or back passage",
+     "Severe tummy pain with vomiting",
+     "Difficulty breathing or chest pain"
+    ],
+    "urgent": [
+     "Diarrhoea many times a day, or with dizziness or feeling faint",
+     "A high temperature or feeling hot and shivery, especially if you are also having chemotherapy",
+     "Being unable to pass urine, or blood in your urine",
+     "Broken, weeping or very painful skin"
+    ],
+    "routine": [
+     "Mild tiredness",
+     "Mild skin redness",
+     "Questions about sex, menopause or dilators"
+    ],
+    "note": "Draft. Urgent-help criteria must be confirmed by your own radiotherapy team. In Malaysia, call 999 in an emergency."
+   },
+   "questions": [
+    "What is the aim of my radiotherapy?",
+    "How many treatments will I have?",
+    "How should I prepare my bladder and bowel?",
+    "Which side effects should I report straight away?",
+    "Will this affect my fertility, menopause or sex life?",
+    "Will I also have chemotherapy or brachytherapy?"
+   ]
   },
   {
    "id": "PIL-TX-BT",
    "title": "Understanding Brachytherapy",
    "disease": "cervical",
-   "audience": "Adults having brachytherapy",
-   "author": "Not assigned",
+   "journey": "during",
+   "audience": "Adults having brachytherapy (internal radiotherapy) for a gynaecological cancer",
+   "author": "DR ARVEEN editorial team (draft)",
    "reviewer": null,
-   "version": "Not started",
-   "approval": "NOT STARTED",
-   "sections": []
+   "pubDate": null,
+   "lastReview": null,
+   "nextReview": null,
+   "version": "0.1 draft",
+   "jurisdiction": "Malaysia",
+   "language": "English",
+   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "approval": "DRAFT",
+   "sources": [
+    "G-ESGO-CX-2023"
+   ],
+   "sections": [
+    [
+     "At a glance",
+     [
+      "Brachytherapy is radiotherapy given from inside the body, very close to the cancer.",
+      "Because the radiation source is placed close to the tumour, a high dose reaches the cancer while nearby organs receive less.",
+      "For cervical cancer it usually follows external beam radiotherapy. After a hysterectomy for womb cancer it may be given to the top of the vagina.",
+      "With the type most often used (high dose rate), the source is removed after each treatment, so you are not radioactive afterwards. Check this with your team."
+     ]
+    ],
+    [
+     "What is it?",
+     [
+      "A small applicator is placed in the vagina, and sometimes into the womb or the tissue around the cervix.",
+      "The applicator is connected to a machine that sends a tiny radioactive source into it for a few minutes, then takes it back.",
+      "Scans (MRI or CT) are often used with the applicator in place so the treatment can be planned precisely."
+     ]
+    ],
+    [
+     "Why might it be recommended?",
+     [
+      "For cervical cancer, brachytherapy is an important part of curative treatment with chemoradiotherapy.",
+      "After surgery for some womb (endometrial) cancers, to lower the chance of cancer coming back at the top of the vagina.",
+      "Your team will explain why it is recommended for you."
+     ]
+    ],
+    [
+     "What will happen?",
+     [
+      "For cervical cancer, the applicator is usually placed under anaesthetic or sedation. You may stay in hospital while treatment is planned and given.",
+      "For vaginal vault treatment after a hysterectomy, a smooth cylinder is placed in the vagina. This usually takes a few minutes and does not need an anaesthetic.",
+      "You will usually have several treatments. Your team will tell you how many and how they are spaced.",
+      "Your own team will give you instructions about eating, drinking and bladder preparation."
+     ]
+    ],
+    [
+     "Benefits and limitations",
+     [
+      "Brachytherapy allows a high dose to reach the cancer, which improves the chance of controlling it.",
+      "It is used together with other treatments, not usually on its own for cervical cancer.",
+      "Some side effects can appear months or years later."
+     ]
+    ],
+    [
+     "Risks and side effects",
+     [
+      "Discomfort or cramping while the applicator is in place. Ask for pain relief if you need it.",
+      "Light bleeding or discharge for a few days.",
+      "Bladder irritation and needing to pass urine more often.",
+      "Loose stools.",
+      "Later effects can include vaginal narrowing, dryness or shortening, and changes to bowel or bladder habits. Using a vaginal dilator, if your team recommends it, can help."
+     ]
+    ],
+    [
+     "How can I prepare?",
+     [
+      "Ask whether you will need an anaesthetic and whether you will stay overnight.",
+      "Ask someone to take you home, especially after an anaesthetic.",
+      "Ask about vaginal dilators and when to start using them."
+     ]
+    ],
+    [
+     "Recovery and self-care",
+     [
+      "Rest on the day of treatment.",
+      "Drink plenty of fluids unless told otherwise.",
+      "Ask your team when it is safe to have sex again. Gentle sex, or using a dilator, can help keep the vagina healthy after treatment."
+     ]
+    ]
+   ],
+   "safety": {
+    "emergency": [
+     "Heavy vaginal bleeding",
+     "Difficulty breathing or chest pain"
+    ],
+    "urgent": [
+     "A high temperature or feeling hot and shivery",
+     "Severe pain that is not controlled by your pain relief",
+     "Being unable to pass urine"
+    ],
+    "routine": [
+     "Mild discharge or spotting",
+     "Questions about dilators or sex"
+    ],
+    "note": "Draft. Urgent-help criteria must be confirmed by your own treating team. In Malaysia, call 999 in an emergency."
+   },
+   "questions": [
+    "How many brachytherapy treatments will I have?",
+    "Will I need an anaesthetic, and will I stay in hospital?",
+    "How should I prepare?",
+    "Should I use a vaginal dilator afterwards, and how?",
+    "When can I have sex again?"
+   ]
   },
   {
    "id": "PIL-SX-HYST",
    "title": "Having a Hysterectomy for Gynaecological Cancer",
    "disease": null,
-   "audience": "Adults having a hysterectomy",
-   "author": "Not assigned",
+   "journey": "preparing",
+   "audience": "Adults having a hysterectomy as part of treatment for a gynaecological cancer",
+   "author": "DR ARVEEN editorial team (draft)",
    "reviewer": null,
-   "version": "Not started",
-   "approval": "NOT STARTED",
-   "sections": []
+   "pubDate": null,
+   "lastReview": null,
+   "nextReview": null,
+   "version": "0.1 draft",
+   "jurisdiction": "Malaysia",
+   "language": "English",
+   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "approval": "DRAFT",
+   "sources": [],
+   "sections": [
+    [
+     "At a glance",
+     [
+      "A hysterectomy is an operation to remove the womb (uterus), usually including the cervix.",
+      "For cancer, the ovaries and fallopian tubes are often removed too, and sometimes lymph nodes or other tissue.",
+      "After a hysterectomy you will not have periods and cannot become pregnant.",
+      "If your ovaries are removed before menopause, you will go through menopause straight away."
+     ]
+    ],
+    [
+     "What is it?",
+     [
+      "Total hysterectomy: removal of the womb and cervix.",
+      "Radical hysterectomy: removal of the womb, cervix, the tissue around the cervix and the top of the vagina. It is used for some cervical cancers.",
+      "Bilateral salpingo-oophorectomy: removal of both ovaries and fallopian tubes.",
+      "Lymph node assessment: removal of some lymph nodes, sometimes only the first ones the cancer drains to (sentinel lymph nodes), to check whether cancer has spread."
+     ]
+    ],
+    [
+     "Why might it be recommended?",
+     [
+      "To remove the cancer.",
+      "To find out exactly how far the cancer has spread (staging), which guides any further treatment.",
+      "Your surgeon will explain which operation is recommended, why, and what the alternatives are."
+     ]
+    ],
+    [
+     "What will happen?",
+     [
+      "Before: you will have tests to check you are fit for surgery and a discussion about the operation and consent.",
+      "The operation is done under general anaesthetic. It may be done through a cut in the tummy (open surgery), through small cuts using a camera (keyhole or laparoscopic surgery), or with robotic assistance. Your surgeon will explain which approach is right for your cancer.",
+      "After: you will have pain relief and may have a drip and a urine catheter for a short time.",
+      "How long you stay in hospital depends on the type of operation and how you recover."
+     ]
+    ],
+    [
+     "Benefits and limitations",
+     [
+      "Surgery can remove the cancer completely in many early-stage cancers.",
+      "The tissue removed is examined in the laboratory. The results may show that you need further treatment.",
+      "Your surgeon cannot always know the full extent of the cancer before the operation."
+     ]
+    ],
+    [
+     "Risks and side effects",
+     [
+      "Pain and tiredness while you recover.",
+      "Bleeding, infection of the wound, bladder or chest.",
+      "Blood clots in the legs or lungs. You may be given injections or stockings to lower this risk.",
+      "Injury to the bladder, bowel or the tubes from the kidneys (ureters). This is uncommon but can be serious.",
+      "After a radical hysterectomy, some people have problems emptying the bladder for a while.",
+      "If lymph nodes are removed, swelling of the legs (lymphoedema) can develop.",
+      "Menopause symptoms if your ovaries are removed before menopause."
+     ]
+    ],
+    [
+     "How can I prepare?",
+     [
+      "Stop smoking if you smoke, and be as active as you can.",
+      "Tell your team about all your medicines, especially blood thinners. Do not stop any medicine unless your team tells you to.",
+      "Your hospital will tell you when to stop eating and drinking before surgery. Follow their instructions exactly.",
+      "Arrange help at home for the first weeks.",
+      "If you have not reached menopause, ask about the effects of removing your ovaries and about fertility."
+     ]
+    ],
+    [
+     "Recovery and self-care",
+     [
+      "Walk a little each day from soon after surgery, as your team advises.",
+      "Avoid heavy lifting and strenuous activity for the time your team recommends.",
+      "Ask your team when you can drive, return to work and have sex again.",
+      "Keep your wound clean and dry and watch for signs of infection."
+     ]
+    ]
+   ],
+   "safety": {
+    "emergency": [
+     "Heavy bleeding from the vagina or the wound",
+     "Chest pain or sudden breathlessness",
+     "Collapse"
+    ],
+    "urgent": [
+     "A high temperature or feeling hot and shivery",
+     "Increasing tummy pain, or pain not controlled by your pain relief",
+     "A red, hot, swollen or leaking wound",
+     "Pain or swelling in one leg",
+     "Being unable to pass urine, or leaking urine or bowel motion from the vagina"
+    ],
+    "routine": [
+     "Questions about returning to work, driving or sex",
+     "Menopause symptoms",
+     "Tiredness"
+    ],
+    "note": "Draft. Urgent-help criteria must be confirmed by your own surgical team. In Malaysia, call 999 in an emergency."
+   },
+   "questions": [
+    "What type of hysterectomy will I have, and why?",
+    "Will my ovaries and lymph nodes be removed?",
+    "Will it be open or keyhole surgery?",
+    "How long will I be in hospital, and how long will recovery take?",
+    "Will I go through menopause, and what can help?",
+    "When will I get my results, and will I need more treatment?"
+   ]
   },
   {
    "id": "PIL-OV-001",
    "title": "Understanding Ovarian Cancer",
    "disease": "ovarian",
-   "audience": "Adults with a new diagnosis of ovarian cancer",
-   "author": "Not assigned",
+   "journey": "diagnosed",
+   "audience": "Adults with a new diagnosis of ovarian, fallopian tube or primary peritoneal cancer, and their families",
+   "author": "DR ARVEEN editorial team (draft)",
    "reviewer": null,
-   "version": "Not started",
-   "approval": "NOT STARTED",
-   "sections": []
+   "pubDate": null,
+   "lastReview": null,
+   "nextReview": null,
+   "version": "0.1 draft",
+   "jurisdiction": "Malaysia",
+   "language": "English",
+   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "approval": "DRAFT",
+   "sources": [
+    "G-ESMO-OV-2023",
+    "FIGO2014-OV"
+   ],
+   "sections": [
+    [
+     "At a glance",
+     [
+      "Ovarian cancer starts in the ovaries, the fallopian tubes or the lining of the tummy (peritoneum). These are treated in similar ways.",
+      "There are several types. The most common is high-grade serous cancer.",
+      "Treatment usually involves surgery and chemotherapy. Some people then have maintenance treatment.",
+      "Many people are offered genetic testing, because the results can guide treatment and matter for family members."
+     ]
+    ],
+    [
+     "What is it?",
+     [
+      "Cancer happens when cells grow out of control. In ovarian cancer this often starts in the fallopian tube and spreads to the ovary and the lining of the tummy.",
+      "Symptoms can be vague: bloating that does not go away, feeling full quickly, tummy or pelvic pain, and needing to pass urine more often.",
+      "Your doctors confirm the diagnosis by examining tissue or fluid under a microscope."
+     ]
+    ],
+    [
+     "Why are more tests needed?",
+     [
+      "A blood test called CA-125, an ultrasound scan and a CT scan help show how far the cancer has spread.",
+      "The results give your cancer a stage, from 1 (only in the ovaries or tubes) to 4 (spread to distant parts of the body).",
+      "Tests on the tumour and genetic tests on your blood may look for changes such as BRCA1 or BRCA2. These can affect which treatments are offered."
+     ]
+    ],
+    [
+     "What treatments might be offered?",
+     [
+      "Surgery to remove as much cancer as possible. This may be done before or after chemotherapy.",
+      "Chemotherapy, usually given as a drip every few weeks.",
+      "Maintenance treatment after chemotherapy for some people, such as tablets called PARP inhibitors or a drip medicine that affects the blood supply to the cancer.",
+      "Your team will explain which treatments are suitable for you and why."
+     ]
+    ],
+    [
+     "Benefits and limitations",
+     [
+      "Treatment aims depend on the stage and type of cancer. Ask your team what the aim of your treatment is.",
+      "Ovarian cancer can come back after treatment. If it does, there are further treatments that can help control it.",
+      "This leaflet cannot tell you what will happen to you personally."
+     ]
+    ],
+    [
+     "Risks and side effects",
+     [
+      "Each treatment has its own side effects. See the leaflets on chemotherapy and hysterectomy.",
+      "Removing both ovaries brings on menopause if you have not already reached it.",
+      "Maintenance tablets can cause tiredness, sickness and changes in blood counts, so you will have regular blood tests."
+     ]
+    ],
+    [
+     "How can I prepare?",
+     [
+      "Write down your questions before appointments, and bring someone with you if you can.",
+      "Ask whether genetic testing is recommended for you and what the results could mean for your family.",
+      "Ask about fertility before treatment if having children in future matters to you."
+     ]
+    ],
+    [
+     "Recovery and self-care",
+     [
+      "Recovery from surgery and chemotherapy takes time. Be kind to yourself and accept help.",
+      "Gentle activity, good nutrition and rest can help with tiredness.",
+      "Support groups and counselling can help you and your family."
+     ]
+    ]
+   ],
+   "safety": {
+    "emergency": [
+     "Severe tummy pain with vomiting and being unable to open your bowels or pass wind",
+     "Difficulty breathing or chest pain"
+    ],
+    "urgent": [
+     "A high temperature or feeling hot and shivery during chemotherapy",
+     "Increasing swelling of your tummy or breathlessness",
+     "Pain or swelling in one leg",
+     "Vomiting that does not stop"
+    ],
+    "routine": [
+     "Questions about genetic testing",
+     "Tiredness or low mood",
+     "Questions about diet"
+    ],
+    "note": "Draft. Urgent-help criteria must be confirmed by your own treating team. In Malaysia, call 999 in an emergency."
+   },
+   "questions": [
+    "What type and stage of ovarian cancer do I have?",
+    "Will I have surgery or chemotherapy first?",
+    "Should I have genetic testing, and what will it mean for my family?",
+    "Will I be offered maintenance treatment?",
+    "What symptoms should I report straight away?"
+   ]
   },
   {
    "id": "PIL-TX-IO",
    "title": "Understanding Immunotherapy",
    "disease": null,
-   "audience": "Adults starting immunotherapy",
-   "author": "Not assigned",
+   "journey": "during",
+   "audience": "Adults starting immunotherapy (an immune checkpoint inhibitor) for a gynaecological cancer",
+   "author": "DR ARVEEN editorial team (draft)",
    "reviewer": null,
-   "version": "Not started",
-   "approval": "NOT STARTED",
-   "sections": []
+   "pubDate": null,
+   "lastReview": null,
+   "nextReview": null,
+   "version": "0.1 draft",
+   "jurisdiction": "Malaysia",
+   "language": "English",
+   "translation": "Bahasa Malaysia, Mandarin and Tamil versions not started",
+   "approval": "DRAFT",
+   "sources": [],
+   "sections": [
+    [
+     "At a glance",
+     [
+      "Immunotherapy helps your own immune system recognise and attack cancer cells.",
+      "It works differently from chemotherapy and has different side effects.",
+      "Side effects happen when the immune system also affects healthy organs. They can start at any time, even months after treatment has finished.",
+      "Always tell any doctor, nurse or pharmacist who treats you that you have had immunotherapy."
+     ]
+    ],
+    [
+     "What is it?",
+     [
+      "The medicines used for gynaecological cancers are called immune checkpoint inhibitors. They release a 'brake' that cancer cells use to hide from the immune system.",
+      "They are given as a drip into a vein, usually every few weeks, sometimes together with chemotherapy.",
+      "Tests on your tumour (for example for mismatch repair or PD-L1) may help decide whether immunotherapy is suitable."
+     ]
+    ],
+    [
+     "Why might it be recommended?",
+     [
+      "For some cervical and endometrial cancers, especially when the cancer has spread or come back.",
+      "Sometimes together with chemotherapy or chemoradiotherapy.",
+      "Your team will explain why it is recommended, and whether it is available and funded where you are treated."
+     ]
+    ],
+    [
+     "What will happen?",
+     [
+      "You will have blood tests before each treatment, including checks of your liver, kidneys and thyroid.",
+      "Each drip usually takes less than an hour, but the whole visit can take longer.",
+      "You will be given an alert card. Carry it with you at all times."
+     ]
+    ],
+    [
+     "Benefits and limitations",
+     [
+      "For some people, immunotherapy can control cancer for a long time.",
+      "It does not work for everyone, and it can take some time to see whether it is working.",
+      "This leaflet cannot tell you how well it will work for you personally."
+     ]
+    ],
+    [
+     "Risks and side effects",
+     [
+      "Tiredness, skin rash and itching are common.",
+      "Inflammation of the bowel (colitis): diarrhoea, tummy pain, blood or mucus in your stool.",
+      "Inflammation of the lungs (pneumonitis): a new cough or breathlessness.",
+      "Inflammation of the liver: yellow skin or eyes, dark urine.",
+      "Changes in hormone glands such as the thyroid, causing tiredness, weight change or feeling hot or cold.",
+      "Less often, other organs such as the kidneys, heart, nerves or eyes can be affected.",
+      "Most side effects can be treated, often with steroids, if they are reported early."
+     ]
+    ],
+    [
+     "How can I prepare?",
+     [
+      "Tell your team about any autoimmune condition you have, such as thyroid disease, lupus or rheumatoid arthritis.",
+      "Tell your team about all medicines, supplements and traditional remedies.",
+      "Keep your alert card and 24-hour contact number with you."
+     ]
+    ],
+    [
+     "Recovery and self-care",
+     [
+      "Keep a diary of any new symptoms, however small.",
+      "Do not treat new diarrhoea with over-the-counter medicines before speaking to your team.",
+      "Keep active and eat well as you are able."
+     ]
+    ]
+   ],
+   "safety": {
+    "emergency": [
+     "Severe breathlessness or chest pain",
+     "Collapse, fits or confusion"
+    ],
+    "urgent": [
+     "Diarrhoea, or more bowel movements than usual for you, or blood in your stool",
+     "A new cough or breathlessness",
+     "Yellow skin or eyes, or dark urine",
+     "Severe headache, changes in vision, or feeling very weak or dizzy",
+     "A widespread or blistering rash",
+     "A high temperature or feeling unwell"
+    ],
+    "routine": [
+     "Mild itching or rash",
+     "Mild tiredness"
+    ],
+    "note": "Draft. Immunotherapy side effects can start months after treatment ends. Call your treating team about any new symptom. In Malaysia, call 999 in an emergency."
+   },
+   "questions": [
+    "Why is immunotherapy recommended for me?",
+    "Will I have it with chemotherapy?",
+    "How long will I have treatment?",
+    "Which side effects should I report straight away?",
+    "Who do I call out of hours, and what should I tell other doctors?"
+   ]
   }
+ ],
+ "articles": [
+  {
+   "id": "colposcopy",
+   "title": "Colposcopy and cervical biopsy",
+   "category": "Tests and investigations",
+   "journey": "diagnosed",
+   "cancers": [
+    "cervical"
+   ],
+   "summary": "What happens when your cervix is examined closely, and how a small tissue sample is taken.",
+   "sections": [
+    [
+     "Screening is not the same as diagnosis",
+     [
+      "Cervical screening (a smear or HPV test) looks for changes in people without symptoms. A colposcopy looks more closely after an abnormal result or if you have symptoms."
+     ]
+    ],
+    [
+     "What happens",
+     [
+      "You lie on a couch with your legs supported, as for a smear test. A speculum is placed in the vagina.",
+      "The doctor or nurse uses a colposcope, a magnifying instrument that stays outside your body, to look at the cervix.",
+      "Liquids may be applied to the cervix to show abnormal areas.",
+      "A small sample of tissue (biopsy) may be taken. It may feel like a sharp pinch or a period-like cramp."
+     ]
+    ],
+    [
+     "Afterwards",
+     [
+      "You may have light bleeding or a brown discharge for a few days.",
+      "Your team will tell you how and when you will get your results."
+     ]
+    ],
+    [
+     "When to seek help",
+     [
+      "Contact the clinic if you have heavy bleeding, smelly discharge or a high temperature."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "scans",
+   "title": "CT, MRI and PET-CT scans",
+   "category": "Tests and investigations",
+   "journey": "diagnosed",
+   "cancers": [
+    "cervical",
+    "ovarian",
+    "endometrial",
+    "vulvar",
+    "vaginal"
+   ],
+   "summary": "Why scans are used to stage a cancer, and what each type of scan is like.",
+   "sections": [
+    [
+     "Why scans are needed",
+     [
+      "Scans show the size of the cancer and whether it has spread. This helps give the cancer a stage and plan the right treatment."
+     ]
+    ],
+    [
+     "CT scan",
+     [
+      "CT uses X-rays to make detailed pictures. You lie on a couch that moves through a ring-shaped scanner.",
+      "You may have a dye (contrast) injected into a vein, and sometimes a drink beforehand. Tell the team if you have kidney problems, diabetes or allergies."
+     ]
+    ],
+    [
+     "MRI scan",
+     [
+      "MRI uses a strong magnet and radio waves. It is very good at showing the pelvis.",
+      "The scanner is a tunnel and is noisy, so you will be given ear protection. Tell the team if you have any metal implants, a pacemaker, or if you feel anxious in small spaces."
+     ]
+    ],
+    [
+     "PET-CT scan",
+     [
+      "PET-CT combines a CT scan with a small injection of a mildly radioactive sugar that collects in active cancer cells.",
+      "You will need to stop eating for some hours beforehand. Your hospital will give you instructions.",
+      "It is used in some situations, not for everyone."
+     ]
+    ],
+    [
+     "Getting your results",
+     [
+      "A specialist doctor (radiologist) reports the scan. Your treating team will discuss the results with you, often at your next appointment."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "tumour-markers",
+   "title": "CA-125 and other tumour markers",
+   "category": "Tests and investigations",
+   "journey": "diagnosed",
+   "cancers": [
+    "ovarian",
+    "gtn"
+   ],
+   "summary": "What blood tests like CA-125 and hCG can and cannot tell you.",
+   "sections": [
+    [
+     "What tumour markers are",
+     [
+      "Tumour markers are substances in the blood that can be raised with some cancers."
+     ]
+    ],
+    [
+     "CA-125",
+     [
+      "CA-125 is often raised in ovarian cancer and is used to help with diagnosis and to follow how the cancer responds to treatment.",
+      "It can also be raised in conditions that are not cancer, such as endometriosis, fibroids, periods or pregnancy. A normal result does not always rule out cancer.",
+      "A single result is less useful than the trend over time."
+     ]
+    ],
+    [
+     "hCG",
+     [
+      "hCG is the pregnancy hormone. In gestational trophoblastic disease it is the main way to check whether treatment is working and whether the condition has returned."
+     ]
+    ],
+    [
+     "Ask your team",
+     [
+      "Ask what your results mean for you, rather than comparing numbers with other people."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "genetic-testing",
+   "title": "Genetic testing and counselling",
+   "category": "Tests and investigations",
+   "journey": "diagnosed",
+   "cancers": [
+    "ovarian",
+    "endometrial"
+   ],
+   "summary": "Why you may be offered genetic testing for BRCA or Lynch syndrome, and what it means for your family.",
+   "sections": [
+    [
+     "Why it may be offered",
+     [
+      "Some gynaecological cancers are linked to inherited gene changes, such as in the BRCA1 and BRCA2 genes (ovarian cancer) or the genes behind Lynch syndrome (womb and ovarian cancer).",
+      "Knowing about a gene change can help choose treatment, and can help relatives find out whether they have a higher cancer risk."
+     ]
+    ],
+    [
+     "Tests on the tumour and tests on blood",
+     [
+      "Tests on the tumour can show changes in the cancer itself. A blood or saliva test shows whether a gene change was inherited.",
+      "A tumour test result may lead to an offer of a blood test."
+     ]
+    ],
+    [
+     "Genetic counselling",
+     [
+      "A genetic counsellor or doctor will explain what the test can and cannot tell you, before you decide.",
+      "Results can affect your relatives. You choose whether and how to share them, and the team can help you do this."
+     ]
+    ],
+    [
+     "Things to think about",
+     [
+      "Ask how long results take and who will give them to you.",
+      "Ask whether results could affect insurance where you live."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "fatigue",
+   "title": "Coping with tiredness (fatigue)",
+   "category": "Living with cancer",
+   "journey": "during",
+   "cancers": [],
+   "summary": "Why cancer and its treatment cause tiredness, and practical ways to manage your energy.",
+   "sections": [
+    [
+     "What cancer-related fatigue is",
+     [
+      "It is a feeling of being physically, emotionally or mentally exhausted that does not get better with rest. It is the most common side effect of cancer treatment."
+     ]
+    ],
+    [
+     "What can help",
+     [
+      "Plan your day. Do important things when you have the most energy.",
+      "Gentle activity, such as short walks, often helps more than resting all day.",
+      "Accept offers of help with shopping, cooking and childcare.",
+      "Eat regularly and drink enough fluids.",
+      "Keep a regular sleep routine."
+     ]
+    ],
+    [
+     "Tell your team",
+     [
+      "Some causes of tiredness can be treated, such as anaemia, thyroid problems, low mood, pain or poor sleep."
+     ]
+    ],
+    [
+     "Seek help urgently if",
+     [
+      "You feel suddenly much more tired or unwell, breathless or dizzy, or have a high temperature."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "nausea-eating",
+   "title": "Nausea, appetite and eating well",
+   "category": "Living with cancer",
+   "journey": "during",
+   "cancers": [],
+   "summary": "Managing sickness and appetite changes during treatment, and eating well.",
+   "sections": [
+    [
+     "Feeling or being sick",
+     [
+      "Take anti-sickness medicines exactly as prescribed, even before you feel sick.",
+      "Eat small meals and snacks often, and avoid strong cooking smells.",
+      "Sip fluids slowly through the day."
+     ]
+    ],
+    [
+     "Poor appetite and taste changes",
+     [
+      "Try foods you enjoy, at times you feel best.",
+      "If you are losing weight without trying, ask to see a dietitian."
+     ]
+    ],
+    [
+     "Diet and supplements",
+     [
+      "There is no special diet that cures cancer. Be cautious about products that claim to.",
+      "Tell your team about any supplements, herbal or traditional remedies, because some can interact with treatment."
+     ]
+    ],
+    [
+     "Seek help urgently if",
+     [
+      "You cannot keep fluids down, or you feel dizzy or are passing very little urine."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "menopause",
+   "title": "Menopause after cancer treatment",
+   "category": "Living with cancer",
+   "journey": "after",
+   "cancers": [
+    "ovarian",
+    "endometrial",
+    "cervical"
+   ],
+   "summary": "Why treatment can bring on menopause, the symptoms, and what may help.",
+   "sections": [
+    [
+     "Why it happens",
+     [
+      "Removing the ovaries, pelvic radiotherapy and some chemotherapy can stop the ovaries working and bring on menopause, sometimes suddenly."
+     ]
+    ],
+    [
+     "Common symptoms",
+     [
+      "Hot flushes and night sweats, vaginal dryness, low mood, poor sleep, and changes in sex drive.",
+      "Over time, early menopause can affect bone and heart health."
+     ]
+    ],
+    [
+     "What may help",
+     [
+      "Hormone replacement therapy (HRT) is safe and helpful for some people after gynaecological cancer, but not for everyone. It depends on your type of cancer. Ask your specialist.",
+      "Vaginal moisturisers and lubricants can help dryness.",
+      "Regular exercise, not smoking and a healthy diet support bone and heart health.",
+      "Ask whether you need a bone density check."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "fertility",
+   "title": "Fertility and cancer treatment",
+   "category": "Living with cancer",
+   "journey": "preparing",
+   "cancers": [
+    "cervical",
+    "ovarian",
+    "endometrial"
+   ],
+   "summary": "How treatment can affect fertility, and why to talk about it before treatment starts.",
+   "sections": [
+    [
+     "Talk about it early",
+     [
+      "Surgery, radiotherapy and some chemotherapy can affect your ability to become pregnant. The time to discuss options is before treatment starts.",
+      "Not everyone wants children, and that is fine. Your team will respect your wishes."
+     ]
+    ],
+    [
+     "Options you may hear about",
+     [
+      "For some early cancers, fertility-sparing treatment may be possible, such as removing only part of the cervix or only one ovary.",
+      "Freezing eggs or embryos before treatment, where available and suitable.",
+      "Whether these are possible depends on the type and stage of cancer, the urgency of treatment and what is available where you are treated."
+     ]
+    ],
+    [
+     "Questions to ask",
+     [
+      "Will my treatment affect my fertility?",
+      "Is fertility-sparing treatment safe for my cancer?",
+      "Can I see a fertility specialist before treatment starts?"
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "sex-intimacy",
+   "title": "Sex, intimacy and body image",
+   "category": "Living with cancer",
+   "journey": "after",
+   "cancers": [],
+   "summary": "Common changes to sex and intimacy after gynaecological cancer, and what can help.",
+   "sections": [
+    [
+     "Changes are common",
+     [
+      "Treatment can cause vaginal dryness, narrowing or pain, lower sex drive, tiredness and changes in how you feel about your body.",
+      "These are common, and it is normal to find them hard to talk about. Your team is used to these questions."
+     ]
+    ],
+    [
+     "What can help",
+     [
+      "Water-based lubricants and vaginal moisturisers.",
+      "Vaginal dilators after radiotherapy or brachytherapy, if your team recommends them.",
+      "Taking things slowly, and finding other ways to be close.",
+      "Talking with your partner, if you have one, or with a counsellor or psychosexual specialist."
+     ]
+    ],
+    [
+     "When to ask",
+     [
+      "Ask your team when it is safe to have sex after surgery or radiotherapy.",
+      "Tell your team about bleeding after sex or pain that does not improve."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "emotional-wellbeing",
+   "title": "Emotional wellbeing",
+   "category": "Living with cancer",
+   "journey": "diagnosed",
+   "cancers": [],
+   "summary": "Coping with worry, low mood and uncertainty, and where to find support.",
+   "sections": [
+    [
+     "Your feelings are normal",
+     [
+      "Shock, fear, anger, sadness and worry about the future are common at every stage."
+     ]
+    ],
+    [
+     "What can help",
+     [
+      "Talking to people you trust, or to others who have been through it in a support group.",
+      "Asking for information when you want it, at your own pace.",
+      "Gentle activity, routine, and doing things you enjoy.",
+      "Spiritual or religious support, if that is important to you."
+     ]
+    ],
+    [
+     "When to ask for help",
+     [
+      "If low mood or anxiety lasts for more than a couple of weeks, or stops you sleeping, eating or coping, tell your team or GP. Effective help is available."
+     ]
+    ],
+    [
+     "Seek help urgently if",
+     [
+      "You have thoughts of harming yourself. Contact emergency services (999 in Malaysia), go to your nearest emergency department, or contact a crisis helpline."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "caregivers",
+   "title": "Caring for someone with gynaecological cancer",
+   "category": "Support",
+   "journey": "during",
+   "cancers": [],
+   "summary": "Practical and emotional support for family members and caregivers.",
+   "sections": [
+    [
+     "How you can help",
+     [
+      "Come to appointments if they want you to, and help write down questions and answers.",
+      "Help with practical things such as transport, meals and household tasks.",
+      "Learn the warning signs in their treatment leaflets, and keep the 24-hour contact number handy."
+     ]
+    ],
+    [
+     "Look after yourself",
+     [
+      "Caring can be tiring and stressful. Accept help from others, and take breaks.",
+      "Talk to someone about how you are feeling. Support is available for caregivers too."
+     ]
+    ],
+    [
+     "Respect their wishes",
+     [
+      "Ask how much they want you to be involved, and respect their privacy and decisions."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "work-money",
+   "title": "Work, money and practical matters",
+   "category": "Support",
+   "journey": "during",
+   "cancers": [],
+   "summary": "Managing work and finances during and after treatment.",
+   "sections": [
+    [
+     "Work",
+     [
+      "Talk to your employer about time off, flexible hours or a phased return. Ask your doctor for a letter if needed.",
+      "Many people return to work after treatment, but it can take time."
+     ]
+    ],
+    [
+     "Money",
+     [
+      "Ask the hospital's medical social worker about financial help, transport support and other assistance you may be entitled to.",
+      "Check what your insurance or employee benefits cover before treatment starts, if you can."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "follow-up",
+   "title": "Follow-up after treatment",
+   "category": "Living with cancer",
+   "journey": "after",
+   "cancers": [],
+   "summary": "What follow-up appointments involve, and what to watch for between them.",
+   "sections": [
+    [
+     "What follow-up is for",
+     [
+      "To check your recovery, manage side effects, and look for signs that the cancer has come back.",
+      "How often you are seen, and which tests you have, depends on your cancer and your treatment. Your team will give you a plan."
+     ]
+    ],
+    [
+     "What to watch for",
+     [
+      "Tell your team about new symptoms between appointments rather than waiting, such as bleeding, a new lump, persistent pain, bloating, cough or weight loss without trying."
+     ]
+    ],
+    [
+     "Looking after your health",
+     [
+      "Stay active, eat well, do not smoke, and keep up with other health checks."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  },
+  {
+   "id": "recurrence",
+   "title": "If cancer comes back",
+   "category": "Living with cancer",
+   "journey": "after",
+   "cancers": [],
+   "summary": "Understanding recurrence, the tests and treatments that may follow, and support.",
+   "sections": [
+    [
+     "It is not your fault",
+     [
+      "Cancer can come back even when treatment was done well and you followed every instruction. Nothing you did caused it."
+     ]
+    ],
+    [
+     "What happens next",
+     [
+      "You will usually have scans and sometimes a biopsy to find out where the cancer is.",
+      "Your team will discuss your situation at a multidisciplinary meeting and talk with you about options."
+     ]
+    ],
+    [
+     "Treatment options",
+     [
+      "Options may include surgery, radiotherapy, chemotherapy, targeted therapy, immunotherapy or hormone treatment, depending on the cancer and earlier treatment.",
+      "Clinical trials may be an option. Ask your team.",
+      "Supportive and palliative care can help with symptoms at any stage, alongside other treatments."
+     ]
+    ],
+    [
+     "Support",
+     [
+      "Many people find this news harder than the first diagnosis. Ask for support for yourself and your family."
+     ]
+    ]
+   ],
+   "status": "DRAFT",
+   "reviewer": null,
+   "lastReview": null,
+   "nextReview": null
+  }
+ ],
+ "journey": [
+  {
+   "id": "diagnosed",
+   "title": "Just diagnosed",
+   "text": "Understand your cancer, your tests and your results."
+  },
+  {
+   "id": "preparing",
+   "title": "Preparing for treatment",
+   "text": "Know what to expect and what to ask before treatment starts."
+  },
+  {
+   "id": "during",
+   "title": "During treatment",
+   "text": "Manage side effects and know when to get help."
+  },
+  {
+   "id": "after",
+   "title": "After treatment",
+   "text": "Recovery, follow-up and life after cancer."
+  }
+ ],
+ "concerns": [
+  [
+   "Understanding my diagnosis",
+   "scans"
+  ],
+  [
+   "Tests and results",
+   "tumour-markers"
+  ],
+  [
+   "Genetic testing",
+   "genetic-testing"
+  ],
+  [
+   "Pain and fatigue",
+   "fatigue"
+  ],
+  [
+   "Nausea and eating",
+   "nausea-eating"
+  ],
+  [
+   "Fertility",
+   "fertility"
+  ],
+  [
+   "Sexual health",
+   "sex-intimacy"
+  ],
+  [
+   "Menopause",
+   "menopause"
+  ],
+  [
+   "Emotional distress",
+   "emotional-wellbeing"
+  ],
+  [
+   "Returning to work",
+   "work-money"
+  ],
+  [
+   "Supporting a loved one",
+   "caregivers"
+  ],
+  [
+   "Life after cancer",
+   "follow-up"
+  ]
  ],
  "glossary": [
   [

@@ -35,13 +35,13 @@ const orgs = g => g.org.join(" / ");
 
 /* ---------- navigation ---------- */
 const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
-const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["governance", "How we check information"], ["about", "About"]];
+const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["articles", "Articles"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["governance", "How we check information"], ["about", "About"]];
 /* Each route name maps to its own HTML file; records use ?id= */
 const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
-  leaflets: "leaflets.html", l: "leaflet.html", sdm: "decision-making.html", tracker: "tracker.html", glossary: "glossary.html" };
+  leaflets: "leaflets.html", l: "leaflet.html", articles: "articles.html", a: "article.html", sdm: "decision-making.html", tracker: "tracker.html", glossary: "glossary.html" };
 const PAGE_BY_FILE = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [f, k]));
 function url(route) {
   const i = route.indexOf("."); const base = i < 0 ? route : route.slice(0, i); const arg = i < 0 ? "" : route.slice(i + 1);
@@ -50,7 +50,7 @@ function url(route) {
 }
 const PARAMS = new URLSearchParams(location.search);
 const PAGE = document.body.dataset.page || PAGE_BY_FILE[location.pathname.split("/").pop()] || "welcome";
-const PT_PAGES = ["pt", "ptcancers", "ptd", "leaflets", "l", "tracker", "glossary"];
+const PT_PAGES = ["pt", "ptcancers", "ptd", "leaflets", "l", "articles", "a", "tracker", "glossary"];
 const SHARED_PAGES = ["welcome", "login", "register", "reset", "governance", "privacy", "workspace", "about", "sdm", "search"];
 const PUBLIC_PAGES = [...PT_PAGES, ...SHARED_PAGES];
 const GATED = !PUBLIC_PAGES.includes(PAGE);
@@ -100,7 +100,7 @@ renderShell();
 function renderNav() {
   const items = (state.aud === "pro" ? NAV_PRO : NAV_PT).filter(([r]) => r !== "accounts" || isAdmin());
   renderAcct();
-  const map = { g: "guidelines", recs: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "ptcancers" };
+  const map = { g: "guidelines", recs: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "ptcancers", a: "articles" };
   const cur = map[PAGE] || PAGE;
   $("#nav").innerHTML = items.map(([r, t]) => `<a href="${url(r)}" ${r === cur ? 'aria-current="page"' : ""}>${t}</a>`).join("");
   state.aud === "pro" ? $("#aud-pro").setAttribute("aria-current", "page") : $("#aud-pro").removeAttribute("aria-current");
@@ -265,20 +265,20 @@ function index() {
   const I = [];
   const add = (aud, type, id, route, title, text, meta, status, warn) => I.push({ aud, type, id, route, title, text: (title + " " + text).toLowerCase(), meta, status, warn });
   if (!state.proLoaded) {
-    D.diseases.forEach(d => add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient, "About this cancer", "DRAFT"));
+    D.diseases.forEach(d => add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient + " " + (d.patientSections || []).flat(2).join(" "), "About this cancer", "DRAFT"));
     D.leaflets.forEach(l => add("pt", "Information leaflet", l.id, "l." + l.id, l.title, l.audience + " " + (l.sections || []).flat(2).join(" "), l.version, l.approval));
-    D.glossary.forEach(([t, d]) => add("pt", "Glossary", t, "glossary", t, d, d, "DRAFT"));
+    D.glossary.forEach(([t, d]) => add("pt", "Glossary", t, "glossary", t, d, d, "DRAFT")); (D.articles || []).forEach(a => add("pt", "Article", a.id, "a." + a.id, a.title, a.summary + " " + a.category + " " + a.sections.flat(2).join(" "), a.category, a.status));
     return I;
   }
   D.guidelines.forEach(g => add("pro", "Guideline", g.id, "g." + g.id, g.title, [orgs(g), dname(g.disease), g.domain.join(" "), g.summary, g.version].join(" "), `${orgs(g)} · ${g.version || "version not recorded"} · ${dname(g.disease)}`, g.status, g.superseded === "superseded" ? "Superseded guidance" : ""));
   D.recommendations.forEach(r => add("pro", "Recommendation", r.id, "g." + r.guideline, r.text, [r.stage, r.biomarker, r.setting, dname(r.disease)].join(" "), `${r.id} · ${dname(r.disease)} · ${r.stage}`, r.status));
-  D.diseases.forEach(d => { add("pro", "Disease reference", d.id, "d." + d.id, d.name, d.short, "Disease page", "NOT VERIFIED"); add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient, "About this cancer", "DRAFT"); });
+  D.diseases.forEach(d => { add("pro", "Disease reference", d.id, "d." + d.id, d.name, d.short, "Disease page", "NOT VERIFIED"); add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient + " " + (d.patientSections || []).flat(2).join(" "), "About this cancer", "DRAFT"); });
   D.staging.forEach(s => add("pro", "Staging system", s.id, "s." + s.id, `${s.name} (${s.authority} ${s.version})`, JSON.stringify(s.stages) + " " + s.notes + " " + dname(s.cancer), `${s.authority} ${s.version}`, "NOT VERIFIED", s.superseded ? "Superseded staging version" : ""));
   D.protocols.forEach(p => add("pro", "Treatment protocol", p.id, "p." + p.id, p.name, [p.indication, p.biomarker, p.modality, p.components.map(c => c.drug).join(" ")].join(" "), `${dname(p.disease)} · ${p.line}`, p.status));
   D.drugs.forEach(d => add("pro", "Drug monograph", d.id, "dr." + d.id, d.name, [d.cls, d.moa, d.ae].join(" "), d.cls, "NOT VERIFIED"));
   D.trials.forEach(t => add("pro", "Clinical trial", t.id, "t." + t.id, t.name, [t.reg, t.population, t.intervention, t.comparator, dname(t.disease)].join(" "), `${t.reg} · Phase ${t.phase}`, "NOT VERIFIED"));
   D.leaflets.forEach(l => add("pt", "Information leaflet", l.id, "l." + l.id, l.title, l.audience + " " + (l.sections || []).flat(2).join(" "), l.version, l.approval));
-  D.glossary.forEach(([t, d]) => add("pt", "Glossary", t, "glossary", t, d, d, "DRAFT"));
+  D.glossary.forEach(([t, d]) => add("pt", "Glossary", t, "glossary", t, d, d, "DRAFT")); (D.articles || []).forEach(a => add("pt", "Article", a.id, "a." + a.id, a.title, a.summary + " " + a.category + " " + a.sections.flat(2).join(" "), a.category, a.status));
   return I;
 }
 let IDX = [];
@@ -586,7 +586,7 @@ function bindQuiz() {
 
 V.workspace = () => {
   const b = bm(), r = store.get("recent", []), n = store.get("notes", {});
-  const link = x => { const p = { Guideline: "g.", Disease: "d.", Staging: "s.", Protocol: "p.", Drug: "dr.", Trial: "t.", Leaflet: "l.", "Patient page": "ptd." }[x.type] || ""; const sup = x.type === "Guideline" && byId(D.guidelines, x.id)?.superseded === "superseded"; return `<a class="row" href="${url(`${p}${x.id}`)}"><span class="row-t">${esc(x.title)} ${sup ? '<span class="pill bad">Now superseded</span>' : ""}</span><span class="row-m"><span class="eyebrow">${esc(x.type)}</span>${x.at ? `<span>${x.at}</span>` : ""}</span></a>` };
+  const link = x => { const p = { Guideline: "g.", Disease: "d.", Staging: "s.", Protocol: "p.", Drug: "dr.", Trial: "t.", Leaflet: "l.", "Patient page": "ptd.", Article: "a." }[x.type] || ""; const sup = x.type === "Guideline" && byId(D.guidelines, x.id)?.superseded === "superseded"; return `<a class="row" href="${url(`${p}${x.id}`)}"><span class="row-t">${esc(x.title)} ${sup ? '<span class="pill bad">Now superseded</span>' : ""}</span><span class="row-m"><span class="eyebrow">${esc(x.type)}</span>${x.at ? `<span>${x.at}</span>` : ""}</span></a>` };
   return `<span class="eyebrow">${state.aud === "pro" ? "My Workspace" : "Saved"}</span><h1>${state.aud === "pro" ? "My Workspace" : "Things you have saved"}</h1>
   <p class="banner info">Saved items, notes and history are kept only in this browser on this device. Accounts with secure sign-in are planned for the production build.</p>
   <div class="cols"><section class="section"><h2>Bookmarks</h2><div class="list">${b.map(link).join("") || `<div class="row muted">Nothing saved yet. Use ☆ Save on any record.</div>`}</div></section>
@@ -666,7 +666,7 @@ V.privacy = () => `<article class="detail prose" style="max-width:820px"><span c
   <h2>Changes to this notice</h2><p>We will update the date below when this notice changes. <span class="todo">[Last updated: to be completed]</span></p></article>`;
 
 /* Review details shown at the end of every record page */
-const REVIEW_SRC = { g: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "diseases" };
+const REVIEW_SRC = { g: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "diseases", a: "articles" };
 function reviewBlock(rec) {
   const by = rec.reviewer, last = rec.verifiedOn || rec.lastReview, next = rec.nextReview;
   return `<aside class="reviewed" aria-label="Review information"><div><span class="eyebrow">Reviewed by</span><span>${by ? esc(by) : '<span class="na">Not yet reviewed</span>'}</span></div>
@@ -681,22 +681,57 @@ V.pt = () => `<div class="patient detail">${transBanner()}
   <p>Clear, reliable information to help you understand your diagnosis, prepare for treatment, manage side effects, and navigate life during and after gynaecological cancer.</p>
   <form class="bigsearch" id="hs"><input id="hq" type="search" aria-label="Search" placeholder="Search for your cancer, treatment, test, symptom, or question."><button>Search</button></form></section>
   <p class="banner">This information is being written and has not yet been reviewed by a clinician. It does not replace advice from your own treating team. In an emergency in Malaysia, call <b>999</b>.</p>
+  <section class="section"><h2>Where are you in your journey?</h2><div class="journey">${(D.journey || []).map((j, i) => `<a class="tile jstep" href="${url(`articles`)}?stage=${j.id}"><span class="jnum" aria-hidden="true">${i + 1}</span><b>${esc(j.title)}</b><span>${esc(j.text)}</span><span class="muted jcount">${journeyItems(j.id).length} guides</span></a>`).join("")}</div></section>
   <section class="section"><h2>Browse by cancer type</h2><div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`ptd.${d.id}`)}"><b>${esc(d.name)}</b><span>${esc(d.patient)}</span></a>`).join("")}</div></section>
-  <section class="section"><h2>Browse by treatment</h2><div class="chips">${["Surgery", "Chemotherapy", "Radiotherapy", "Brachytherapy", "Immunotherapy", "Targeted therapy", "Hormonal therapy", "Fertility-sparing treatment", "Maintenance treatment", "Palliative treatment"].map(t => `<button class="chip" data-q="${t}">${t}</button>`).join("")}</div></section>
-  <section class="section"><h2>Browse by concern</h2><div class="chips">${["Understanding my diagnosis", "Preparing for surgery", "Pain and fatigue", "Managing side effects", "Nutrition", "Fertility", "Sexual health", "Menopause", "Emotional distress", "Returning to work", "Supporting a loved one", "Life after cancer"].map(t => `<button class="chip" data-q="${t}">${t}</button>`).join("")}</div></section>
+  <section class="section"><h2>Treatment explained</h2><div class="chips">${TREATMENT_LINKS.map(([t, id]) => id ? `<a class="chip" href="${url(`l.${id}`)}">${t}</a>` : `<button class="chip" data-q="${t}">${t}</button>`).join("")}</div></section>
+  <section class="section"><h2>Browse by concern</h2><div class="chips">${(D.concerns || []).map(([t, id]) => `<a class="chip" href="${url(`a.${id}`)}">${esc(t)}</a>`).join("")}</div></section>
   <section class="section"><h2>Tools to use with your care team</h2><div class="grid">
     <a class="tile" href="${url(`sdm`)}"><b>Questions for my oncologist</b><span>A checklist to bring to your next appointment.</span></a>
     <a class="tile" href="${url(`tracker`)}"><b>Side-effect tracker</b><span>Note changes so you can tell your team accurately.</span></a>
-    <a class="tile" href="${url(`leaflets`)}"><b>Information leaflets</b><span>${D.leaflets.length} leaflets planned; 1 draft available.</span></a>
+    <a class="tile" href="${url(`leaflets`)}"><b>Information leaflets</b><span>${D.leaflets.filter(l => (l.sections || []).length).length} leaflets you can read and print.</span></a>
+    <a class="tile" href="${url(`articles`)}"><b>Articles</b><span>${(D.articles || []).length} guides on tests, side effects and living with cancer.</span></a>
     <a class="tile" href="${url(`glossary`)}"><b>Medical glossary</b><span>${D.glossary.length} terms explained in plain language.</span></a></div></section></div>`;
+const TREATMENT_LINKS = [["Surgery", "PIL-SX-HYST"], ["Chemotherapy", "PIL-TX-CHEMO"], ["Radiotherapy", "PIL-TX-RT"], ["Brachytherapy", "PIL-TX-BT"], ["Immunotherapy", "PIL-TX-IO"], ["Targeted therapy", null], ["Hormonal therapy", null], ["Fertility-sparing treatment", null], ["Maintenance treatment", null], ["Palliative treatment", null]];
+const journeyItems = stage => [...(D.articles || []).filter(a => a.journey === stage).map(a => ({ kind: "Article", route: "a." + a.id, title: a.title, summary: a.summary, status: a.status })),
+  ...D.leaflets.filter(l => l.journey === stage && (l.sections || []).length).map(l => ({ kind: "Leaflet", route: "l." + l.id, title: l.title, summary: l.audience, status: l.approval }))];
+const sectionsHtml = secs => secs.map(([h, ps]) => `<section><h2>${esc(h)}</h2>${ps.length > 1 ? `<ul>${ps.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : `<p>${esc(ps[0])}</p>`}</section>`).join("");
+V.articles = () => {
+  const stage = new URLSearchParams(location.search).get("stage") || "";
+  const cats = [...new Set((D.articles || []).map(a => a.category))];
+  const st = (D.journey || []).find(j => j.id === stage);
+  const list = stage ? journeyItems(stage) : null;
+  return `<div class="patient detail"><span class="eyebrow">Patient Education Centre</span><h1>${st ? esc(st.title) : "Articles"}</h1>${transBanner()}
+  <div class="chips" role="navigation" aria-label="Journey stage"><a class="chip" href="${url(`articles`)}" ${!stage ? 'aria-current="page"' : ""}>All articles</a>${(D.journey || []).map(j => `<a class="chip" href="${url(`articles`)}?stage=${j.id}" ${stage === j.id ? 'aria-current="page"' : ""}>${esc(j.title)}</a>`).join("")}</div>
+  ${list ? `<p class="prose muted">${esc(st.text)}</p><div class="list">${list.map(x => `<a class="row" href="${url(x.route)}"><span class="row-t">${esc(x.title)} ${statusPill(x.status)}</span><span class="row-m"><span class="eyebrow">${x.kind}</span><span>${esc(x.summary)}</span></span></a>`).join("")}</div>`
+  : cats.map(c => `<section class="section"><h2>${esc(c)}</h2><div class="list">${D.articles.filter(a => a.category === c).map(a => `<a class="row" href="${url(`a.${a.id}`)}"><span class="row-t">${esc(a.title)} ${statusPill(a.status)}</span><span class="row-m"><span>${esc(a.summary)}</span></span></a>`).join("")}</div></section>`).join("")}</div>`;
+};
+V.a = id => {
+  const a = byId(D.articles || [], id); if (!a) return notFound();
+  recent("Article", a.id, a.title);
+  const related = (D.articles || []).filter(x => x.id !== a.id && (x.journey === a.journey || x.category === a.category)).slice(0, 4);
+  const cancers = (a.cancers || []).map(c => disease(c)).filter(Boolean);
+  return `<article class="patient leaflet">${transBanner()}
+  <div class="dhead"><span class="eyebrow">${esc(a.category)}</span><h1>${esc(a.title)}</h1><p class="prose" style="font-size:1.05rem">${esc(a.summary)}</p>
+    <div class="actions">${bmBtn("Article", a.id, a.title)}<button class="btn" type="button" data-print>Print or save as PDF</button></div></div>
+  ${a.status !== "APPROVED" ? `<p class="banner">Draft article, not yet clinically reviewed. It gives general information and does not replace advice from your treating team. In an emergency in Malaysia, call 999.</p>` : ""}
+  ${sectionsHtml(a.sections)}
+  ${cancers.length ? `<section><h2>Related cancers</h2><div class="chips">${cancers.map(d => `<a class="chip" href="${url(`ptd.${d.id}`)}">${esc(d.name)}</a>`).join("")}</div></section>` : ""}
+  ${related.length ? `<section class="no-print"><h2>You might also find helpful</h2><div class="list">${related.map(x => `<a class="row" href="${url(`a.${x.id}`)}"><span class="row-t">${esc(x.title)}</span><span class="row-m"><span>${esc(x.summary)}</span></span></a>`).join("")}</div></section>` : ""}
+  <p class="print-only print-foot">General information from the DR ARVEEN Patient Education Centre. It does not replace advice from your own treating team. In an emergency in Malaysia, call 999. Online version: ${esc(location.href.split("#")[0])}</p></article>`;
+};
 V.ptcancers = () => `<div class="patient detail"><span class="eyebrow">Understanding your cancer</span><h1>Your cancer</h1><div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`ptd.${d.id}`)}"><b>${esc(d.name)}</b><span>${esc(d.patient)}</span></a>`).join("")}</div></div>`;
 V.ptd = id => {
   const d = disease(id); if (!d) return notFound();
   recent("Patient page", d.id, d.name);
-  const ls = D.leaflets.filter(l => l.disease === id);
+  const ls = D.leaflets.filter(l => l.disease === id || (["tubal", "peritoneal"].includes(id) && l.disease === "ovarian"));
+  const secs = d.patientSections || (["tubal", "peritoneal"].includes(id) ? disease("ovarian")?.patientSections : null);
+  const arts = (D.articles || []).filter(a => (a.cancers || []).includes(id) || (["tubal", "peritoneal"].includes(id) && (a.cancers || []).includes("ovarian")));
   return `<article class="patient detail">${transBanner()}<div class="dhead"><span class="eyebrow">Understanding your cancer</span><h1>${esc(d.name)}</h1><p class="prose" style="font-size:1.05rem">${esc(d.patient)}</p><div class="row-m">${statusPill("DRAFT")} <span>Not yet clinically reviewed</span></div><div class="actions">${bmBtn("Patient page", d.id, d.name)}</div></div>
-  <div class="cols">${["What stage means", "Tests you may have", "Treatment options", "Living with and after cancer"].map(h => `<section class="section"><h2>${h}</h2><p class="na">This section is being written and reviewed.</p></section>`).join("")}</div>
+  ${["tubal", "peritoneal"].includes(id) && secs ? `<p class="banner info">This cancer is usually staged and treated in the same way as ovarian cancer, so the information below covers all three.</p>` : ""}
+  <div class="cols">${secs ? secs.map(([h, ps]) => `<section class="section"><h2>${esc(h)}</h2><ul class="plist">${ps.map(p => `<li>${esc(p)}</li>`).join("")}</ul></section>`).join("")
+    : ["What stage means", "Tests you may have", "Treatment options", "Living with and after cancer"].map(h => `<section class="section"><h2>${h}</h2><p class="na">This section is being written and reviewed. Your treating team is the best source of information about this cancer.</p></section>`).join("")}</div>
   <section class="section"><h2>Leaflets</h2><div class="list">${ls.map(l => `<a class="row" href="${url(`l.${l.id}`)}"><span class="row-t">${esc(l.title)} ${statusPill(l.approval)}</span></a>`).join("") || `<div class="row muted">No leaflet for this cancer yet.</div>`}</div></section>
+  ${arts.length ? `<section class="section"><h2>Articles</h2><div class="list">${arts.map(a => `<a class="row" href="${url(`a.${a.id}`)}"><span class="row-t">${esc(a.title)}</span><span class="row-m"><span>${esc(a.summary)}</span></span></a>`).join("")}</div></section>` : ""}
   <p><a class="btn" href="${url(`sdm`)}">Prepare questions for your doctor →</a></p></article>`;
 };
 V.leaflets = () => `<div class="patient detail"><span class="eyebrow">Patient information leaflets</span><h1>Information leaflets</h1>${transBanner()}

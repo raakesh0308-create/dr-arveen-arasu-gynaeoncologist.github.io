@@ -237,3 +237,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--teal) }
   .tablewrap { overflow: visible; border: 0 }
   .tablewrap td .btn { display: none }
 }
+/* Upgrade 4: patient journey and articles */
+.journey { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); counter-reset: none }
+.tile.jstep { position: relative; padding-top: 18px; border-top: 3px solid var(--teal) }
+.jstep .jnum { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--lav-soft); color: var(--lav); font-weight: 700; font-family: var(--f-display) }
+.jstep .jcount { font-size: .8rem; margin-top: auto }
+.plist { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 68ch }
+a.chip { display: inline-block }
+a.chip[aria-current="page"] { background: var(--lav-soft); border-color: var(--lav) }
