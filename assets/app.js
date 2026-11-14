@@ -37,7 +37,7 @@ const orgs = g => g.org.join(" / ");
 const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
 const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["articles", "Articles"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["governance", "How we check information"], ["about", "About"]];
 /* Each route name maps to its own HTML file; records use ?id= */
-const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
+const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
@@ -102,14 +102,14 @@ const NAV_PRO_GROUPS = [["home", "Home"],
   { label: "Reference", items: [["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
   { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"]] },
   ["updates", "Updates"], ["pt", "Patient Education"], ["sdm", "Shared decisions"], ["workspace", "My Workspace"],
-  { label: "More", items: [["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]] }];
+  { label: "More", items: [["cms", "Edit content"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]] }];
 function renderNav() {
   renderAcct();
   document.body.classList.toggle("aud-pt", state.aud === "pt");
   const map = { g: "guidelines", recs: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "ptcancers", a: "articles" };
   const cur = map[PAGE] || PAGE;
   const link = ([r, t]) => `<a href="${url(r)}" ${r === cur ? 'aria-current="page"' : ""}>${t}</a>`;
-  const allowed = ([r]) => r !== "accounts" || isAdmin();
+  const allowed = ([r]) => (r !== "accounts" || isAdmin()) && (r !== "cms" || isEditor());
   $("#nav").innerHTML = state.aud === "pro"
     ? NAV_PRO_GROUPS.map(g => Array.isArray(g) ? link(g) : `<details class="navgrp"><summary class="${g.items.some(([r]) => r === cur) ? "cur" : ""}">${g.label}</summary><div class="navmenu">${g.items.filter(allowed).map(link).join("")}</div></details>`).join("")
     : NAV_PT.filter(allowed).map(link).join("");
@@ -173,6 +173,38 @@ const sb = (window.supabase && CFG.supabaseUrl && !/YOUR-/.test(CFG.supabaseUrl 
 state.user = null; state.profile = null; state.proLoaded = false;
 const approved = () => state.profile?.status === "approved";
 const isAdmin = () => approved() && state.profile.role === "admin";
+const isEditor = () => approved() && ["editor", "reviewer", "admin"].includes(state.profile.role);
+const canApprove = () => approved() && ["reviewer", "admin"].includes(state.profile.role);
+/* Online edits to patient content (Supabase patient_items) are applied on top of the built-in content */
+state.items = [];
+async function loadPatientItems() {
+  if (!sb) return;
+  const { data, error } = await sb.from("patient_items").select("*");
+  if (error || !data) return;
+  state.items = data;
+  const P = window.ARVEEN_PUBLIC;
+  for (const row of data) {
+    const [kind, ...rest] = row.id.split(":"); const id = rest.join(":");
+    const meta = { reviewer: row.reviewer, lastReview: row.last_review, nextReview: row.next_review, online: true, updatedAt: row.updated_at };
+    if (kind === "article") {
+      const i = P.articles.findIndex(a => a.id === id);
+      if (row.status === "WITHDRAWN") { if (i >= 0) P.articles.splice(i, 1); continue; }
+      const item = { ...(i >= 0 ? P.articles[i] : {}), ...row.data, id, status: row.status, ...meta };
+      i >= 0 ? (P.articles[i] = item) : P.articles.push(item);
+    } else if (kind === "leaflet") {
+      const i = P.leaflets.findIndex(l => l.id === id);
+      if (row.status === "WITHDRAWN") { if (i >= 0) P.leaflets.splice(i, 1); continue; }
+      const item = { ...(i >= 0 ? P.leaflets[i] : {}), ...row.data, id, approval: row.status, ...meta };
+      i >= 0 ? (P.leaflets[i] = item) : P.leaflets.push(item);
+    } else if (kind === "cancer") {
+      const d = P.diseases.find(x => x.id === id); if (!d) continue;
+      if (row.data.patient) d.patient = row.data.patient;
+      if (row.data.sections) d.patientSections = row.data.sections;
+      d.image = row.data.image || null; d.pageStatus = row.status; Object.assign(d, meta);
+    }
+  }
+}
+const photo = img => img && /^https:\/\//.test(img.url || "") ? `<figure class="photo"><img src="${esc(img.url)}" alt="${esc(img.alt || "")}" loading="lazy">${img.credit ? `<figcaption>${esc(img.credit)}</figcaption>` : ""}</figure>` : "";
 const siteBase = () => location.origin + location.pathname.replace(/[^/]*$/, "");
 async function loadSession() {
   if (!sb) return;
@@ -185,7 +217,7 @@ async function loadPro() {
   if (error || !data?.length) return false;
   const pro = Object.fromEntries(data.map(r => [r.key, r.data])), pub = window.ARVEEN_PUBLIC;
   for (const k of ["leaflets", "articles", "glossary", "journey", "concerns", "sdmQuestions"]) delete pro[k]; // patient content always comes from the public file
-  if (pro.diseases) pro.diseases = pro.diseases.map(d => { const p = pub.diseases.find(x => x.id === d.id) || {}; return { ...d, patient: p.patient || d.patient, patientSections: p.patientSections || null }; });
+  if (pro.diseases) pro.diseases = pro.diseases.map(d => { const p = pub.diseases.find(x => x.id === d.id) || {}; return { ...d, patient: p.patient || d.patient, patientSections: p.patientSections || null, image: p.image || null, pageStatus: p.pageStatus, online: p.online, reviewer: p.reviewer, lastReview: p.lastReview, nextReview: p.nextReview }; });
   D = { ...pub, ...pro };
   state.proLoaded = true; return true;
 }
@@ -857,6 +889,7 @@ V.a = id => {
   return `<article class="patient leaflet">${transBanner()}
   <div class="dhead"><span class="eyebrow">${esc(a.category)}</span><h1>${esc(a.title)}</h1><p class="prose" style="font-size:1.05rem">${esc(a.summary)}</p>
     <div class="actions">${bmBtn("Article", a.id, a.title)}<button class="btn" type="button" data-print>Print or save as PDF</button></div></div>
+  ${photo(a.image)}
   ${a.status !== "APPROVED" ? `<p class="banner">Draft article, not yet clinically reviewed. It gives general information and does not replace advice from your treating team. In an emergency in Malaysia, call 999.</p>` : ""}
   ${sectionsHtml(a.sections)}
   ${cancers.length ? `<section><h2>Related cancers</h2><div class="chips">${cancers.map(d => `<a class="chip" href="${url(`ptd.${d.id}`)}">${esc(d.name)}</a>`).join("")}</div></section>` : ""}
@@ -870,7 +903,7 @@ V.ptd = id => {
   const ls = D.leaflets.filter(l => l.disease === id || (["tubal", "peritoneal"].includes(id) && l.disease === "ovarian"));
   const secs = d.patientSections || (["tubal", "peritoneal"].includes(id) ? disease("ovarian")?.patientSections : null);
   const arts = (D.articles || []).filter(a => (a.cancers || []).includes(id) || (["tubal", "peritoneal"].includes(id) && (a.cancers || []).includes("ovarian")));
-  return `<article class="patient detail">${transBanner()}<div class="dhead"><div class="ptd-intro"><div><div class="dtitle">${badge(d.id, true)}<div><span class="eyebrow">Understanding your cancer</span><h1>${esc(d.name)}</h1></div></div><p class="prose" style="font-size:1.05rem">${esc(d.patient)}</p></div><figure class="anatomy">${anatomySvg(d.id)}<figcaption>${id === "rare" ? "The organs of the female reproductive system." : "The highlighted area shows where this cancer starts."}</figcaption></figure></div><div class="row-m">${statusPill("DRAFT")} <span>Not yet clinically reviewed</span></div><div class="actions">${bmBtn("Patient page", d.id, d.name)}</div></div>
+  return `<article class="patient detail">${transBanner()}<div class="dhead"><div class="ptd-intro"><div><div class="dtitle">${badge(d.id, true)}<div><span class="eyebrow">Understanding your cancer</span><h1>${esc(d.name)}</h1></div></div><p class="prose" style="font-size:1.05rem">${esc(d.patient)}</p></div><figure class="anatomy">${anatomySvg(d.id)}<figcaption>${id === "rare" ? "The organs of the female reproductive system." : "The highlighted area shows where this cancer starts."}</figcaption></figure></div>${photo(d.image)}<div class="row-m">${statusPill("DRAFT")} <span>Not yet clinically reviewed</span></div><div class="actions">${bmBtn("Patient page", d.id, d.name)}</div></div>
   ${["tubal", "peritoneal"].includes(id) && secs ? `<p class="banner info">This cancer is usually staged and treated in the same way as ovarian cancer, so the information below covers all three.</p>` : ""}
   <div class="cols">${secs ? secs.map(([h, ps]) => `<section class="section"><h2>${esc(h)}</h2><ul class="plist">${ps.map(p => `<li>${esc(p)}</li>`).join("")}</ul></section>`).join("")
     : ["What stage means", "Tests you may have", "Treatment options", "Living with and after cancer"].map(h => `<section class="section"><h2>${h}</h2><p class="na">This section is being written and reviewed. Your treating team is the best source of information about this cancer.</p></section>`).join("")}</div>
@@ -897,6 +930,7 @@ V.l = id => {
   ${approvedLeaflet ? "" : `<p class="watermark">${esc(T.watermark)}</p><div class="print-only print-draft" aria-hidden="true">${esc(T.printDraft)}</div>`}
   <div class="dhead"><span class="eyebrow">${esc(T.eyebrow)}</span><h1>${esc(title)}</h1><div class="actions">${bmBtn("Leaflet", l.id, l.title)}<button class="btn" type="button" data-print>${esc(T.print)}</button></div>
   ${approvedLeaflet ? "" : `<p class="muted no-print" style="font-size:.86rem">${esc(T.draftNote)}</p>`}</div>
+  ${photo(l.image)}
   ${sectionsHtml(sections)}
   <section><h2>${esc(T.seekHelp)}</h2><div class="safety">
     <div class="em"><b>${esc(T.emergency)}</b><ul>${s.emergency.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
@@ -1070,16 +1104,168 @@ function render() {
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
-  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth();
+  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms();
 }
+/* ---------- content editor (editors, reviewers, admins) ---------- */
+const CMS_KINDS = [["article", "Articles"], ["leaflet", "Leaflets"], ["cancer", "Cancer pages"]];
+const CMS_STATUSES = ["DRAFT", "EDITORIAL REVIEW", "CLINICAL REVIEW", "APPROVED", "WITHDRAWN"];
+const slug = s => String(s).toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_]+/g, "-").replace(/-+/g, "-").slice(0, 60);
+function cmsItems() {
+  const rows = Object.fromEntries(state.items.map(r => [r.id, r]));
+  const withdrawn = state.items.filter(r => r.status === "WITHDRAWN");
+  const list = [
+    ...D.articles.map(a => ({ key: "article:" + a.id, kind: "article", title: a.title, status: a.status || "DRAFT" })),
+    ...D.leaflets.filter(l => (l.sections || []).length).map(l => ({ key: "leaflet:" + l.id, kind: "leaflet", title: l.title, status: l.approval || "DRAFT" })),
+    ...D.diseases.map(d => ({ key: "cancer:" + d.id, kind: "cancer", title: d.name, status: d.pageStatus || "DRAFT" })),
+    ...withdrawn.map(r => ({ key: r.id, kind: r.kind, title: (r.data.title || r.id) + " (withdrawn)", status: "WITHDRAWN" }))
+  ];
+  return list.map(x => ({ ...x, online: !!rows[x.key] }));
+}
+function cmsCurrent(key) {
+  const [kind, ...rest] = key.split(":"); const id = rest.join(":");
+  const row = state.items.find(r => r.id === key);
+  if (kind === "article") return { kind, id, row, item: row?.status === "WITHDRAWN" ? { id, ...row.data } : (D.articles.find(a => a.id === id) || { id, title: PARAMS.get("title") || "", summary: "", category: "Living with cancer", journey: "during", cancers: [], sections: [["", [""]]] }) };
+  if (kind === "leaflet") return { kind, id, row, item: row?.status === "WITHDRAWN" ? { id, ...row.data } : D.leaflets.find(l => l.id === id) };
+  if (kind === "cancer") { const d = disease(id); return { kind, id, row, item: d && { id, title: d.name, patient: d.patient, sections: d.patientSections || [], image: d.image } }; }
+  return null;
+}
+const secEditor = secs => `<div id="secs" class="secs">${(secs.length ? secs : [["", [""]]]).map(([h, ps], i) => `<div class="secblock">
+  <div class="sec-top"><label>Section heading<input type="text" class="sec-h" value="${esc(h)}"></label>
+  <div class="sec-tools"><button class="btn" type="button" data-secmv="-1" aria-label="Move section up">↑</button><button class="btn" type="button" data-secmv="1" aria-label="Move section down">↓</button><button class="btn" type="button" data-secdel aria-label="Remove section">Remove</button></div></div>
+  <label>Text, one point per line<textarea class="sec-b" rows="${Math.min(10, Math.max(3, ps.length + 1))}">${esc(ps.join("\n"))}</textarea></label></div>`).join("")}</div>
+  <button class="btn" type="button" id="secadd">+ Add section</button>`;
+const lines = v => String(v || "").split("\n").map(s => s.trim()).filter(Boolean);
+V.cms = () => {
+  const items = cmsItems();
+  const sel = PARAMS.get("id");
+  const cur = sel ? cmsCurrent(sel) : null;
+  const listHtml = CMS_KINDS.map(([k, t]) => `<details class="cms-group" ${!sel || sel.startsWith(k + ":") ? "open" : ""}><summary>${t} <span class="muted">${items.filter(x => x.kind === k).length}</span></summary>
+    ${items.filter(x => x.kind === k).map(x => `<a class="cms-item" href="${FILES.cms}?id=${encodeURIComponent(x.key)}" ${x.key === sel ? 'aria-current="page"' : ""}><span>${esc(x.title)}</span><span class="row-m">${statusPill(x.status)}${x.online ? '<span class="pill teal">Edited online</span>' : ""}</span></a>`).join("")}</details>`).join("");
+  let form = `<div class="cms-empty"><h2>Choose something to edit</h2><p class="muted">Pick an article, leaflet or cancer page on the left, or start a new article.</p>
+    <div class="cms-new"><label for="new-title">New article title<input type="text" id="new-title" placeholder="Coping with sleep problems"></label><button class="btn primary" type="button" id="new-article">Create draft</button></div></div>`;
+  if (cur && cur.item) {
+    const it = cur.item, row = cur.row || {}, img = it.image || {};
+    const status = row.status || (cur.kind === "leaflet" ? it.approval : cur.kind === "article" ? it.status : "DRAFT") || "DRAFT";
+    const viewRoute = cur.kind === "article" ? `a.${cur.id}` : cur.kind === "leaflet" ? `l.${cur.id}` : `ptd.${cur.id}`;
+    form = `<form id="cmsf" class="cms-form" data-key="${esc(sel)}">
+    <div class="section-h"><div><span class="eyebrow">${cur.kind === "cancer" ? "Cancer page" : cur.kind === "leaflet" ? "Leaflet" : "Article"} · ${esc(cur.id)}</span><h2>${esc(it.title || "New article")}</h2></div>
+      <div class="toc"><a class="btn" href="${url(viewRoute)}" target="_blank" rel="noopener">View page ↗</a></div></div>
+    ${cur.row ? `<p class="banner info">This item has online edits (last saved ${esc((row.updated_at || "").slice(0, 16).replace("T", " "))}). The site shows this version.</p>` : `<p class="muted">Not edited online yet: you are looking at the built-in version. Saving creates an online version.</p>`}
+    <fieldset><legend>Text</legend>
+      ${cur.kind !== "cancer" ? `<label>Title<input type="text" id="f-title" value="${esc(it.title)}" required></label>` : ""}
+      ${cur.kind === "article" ? `<label>Short summary<textarea id="f-summary" rows="2">${esc(it.summary)}</textarea></label>
+        <div class="fields"><label>Category<select id="f-category">${["Tests and investigations", "Treatment explained", "Living with cancer", "Support"].map(c => `<option ${c === it.category ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+        <label>Journey stage<select id="f-journey">${(D.journey || []).map(j => `<option value="${j.id}" ${j.id === it.journey ? "selected" : ""}>${esc(j.title)}</option>`).join("")}</select></label></div>
+        <div class="chips" role="group" aria-label="Related cancers">${D.diseases.map(d => `<label class="chip"><input type="checkbox" class="f-cancer" value="${d.id}" ${(it.cancers || []).includes(d.id) ? "checked" : ""}> ${esc(d.name)}</label>`).join("")}</div>` : ""}
+      ${cur.kind === "leaflet" ? `<label>Intended audience<textarea id="f-audience" rows="2">${esc(it.audience)}</textarea></label>` : ""}
+      ${cur.kind === "cancer" ? `<label>Introduction (shown under the title)<textarea id="f-patient" rows="3">${esc(it.patient)}</textarea></label>` : ""}
+    </fieldset>
+    <fieldset><legend>Sections</legend>${secEditor(it.sections || [])}</fieldset>
+    ${cur.kind === "leaflet" ? `<fieldset><legend>When to seek help (needs clinical review)</legend>
+      <label>Emergency — one per line<textarea id="f-em" rows="3">${esc((it.safety?.emergency || []).join("\n"))}</textarea></label>
+      <label>Urgent — one per line<textarea id="f-ur" rows="4">${esc((it.safety?.urgent || []).join("\n"))}</textarea></label>
+      <label>Routine — one per line<textarea id="f-ro" rows="3">${esc((it.safety?.routine || []).join("\n"))}</textarea></label>
+      <label>Note<textarea id="f-note" rows="2">${esc(it.safety?.note || "")}</textarea></label></fieldset>
+      <fieldset><legend>Questions to ask your doctor</legend><label>One per line<textarea id="f-q" rows="5">${esc((it.questions || []).join("\n"))}</textarea></label></fieldset>
+      ${it.translations ? `<p class="banner">This leaflet has translations. Changing the English text means the translations need updating and re-review.</p>` : ""}` : ""}
+    <fieldset><legend>Picture</legend>
+      <div class="img-slot"><div class="img-prev" id="img-prev">${img.url ? `<img src="${esc(img.url)}" alt="">` : `<span class="muted">No picture</span>`}</div>
+      <div class="img-fields"><input type="hidden" id="img-url" value="${esc(img.url || "")}">
+        <label>Upload a picture (JPEG, PNG or WebP, up to 3 MB)<input type="file" id="img-file" accept="image/jpeg,image/png,image/webp"></label>
+        <label>Description for screen readers (required with a picture)<input type="text" id="img-alt" value="${esc(img.alt || "")}" placeholder="Nurse explaining a leaflet to a patient"></label>
+        <label>Credit or caption (optional)<input type="text" id="img-credit" value="${esc(img.credit || "")}" placeholder="Photo: DR ARVEEN clinic"></label>
+        <div class="toc"><button class="btn" type="button" id="img-remove">Remove picture</button></div>
+        <p class="muted" style="font-size:.84rem">Only upload pictures you own or have permission to use. Get written consent from anyone identifiable, and never show patient information.</p></div></div>
+    </fieldset>
+    <fieldset><legend>Review and status</legend><div class="fields">
+      <label>Status<select id="f-status">${CMS_STATUSES.map(s => `<option ${s === status ? "selected" : ""} ${s === "APPROVED" && !canApprove() ? "disabled" : ""}>${s}</option>`).join("")}</select></label>
+      <label>Clinical reviewer<input type="text" id="f-reviewer" value="${esc(row.reviewer || it.reviewer || "")}"></label>
+      <label>Last reviewed<input type="date" id="f-last" value="${esc(row.last_review || it.lastReview || "")}"></label>
+      <label>Next review due<input type="date" id="f-next" value="${esc(row.next_review || it.nextReview || "")}"></label></div>
+      ${canApprove() ? "" : `<p class="muted" style="font-size:.84rem">Only reviewers and administrators can set APPROVED.</p>`}</fieldset>
+    <p class="result err" id="cms-err" role="alert" hidden></p><p class="banner info" id="cms-ok" role="status" hidden></p>
+    <div class="toc cms-actions"><button class="btn primary" type="submit">Save</button>
+      ${cur.row ? `<button class="btn" type="button" id="cms-revert">Discard online edits…</button><span id="cms-revert-confirm" hidden>Go back to the built-in version? <button class="btn" type="button" id="cms-revert-yes">Yes, discard</button> <button class="btn" type="button" id="cms-revert-no">Cancel</button></span>` : ""}</div>
+  </form>`;
+  }
+  return `<span class="eyebrow">Content</span><h1>Edit content</h1>
+  <p class="prose muted">Edit patient articles, leaflets and cancer pages, add pictures, and record reviews. Saved changes appear on the site straight away. Every save is logged.</p>
+  <div class="cms">${`<nav class="cms-list" aria-label="Content items">${listHtml}</nav>`}<div>${form}</div></div>`;
+};
+function bindCms() {
+  if (PAGE !== "cms" || !isEditor()) return;
+  const nb = $("#new-article");
+  if (nb) nb.onclick = () => { const t = $("#new-title").value.trim(); if (!t) { $("#new-title").focus(); return; } const id = slug(t) || "article-" + Date.now();
+    D.articles.push({ id, title: t, summary: "", category: "Living with cancer", journey: "during", cancers: [], sections: [["", [""]]], status: "DRAFT" }); location.href = `${FILES.cms}?id=${encodeURIComponent("article:" + id)}&title=${encodeURIComponent(t)}`; };
+  const f = $("#cmsf"); if (!f) return;
+  const key = f.dataset.key, cur = cmsCurrent(key);
+  const err = m => { const e = $("#cms-err"); e.hidden = !m; e.textContent = m || ""; if (m) $("#cms-ok").hidden = true; };
+  const ok = m => { const o = $("#cms-ok"); o.hidden = false; o.textContent = m; err(""); };
+  const secs = $("#secs");
+  const newBlock = () => { const t = document.createElement("div"); t.innerHTML = secEditor([["", [""]]]); return t.querySelector(".secblock"); };
+  $("#secadd").onclick = () => secs.appendChild(newBlock());
+  secs.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return; const blk = b.closest(".secblock");
+    if (b.hasAttribute("data-secdel")) { if (secs.children.length > 1) blk.remove(); else { blk.querySelector(".sec-h").value = ""; blk.querySelector(".sec-b").value = ""; } }
+    if (b.dataset.secmv === "-1" && blk.previousElementSibling) secs.insertBefore(blk, blk.previousElementSibling);
+    if (b.dataset.secmv === "1" && blk.nextElementSibling) secs.insertBefore(blk.nextElementSibling, blk);
+  });
+  $("#img-file").onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) return err("Choose a JPEG, PNG or WebP picture.");
+    if (file.size > 3 * 1024 * 1024) return err("That picture is over 3 MB. Resize it and try again.");
+    ok("Uploading picture…");
+    const path = `${cur.kind}/${cur.id}-${Date.now()}.${file.type.split("/")[1].replace("jpeg", "jpg")}`;
+    const { error } = await sb.storage.from("site-images").upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+    if (error) return err("The picture couldn't be uploaded: " + error.message);
+    const u = sb.storage.from("site-images").getPublicUrl(path).data.publicUrl;
+    $("#img-url").value = u; $("#img-prev").innerHTML = `<img src="${esc(u)}" alt="">`;
+    ok("Picture uploaded. Add a description, then Save.");
+  };
+  $("#img-remove").onclick = () => { $("#img-url").value = ""; $("#img-prev").innerHTML = `<span class="muted">No picture</span>`; };
+  const revert = $("#cms-revert");
+  if (revert) {
+    revert.onclick = () => { $("#cms-revert-confirm").hidden = false; revert.hidden = true; };
+    $("#cms-revert-no").onclick = () => { $("#cms-revert-confirm").hidden = true; revert.hidden = false; };
+    $("#cms-revert-yes").onclick = async () => { const { error } = await sb.from("patient_items").delete().eq("id", key); if (error) return err(error.message); location.reload(); };
+  }
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const sections = [...secs.querySelectorAll(".secblock")].map(b => [b.querySelector(".sec-h").value.trim(), lines(b.querySelector(".sec-b").value)]).filter(([h, ps]) => h || ps.length);
+    if (sections.some(([h, ps]) => !h || !ps.length)) return err("Every section needs a heading and at least one line of text.");
+    const imgUrl = $("#img-url").value, alt = $("#img-alt").value.trim();
+    if (imgUrl && !alt) return err("Add a description of the picture for people using screen readers.");
+    const image = imgUrl ? { url: imgUrl, alt, credit: $("#img-credit").value.trim() } : null;
+    const status = $("#f-status").value, reviewer = $("#f-reviewer").value.trim(), last = $("#f-last").value || null, next = $("#f-next").value || null;
+    if (status === "APPROVED" && (!reviewer || !last)) return err("To approve, enter the clinical reviewer's name and the review date.");
+    const it = cur.item; let data;
+    if (cur.kind === "article") {
+      const title = $("#f-title").value.trim(); if (!title) return err("Add a title.");
+      data = { title, summary: $("#f-summary").value.trim(), category: $("#f-category").value, journey: $("#f-journey").value, cancers: [...document.querySelectorAll(".f-cancer:checked")].map(c => c.value), sections, image };
+    } else if (cur.kind === "leaflet") {
+      const title = $("#f-title").value.trim(); if (!title) return err("Add a title.");
+      const { approval, reviewer: _r, lastReview: _l, nextReview: _n, online, updatedAt, ...base } = it;
+      data = { ...base, title, audience: $("#f-audience").value.trim(), sections, questions: lines($("#f-q").value), image,
+        safety: { emergency: lines($("#f-em").value), urgent: lines($("#f-ur").value), routine: lines($("#f-ro").value), note: $("#f-note").value.trim() } };
+    } else {
+      data = { patient: $("#f-patient").value.trim(), sections, image };
+    }
+    const { error } = await sb.from("patient_items").upsert({ id: key, kind: cur.kind, data, status, reviewer: reviewer || null, last_review: last, next_review: next });
+    if (error) return err(/approve/i.test(error.message) ? error.message : "Couldn't save: " + error.message);
+    ok("Saved. The page now shows this version.");
+    await loadPatientItems(); setTimeout(() => location.reload(), 900);
+  };
+}
+
 async function boot() {
   renderNav();
   app.innerHTML = `<p class="muted">Loading…</p>`;
-  try { await loadSession(); if (approved() && (GATED || PAGE === "search" || PAGE === "workspace")) await loadPro(); } catch (e) { console.error(e); }
+  try { await loadSession(); await loadPatientItems(); if (approved() && (GATED || PAGE === "search" || PAGE === "workspace")) await loadPro(); } catch (e) { console.error(e); }
   IDX = index();
-  if ((GATED && !state.proLoaded) || (PAGE === "accounts" && !isAdmin())) {
+  if ((GATED && !state.proLoaded) || (PAGE === "accounts" && !isAdmin()) || (PAGE === "cms" && !isEditor())) {
     renderNav();
-    app.innerHTML = PAGE === "accounts" && state.proLoaded ? `<h1>Administrators only</h1><p class="prose">Account approvals are limited to administrators.</p>` : gateView();
+    app.innerHTML = PAGE === "accounts" && state.proLoaded ? `<h1>Administrators only</h1><p class="prose">Account approvals are limited to administrators.</p>`
+      : PAGE === "cms" && state.proLoaded ? `<h1>Editors only</h1><p class="prose">The content editor is for accounts with the editor, reviewer or admin role. An administrator can change your role on the Accounts page.</p>` : gateView();
     document.title = "Sign in · DR ARVEEN";
     bindAuth(); return;
   }

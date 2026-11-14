@@ -72,6 +72,21 @@ Every page has a "Report a problem with this page" form. Reports go into a `feed
 
 If you ran `setup.sql` before this feature was added, run `supabase/upgrade-2-feedback.sql` once in **SQL Editor → New query**. New projects get it automatically from `setup.sql`.
 
+## 9. Online editor and pictures (upgrade 3)
+
+Run `supabase/upgrade-3-editor.sql` once in **SQL Editor → New query**. It creates:
+
+- a `patient_items` table for online edits to articles, leaflets and cancer pages. Anyone can read it, because patient content is public; only editors can change it.
+- a safeguard in the database: only **reviewer** or **admin** accounts can set APPROVED, and approval needs a reviewer name and review date.
+- a `content_audit` log of every save.
+- a public `site-images` storage bucket for pictures (JPEG, PNG or WebP up to 3 MB). Only editors can upload.
+
+To use the editor, sign in and open **More → Edit content**. Admins can use it straight away. To let someone else edit, set their role on the **Accounts** page:
+- **editor:** can write and change status up to clinical review.
+- **reviewer:** can also approve.
+
+Online edits take priority over the built-in content. **Discard online edits** returns an item to the built-in version.
+
 ## Test the protection
 
 After setup, check all of these:

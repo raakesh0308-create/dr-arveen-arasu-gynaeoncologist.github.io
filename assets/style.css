@@ -351,3 +351,37 @@ th, td { padding: 12px 14px }
 .anat .lab.hl { fill: var(--lav); font-weight: 700 }
 .mast .lang { width: auto; flex: none }
 .mast .acct { flex: none }
+
+/* Content editor and pictures */
+.cms { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: start }
+@media (max-width: 900px) { .cms { grid-template-columns: minmax(0, 1fr) } }
+.cms-list { display: grid; gap: 10px; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px }
+@media (max-width: 900px) { .cms-list { position: static; max-height: 360px } }
+.cms-group > summary { cursor: pointer; font-weight: 600; padding: 6px 8px; display: flex; justify-content: space-between }
+.cms-item { display: grid; gap: 4px; padding: 8px 10px; border-radius: 8px; color: var(--fg); text-decoration: none; font-size: .9rem }
+.cms-item:hover { background: var(--teal-soft) }
+.cms-item[aria-current="page"] { background: var(--teal-soft); box-shadow: inset 3px 0 0 var(--teal); border-radius: 0 8px 8px 0 }
+.cms-form { display: grid; gap: 20px }
+.cms-form fieldset { border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px 18px; display: grid; gap: 14px; background: var(--surface); margin: 0; min-width: 0 }
+.cms-form legend { font-weight: 700; padding: 0 6px; color: var(--fg) }
+.cms-form label, .cms-new label { display: grid; gap: 4px; font-size: .86rem; font-weight: 600; color: var(--muted) }
+.cms-form label.chip { display: inline-flex; gap: 6px; font-weight: 500; color: var(--fg) }
+.cms-form input[type="date"], .cms-form input[type="file"] { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--field); border-radius: var(--r); padding: 7px 9px }
+.cms-form .fields { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) }
+.secs { display: grid; gap: 14px }
+.secblock { display: grid; gap: 10px; padding: 14px; border: 1px dashed var(--field); border-radius: var(--r); background: var(--bg) }
+.sec-top { display: flex; gap: 10px; align-items: end; flex-wrap: wrap }
+.sec-top label { flex: 1 1 260px }
+.sec-tools { display: flex; gap: 6px }
+.img-slot { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start }
+@media (max-width: 640px) { .img-slot { grid-template-columns: minmax(0, 1fr) } }
+.img-prev { aspect-ratio: 4 / 3; max-width: 100%; border: 1px dashed var(--field); border-radius: var(--r); display: grid; place-items: center; overflow: hidden; background: var(--bg) }
+.img-prev img { width: 100%; height: 100%; object-fit: cover }
+.img-fields { display: grid; gap: 12px }
+.cms-empty { display: grid; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 24px }
+.cms-new { display: flex; gap: 10px; align-items: end; flex-wrap: wrap }
+.cms-new label { flex: 1 1 280px }
+.cms-actions { position: sticky; bottom: 0; background: var(--bg); padding-block: 12px; border-top: 1px solid var(--line) }
+.photo { margin: 0; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-1); max-width: 760px }
+.photo img { width: 100%; max-height: 420px; object-fit: cover; display: block }
+.photo figcaption { font-size: .84rem; color: var(--muted); padding: 8px 14px }
