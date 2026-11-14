@@ -97,16 +97,73 @@ function renderShell() {
   };
 }
 renderShell();
+/* Professional menu grouped so the bar stays short; patient menu stays flat */
+const NAV_PRO_GROUPS = [["home", "Home"],
+  { label: "Reference", items: [["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
+  { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"]] },
+  ["updates", "Updates"], ["pt", "Patient Education"], ["sdm", "Shared decisions"], ["workspace", "My Workspace"],
+  { label: "More", items: [["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]] }];
 function renderNav() {
-  const items = (state.aud === "pro" ? NAV_PRO : NAV_PT).filter(([r]) => r !== "accounts" || isAdmin());
   renderAcct();
+  document.body.classList.toggle("aud-pt", state.aud === "pt");
   const map = { g: "guidelines", recs: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "ptcancers", a: "articles" };
   const cur = map[PAGE] || PAGE;
-  $("#nav").innerHTML = items.map(([r, t]) => `<a href="${url(r)}" ${r === cur ? 'aria-current="page"' : ""}>${t}</a>`).join("");
+  const link = ([r, t]) => `<a href="${url(r)}" ${r === cur ? 'aria-current="page"' : ""}>${t}</a>`;
+  const allowed = ([r]) => r !== "accounts" || isAdmin();
+  $("#nav").innerHTML = state.aud === "pro"
+    ? NAV_PRO_GROUPS.map(g => Array.isArray(g) ? link(g) : `<details class="navgrp"><summary class="${g.items.some(([r]) => r === cur) ? "cur" : ""}">${g.label}</summary><div class="navmenu">${g.items.filter(allowed).map(link).join("")}</div></details>`).join("")
+    : NAV_PT.filter(allowed).map(link).join("");
+  $("#nav").querySelectorAll(".navgrp").forEach(d => d.addEventListener("toggle", () => { if (d.open) $("#nav").querySelectorAll(".navgrp").forEach(o => { if (o !== d) o.open = false; }); }));
   state.aud === "pro" ? $("#aud-pro").setAttribute("aria-current", "page") : $("#aud-pro").removeAttribute("aria-current");
   state.aud === "pt" ? $("#aud-pt").setAttribute("aria-current", "page") : $("#aud-pt").removeAttribute("aria-current");
   $("#tagline").textContent = state.aud === "pro" ? "Evidence. Guidelines. Clinical Excellence." : "Understand Your Diagnosis. Navigate Your Care.";
   $("#mq").placeholder = state.aud === "pro" ? "Search a cancer, guideline, drug, trial or stage" : "Search for your cancer, treatment, test or question";
+}
+document.addEventListener("click", e => { if (!e.target.closest(".navgrp")) document.querySelectorAll(".navgrp[open]").forEach(d => d.open = false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".navgrp[open]").forEach(d => { d.open = false; d.querySelector("summary").focus(); }); });
+
+/* ---------- illustrations: icons, cancer badges, anatomy diagram (original artwork) ---------- */
+const ICON = {
+  guidelines: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>',
+  staging: '<path d="M12 3 3 8l9 5 9-5z"/><path d="m3 13 9 5 9-5"/><path d="m3 17.5 9 4.5 9-4.5"/>',
+  protocols: '<path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7.5 15h9"/>',
+  drugs: '<rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="m9.5 9.5 5 5"/>',
+  trials: '<path d="M4 20V4"/><path d="M4 20h16"/><path d="m7 15 4-4 3 3 5-6"/>',
+  calculators: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h1M12 11h1M16 11h0M8 15h1M12 15h1M8 18h1M12 18h1M16 15v3"/>',
+  algorithms: '<circle cx="6" cy="5" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="19" r="2"/><path d="M8 5h4a4 4 0 0 1 4 4v1M16 14v1a4 4 0 0 1-4 4H8"/>',
+  education: '<path d="m2 9 10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/>',
+  compare: '<rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/>',
+  updates: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  sdm: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/>',
+  tracker: '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
+  leaflets: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 12h6M10 15h6M10 18h4"/>',
+  articles: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/><path d="M9 7h6"/>',
+  glossary: '<path d="M4 18 8 6l4 12M5.5 14h5"/><path d="M14 6h6l-6 12h6"/>'
+};
+ICON.recs = ICON.guidelines; ICON.diseases = ICON.articles;
+const ic = name => ICON[name] ? `<span class="ticon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[name]}</svg></span>` : "";
+const HUE = { cervical: "#0e7c86", ovarian: "#5f4dbf", tubal: "#7046a8", peritoneal: "#4b5bb0", endometrial: "#b04a26", vulvar: "#a3316f", vaginal: "#1f6aa8", sarcoma: "#2f7a3e", gtn: "#875800", rare: "#4a5868" };
+const ABBR = { cervical: "CX", ovarian: "OV", tubal: "FT", peritoneal: "PP", endometrial: "EN", vulvar: "VU", vaginal: "VA", sarcoma: "US", gtn: "GTN", rare: "RG" };
+const badge = (id, big) => `<span class="dbadge${big ? " big" : ""}" style="--hue:${HUE[id] || "#4a5868"}" aria-hidden="true">${ABBR[id] || "•"}</span>`;
+/* Simplified front view of the female reproductive organs; the organ where the cancer starts is highlighted */
+function anatomySvg(id) {
+  const hl = { cervical: ["cervix"], ovarian: ["ovary"], tubal: ["tube"], peritoneal: ["peri"], endometrial: ["lining"], vulvar: ["vulva"], vaginal: ["vagina"], sarcoma: ["uterus"], gtn: ["uterus"], rare: [] }[id] || [];
+  const c = part => hl.includes(part) ? "org hl" : "org";
+  const lbl = (x, y, lx, ly, t, part, anchor = "start") => `<line class="lead${hl.includes(part) ? " hl" : ""}" x1="${x}" y1="${y}" x2="${lx}" y2="${ly}"/><text class="lab${hl.includes(part) ? " hl" : ""}" x="${x + (anchor === "end" ? -4 : 4)}" y="${y + 4}" text-anchor="${anchor}">${t}</text>`;
+  return `<svg class="anat" viewBox="0 0 380 300" role="img" aria-labelledby="anat-t"><title id="anat-t">Diagram of the womb, cervix, ovaries, fallopian tubes, vagina and vulva${hl.length ? ", with the area where this cancer starts highlighted" : ""}</title>
+    <rect class="${hl.includes("peri") ? "peri hl" : "peri"}" x="40" y="30" width="300" height="196" rx="46"/>
+    <path class="${c("tube")}" fill="none" stroke-width="7" stroke-linecap="round" d="M158 76 Q118 48 88 66 Q72 76 76 96"/><path class="${c("tube")}" fill="none" stroke-width="7" stroke-linecap="round" d="M222 76 Q262 48 292 66 Q308 76 304 96"/>
+    <ellipse class="${c("ovary")}" cx="98" cy="114" rx="20" ry="13"/><ellipse class="${c("ovary")}" cx="282" cy="114" rx="20" ry="13"/>
+    <path class="${c("uterus")}" d="M158 70 Q190 54 222 70 Q248 86 240 128 Q232 164 206 182 L174 182 Q148 164 140 128 Q132 86 158 70 Z"/>
+    <path class="${c("lining")} lining" d="M170 92 Q190 84 210 92 Q220 122 200 162 L180 162 Q160 122 170 92 Z"/>
+    <path class="${c("cervix")}" d="M174 182 L206 182 L202 214 L178 214 Z"/>
+    <path class="${c("vagina")}" d="M178 214 L202 214 L206 262 L174 262 Z"/>
+    <ellipse class="${c("vulva")}" cx="190" cy="276" rx="36" ry="12"/>
+    ${lbl(30, 50, 104, 58, "Fallopian tube", "tube", "start")}${lbl(30, 150, 84, 122, "Ovary", "ovary", "start")}
+    ${lbl(250, 132, 236, 128, "Womb (uterus)", "uterus")}${lbl(250, 108, 212, 112, "Lining (endometrium)", "lining")}
+    ${lbl(250, 198, 204, 196, "Cervix", "cervix")}${lbl(250, 240, 204, 238, "Vagina", "vagina")}${lbl(250, 286, 222, 278, "Vulva", "vulva")}
+    ${lbl(30, 18, 70, 34, "Lining of the abdomen (peritoneum)", "peri", "start")}
+  </svg>`;
 }
 function setAud(a) { state.aud = a; store.set("aud", a); location.href = a === "pro" ? "professional.html" : "patients.html"; }
 
@@ -350,7 +407,7 @@ const transBanner = () => state.lang === "en" ? "" : `<p class="banner info">Tra
 /* ---------- views: professional ---------- */
 const V = {};
 V.home = () => `
-  <section class="hero">
+  <section class="hero hero-pro">
     <span class="eyebrow">Gynaecological oncology reference · Malaysia</span>
     <h1>DR ARVEEN — Evidence-Based Gynaecological Oncology.</h1>
     <p>Find clinical guidelines, staging criteria, treatment protocols, clinical trial evidence, and patient education resources in one integrated platform.</p>
@@ -364,18 +421,18 @@ V.home = () => `
     <p class="muted" style="font-size:.84rem">Doses and recommendation grades are shown only after verification. Check every record's status label before relying on it.</p></section>`; })()}
   <section class="section"><div class="section-h"><h2>Disease hubs</h2><a href="${url(`diseases`)}">All diseases</a></div>
     <div class="grid">${D.diseases.map(d => { const nt = D.trials.filter(t => t.disease === d.id).length, ng = D.guidelines.filter(g => g.disease === d.id).length, ns = D.staging.filter(s => s.cancer === d.id && !s.superseded).length;
-      return `<a class="tile hub" href="${url(`d.${d.id}`)}"><b>${esc(d.name)}</b><span>${esc(d.short)}</span><span class="hubmeta">${[ng && `${ng} guideline${ng > 1 ? "s" : ""}`, ns && `${ns} staging`, nt && `${nt} trial${nt > 1 ? "s" : ""}`, d.reference && "24-section reference"].filter(Boolean).join(" · ") || "Reference in progress"}</span></a>`; }).join("")}</div></section>
-  <section class="section"><div class="section-h"><h2>Key evidence</h2><a href="${url(`trials`)}">All trials</a></div>
+      return `<a class="tile hub" href="${url(`d.${d.id}`)}">${badge(d.id)}<b>${esc(d.name)}</b><span>${esc(d.short)}</span><span class="hubmeta">${[ng && `${ng} guideline${ng > 1 ? "s" : ""}`, ns && `${ns} staging`, nt && `${nt} trial${nt > 1 ? "s" : ""}`, d.reference && "24-section reference"].filter(Boolean).join(" · ") || "Reference in progress"}</span></a>`; }).join("")}</div></section>
+  <section class="section band"><div class="section-h"><h2>Key evidence</h2><a href="${url(`trials`)}">All trials</a></div>
     <div class="tablewrap"><table><thead><tr><th>Trial</th><th>Question</th><th>Headline result</th><th>Status</th></tr></thead><tbody>
     ${D.trials.filter(t => t.outcome).map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)}</div></td><td style="font-size:.86rem">${esc(t.intervention)} vs ${esc(t.comparator)}</td><td style="font-size:.86rem">${esc(headline(t))}</td><td>${statusPill(t.outcome.status)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Trial results load from the database. If this is empty, the latest seed.sql has not been run.</td></tr>`}
     </tbody></table></div></section>
   <section class="section"><h2>Clinical tools</h2><div class="grid">
-    <a class="tile" href="${url(`calculators`)}"><b>Calculators</b><span>BSA, BMI, Cockcroft–Gault, CKD-EPI 2021, Calvert dose support.</span></a>
-    <a class="tile" href="${url(`staging`)}"><b>Staging systems</b><span>${D.staging.filter(s => !s.superseded).length} current FIGO systems with searchable criteria.</span></a>
-    <a class="tile" href="${url(`algorithms`)}"><b>Clinical pathways</b><span>Step-by-step work-up that shows missing information.</span></a>
-    <a class="tile" href="${url(`education`)}"><b>Staging exercises</b><span>${D.quiz.length} questions with explanations.</span></a></div></section>
+    <a class="tile" href="${url(`calculators`)}">${ic("calculators")}<b>Calculators</b><span>BSA, BMI, Cockcroft–Gault, CKD-EPI 2021, Calvert dose support.</span></a>
+    <a class="tile" href="${url(`staging`)}">${ic("staging")}<b>Staging systems</b><span>${D.staging.filter(s => !s.superseded).length} current FIGO systems with searchable criteria.</span></a>
+    <a class="tile" href="${url(`algorithms`)}">${ic("algorithms")}<b>Clinical pathways</b><span>Step-by-step work-up that shows missing information.</span></a>
+    <a class="tile" href="${url(`education`)}">${ic("education")}<b>Staging exercises</b><span>${D.quiz.length} questions with explanations.</span></a></div></section>
   <section class="section"><h2>Browse by resource</h2>
-    <div class="grid">${[["guidelines", "Clinical guidelines", D.guidelines.length + " records"], ["staging", "Staging systems", D.staging.length + " systems"], ["protocols", "Treatment protocols", D.protocols.length + " regimens"], ["algorithms", "Clinical algorithms", D.algorithms.length + " pathway"], ["drugs", "Drug monographs", D.drugs.length + " drugs"], ["trials", "Clinical trials", D.trials.length + " trials"], ["compare", "Guideline comparisons", "By clinical question"], ["calculators", "Calculators", "BSA, BMI, renal function, Calvert"], ["education", "Educational resources", "Staging exercises"], ["updates", "Recent updates", D.updates.length + " surveillance items"]].map(([r, t, s]) => `<a class="tile" href="${url(`${r}`)}"><b>${t}</b><span>${s}</span></a>`).join("")}</div></section>
+    <div class="grid">${[["guidelines", "Clinical guidelines", D.guidelines.length + " records"], ["staging", "Staging systems", D.staging.length + " systems"], ["protocols", "Treatment protocols", D.protocols.length + " regimens"], ["algorithms", "Clinical algorithms", D.algorithms.length + " pathway"], ["drugs", "Drug monographs", D.drugs.length + " drugs"], ["trials", "Clinical trials", D.trials.length + " trials"], ["compare", "Guideline comparisons", "By clinical question"], ["calculators", "Calculators", "BSA, BMI, renal function, Calvert"], ["education", "Educational resources", "Staging exercises"], ["updates", "Recent updates", D.updates.length + " surveillance items"]].map(([r, t, s]) => `<a class="tile" href="${url(`${r}`)}">${ic(r)}<b>${t}</b><span>${s}</span></a>`).join("")}</div></section>
   <section class="section"><div class="section-h"><h2>Recent updates</h2><a href="${url(`updates`)}">All updates</a></div>${updatesTable(D.updates.slice(0, 3))}</section>
   <section class="section"><a class="tile" href="${url(`pt`)}" style="padding:20px"><span class="eyebrow">For patients and caregivers</span><b style="font-size:1.3rem">DR ARVEEN Patient Education Centre</b><span>Clear, reliable information to help patients understand their diagnosis, prepare for treatment, manage side effects, and navigate life during and after gynaecological cancer.</span></a></section>`;
 
@@ -448,7 +505,7 @@ V.g = id => {
 };
 
 V.diseases = () => `<span class="eyebrow">Disease reference library</span><h1>Diseases</h1>
-  <div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`d.${d.id}`)}"><b>${esc(d.name)}</b><span>${esc(d.short)}</span></a>`).join("")}</div>`;
+  <div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`d.${d.id}`)}">${badge(d.id)}<b>${esc(d.name)}</b><span>${esc(d.short)}</span></a>`).join("")}</div>`;
 const DTEMPLATE = ["Definition and epidemiology", "Risk factors and hereditary predisposition", "Histological classification", "Molecular classification and biomarkers", "Clinical presentation", "Diagnostic pathway", "Imaging and pathology", "Staging", "Risk stratification", "Treatment intent", "Management by stage and subtype", "Surgery", "Radiotherapy", "Systemic therapy", "Recurrent and metastatic disease", "Follow-up", "Survivorship", "Pivotal trials", "Current guideline references", "Malaysian applicability", "Clinical pearls", "Case-based learning", "Examination questions", "Patient education links"];
 V.d = id => {
   const d = disease(id); if (!d) return notFound();
@@ -472,7 +529,7 @@ V.d = id => {
   const body = s => { const txt = ref[s] || [], lk = linked[s] || [];
     if (!txt.length && !lk.length) return `<span class="na" style="font-size:.86rem">Content not yet authored. Requires source-linked authoring and clinical review.</span>`;
     return `${txt.length ? `<ul class="plist" style="font-size:.92rem">${txt.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${lk.length ? `<div style="display:grid;gap:4px;font-size:.9rem">${lk.map(x => `<span>${x}</span>`).join("")}</div>` : ""}`; };
-  return `<article class="detail"><div class="dhead"><span class="eyebrow">Disease reference</span><h1>${esc(d.name)}</h1><p class="prose muted">${esc(d.short)}</p>
+  return `<article class="detail"><div class="dhead"><div class="dtitle">${badge(d.id, true)}<div><span class="eyebrow">Disease reference</span><h1>${esc(d.name)}</h1></div></div><p class="prose muted">${esc(d.short)}</p>
     <div class="actions"><button class="btn" data-mode="quick" aria-pressed="${mode === "quick"}">Quick reference</button><button class="btn" data-mode="comp" aria-pressed="${mode !== "quick"}">Comprehensive reference</button>${bmBtn("Disease", d.id, d.name)}</div></div>
   <section class="glance" aria-label="At a glance">
     <div><span class="eyebrow">Staging</span>${st.filter(s => !s.superseded).map(s => `<a href="${url(`s.${s.id}`)}">${esc(s.authority)} ${esc(s.version)}</a>`).join("") || `<span class="na">Not entered</span>`}</div>
@@ -764,20 +821,20 @@ function reviewBlock(rec) {
 
 /* ---------- views: patient ---------- */
 V.pt = () => `<div class="patient detail">${transBanner()}
-  <section class="hero"><span class="eyebrow">DR ARVEEN Patient Education Centre</span><h1>Understanding Your Cancer. Understanding Your Care.</h1>
+  <section class="hero hero-pt"><span class="eyebrow">DR ARVEEN Patient Education Centre</span><h1>Understanding Your Cancer. Understanding Your Care.</h1>
   <p>Clear, reliable information to help you understand your diagnosis, prepare for treatment, manage side effects, and navigate life during and after gynaecological cancer.</p>
   <form class="bigsearch" id="hs"><input id="hq" type="search" aria-label="Search" placeholder="Search for your cancer, treatment, test, symptom, or question."><button>Search</button></form></section>
   <p class="banner">This information is being written and has not yet been reviewed by a clinician. It does not replace advice from your own treating team. In an emergency in Malaysia, call <b>999</b>.</p>
-  <section class="section"><h2>Where are you in your journey?</h2><div class="journey">${(D.journey || []).map((j, i) => `<a class="tile jstep" href="${url(`articles`)}?stage=${j.id}"><span class="jnum" aria-hidden="true">${i + 1}</span><b>${esc(j.title)}</b><span>${esc(j.text)}</span><span class="muted jcount">${journeyItems(j.id).length} guides</span></a>`).join("")}</div></section>
-  <section class="section"><h2>Browse by cancer type</h2><div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`ptd.${d.id}`)}"><b>${esc(d.name)}</b><span>${esc(d.patient)}</span></a>`).join("")}</div></section>
+  <section class="section band"><h2>Where are you in your journey?</h2><div class="journey">${(D.journey || []).map((j, i) => `<a class="tile jstep" href="${url(`articles`)}?stage=${j.id}"><span class="jnum" aria-hidden="true">${i + 1}</span><b>${esc(j.title)}</b><span>${esc(j.text)}</span><span class="muted jcount">${journeyItems(j.id).length} guides</span></a>`).join("")}</div></section>
+  <section class="section"><h2>Browse by cancer type</h2><div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`ptd.${d.id}`)}">${badge(d.id)}<b>${esc(d.name)}</b><span>${esc(d.patient)}</span></a>`).join("")}</div></section>
   <section class="section"><h2>Treatment explained</h2><div class="chips">${TREATMENT_LINKS.map(([t, id]) => id ? `<a class="chip" href="${url(`l.${id}`)}">${t}</a>` : `<button class="chip" data-q="${t}">${t}</button>`).join("")}</div></section>
   <section class="section"><h2>Browse by concern</h2><div class="chips">${(D.concerns || []).map(([t, id]) => `<a class="chip" href="${url(`a.${id}`)}">${esc(t)}</a>`).join("")}</div></section>
   <section class="section"><h2>Tools to use with your care team</h2><div class="grid">
-    <a class="tile" href="${url(`sdm`)}"><b>Questions for my oncologist</b><span>A checklist to bring to your next appointment.</span></a>
-    <a class="tile" href="${url(`tracker`)}"><b>Side-effect tracker</b><span>Note changes so you can tell your team accurately.</span></a>
-    <a class="tile" href="${url(`leaflets`)}"><b>Information leaflets</b><span>${D.leaflets.filter(l => (l.sections || []).length).length} leaflets you can read and print.</span></a>
-    <a class="tile" href="${url(`articles`)}"><b>Articles</b><span>${(D.articles || []).length} guides on tests, side effects and living with cancer.</span></a>
-    <a class="tile" href="${url(`glossary`)}"><b>Medical glossary</b><span>${D.glossary.length} terms explained in plain language.</span></a></div></section></div>`;
+    <a class="tile" href="${url(`sdm`)}">${ic("sdm")}<b>Questions for my oncologist</b><span>A checklist to bring to your next appointment.</span></a>
+    <a class="tile" href="${url(`tracker`)}">${ic("tracker")}<b>Side-effect tracker</b><span>Note changes so you can tell your team accurately.</span></a>
+    <a class="tile" href="${url(`leaflets`)}">${ic("leaflets")}<b>Information leaflets</b><span>${D.leaflets.filter(l => (l.sections || []).length).length} leaflets you can read and print.</span></a>
+    <a class="tile" href="${url(`articles`)}">${ic("articles")}<b>Articles</b><span>${(D.articles || []).length} guides on tests, side effects and living with cancer.</span></a>
+    <a class="tile" href="${url(`glossary`)}">${ic("glossary")}<b>Medical glossary</b><span>${D.glossary.length} terms explained in plain language.</span></a></div></section></div>`;
 const TREATMENT_LINKS = [["Surgery", "PIL-SX-HYST"], ["Chemotherapy", "PIL-TX-CHEMO"], ["Radiotherapy", "PIL-TX-RT"], ["Brachytherapy", "PIL-TX-BT"], ["Immunotherapy", "PIL-TX-IO"], ["Targeted therapy", null], ["Hormonal therapy", null], ["Fertility-sparing treatment", null], ["Maintenance treatment", null], ["Palliative treatment", null]];
 const journeyItems = stage => [...(D.articles || []).filter(a => a.journey === stage).map(a => ({ kind: "Article", route: "a." + a.id, title: a.title, summary: a.summary, status: a.status })),
   ...D.leaflets.filter(l => l.journey === stage && (l.sections || []).length).map(l => ({ kind: "Leaflet", route: "l." + l.id, title: l.title, summary: l.audience, status: l.approval }))];
@@ -806,14 +863,14 @@ V.a = id => {
   ${related.length ? `<section class="no-print"><h2>You might also find helpful</h2><div class="list">${related.map(x => `<a class="row" href="${url(`a.${x.id}`)}"><span class="row-t">${esc(x.title)}</span><span class="row-m"><span>${esc(x.summary)}</span></span></a>`).join("")}</div></section>` : ""}
   <p class="print-only print-foot">General information from the DR ARVEEN Patient Education Centre. It does not replace advice from your own treating team. In an emergency in Malaysia, call 999. Online version: ${esc(location.href.split("#")[0])}</p></article>`;
 };
-V.ptcancers = () => `<div class="patient detail"><span class="eyebrow">Understanding your cancer</span><h1>Your cancer</h1><div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`ptd.${d.id}`)}"><b>${esc(d.name)}</b><span>${esc(d.patient)}</span></a>`).join("")}</div></div>`;
+V.ptcancers = () => `<div class="patient detail"><span class="eyebrow">Understanding your cancer</span><h1>Your cancer</h1><div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`ptd.${d.id}`)}">${badge(d.id)}<b>${esc(d.name)}</b><span>${esc(d.patient)}</span></a>`).join("")}</div></div>`;
 V.ptd = id => {
   const d = disease(id); if (!d) return notFound();
   recent("Patient page", d.id, d.name);
   const ls = D.leaflets.filter(l => l.disease === id || (["tubal", "peritoneal"].includes(id) && l.disease === "ovarian"));
   const secs = d.patientSections || (["tubal", "peritoneal"].includes(id) ? disease("ovarian")?.patientSections : null);
   const arts = (D.articles || []).filter(a => (a.cancers || []).includes(id) || (["tubal", "peritoneal"].includes(id) && (a.cancers || []).includes("ovarian")));
-  return `<article class="patient detail">${transBanner()}<div class="dhead"><span class="eyebrow">Understanding your cancer</span><h1>${esc(d.name)}</h1><p class="prose" style="font-size:1.05rem">${esc(d.patient)}</p><div class="row-m">${statusPill("DRAFT")} <span>Not yet clinically reviewed</span></div><div class="actions">${bmBtn("Patient page", d.id, d.name)}</div></div>
+  return `<article class="patient detail">${transBanner()}<div class="dhead"><div class="ptd-intro"><div><div class="dtitle">${badge(d.id, true)}<div><span class="eyebrow">Understanding your cancer</span><h1>${esc(d.name)}</h1></div></div><p class="prose" style="font-size:1.05rem">${esc(d.patient)}</p></div><figure class="anatomy">${anatomySvg(d.id)}<figcaption>${id === "rare" ? "The organs of the female reproductive system." : "The highlighted area shows where this cancer starts."}</figcaption></figure></div><div class="row-m">${statusPill("DRAFT")} <span>Not yet clinically reviewed</span></div><div class="actions">${bmBtn("Patient page", d.id, d.name)}</div></div>
   ${["tubal", "peritoneal"].includes(id) && secs ? `<p class="banner info">This cancer is usually staged and treated in the same way as ovarian cancer, so the information below covers all three.</p>` : ""}
   <div class="cols">${secs ? secs.map(([h, ps]) => `<section class="section"><h2>${esc(h)}</h2><ul class="plist">${ps.map(p => `<li>${esc(p)}</li>`).join("")}</ul></section>`).join("")
     : ["What stage means", "Tests you may have", "Treatment options", "Living with and after cancer"].map(h => `<section class="section"><h2>${h}</h2><p class="na">This section is being written and reviewed. Your treating team is the best source of information about this cancer.</p></section>`).join("")}</div>
@@ -859,7 +916,7 @@ V.sdm = () => {
   <p class="banner info">These tools help you talk with your treating team. They do not recommend a treatment. Anything you type stays only on this device.</p>
   <div class="cols"><section class="section"><h2>Questions for my oncologist</h2><div class="checklist">${D.sdmQuestions.map((q, i) => `<label for="sq${i}"><input type="checkbox" id="sq${i}" data-sq="${i}" ${done.includes(i) ? "checked" : ""}> ${esc(q)}</label>`).join("")}</div></section>
   <section class="section"><h2>Treatment discussion worksheet</h2><form class="calc" id="ws">${[["goals", "What matters most to me"], ["benefits", "Benefits my team described"], ["risks", "Risks and side effects I want to understand"], ["alts", "Other options we discussed"], ["unsure", "Things I am still unsure about"]].map(([k, t]) => `<label for="ws-${k}">${t}<textarea id="ws-${k}" data-ws="${k}">${esc(ws[k] || "")}</textarea></label>`).join("")}</form></section></div>
-  <section class="section"><h2>More discussion guides</h2><div class="grid">${["Understanding my diagnosis", "Surgery preparation checklist", "Chemotherapy diary", "Fertility discussion guide", "Menopause and sexual health guide", "Follow-up planner", "Caregiver guide"].map(t => `<div class="tile"><b>${t}</b><span>Being written.</span></div>`).join("")}<a class="tile" href="${url(`tracker`)}"><b>Side-effect tracker</b><span>Available now.</span></a></div></section></div>`;
+  <section class="section"><h2>More discussion guides</h2><div class="grid">${["Understanding my diagnosis", "Surgery preparation checklist", "Chemotherapy diary", "Fertility discussion guide", "Menopause and sexual health guide", "Follow-up planner", "Caregiver guide"].map(t => `<div class="tile"><b>${t}</b><span>Being written.</span></div>`).join("")}<a class="tile" href="${url(`tracker`)}">${ic("tracker")}<b>Side-effect tracker</b><span>Available now.</span></a></div></section></div>`;
 };
 function bindSdm() {
   app.querySelectorAll("[data-sq]").forEach(c => c.onchange = () => { let d = store.get("sdmq", []); const i = +c.dataset.sq; d = c.checked ? [...d, i] : d.filter(x => x !== i); store.set("sdmq", d); });
@@ -900,7 +957,7 @@ V.search = () => {
 const notFound = () => `<h1>Record not found</h1><p><a href="index.html">Return home</a></p>`;
 
 /* ---------- views: welcome, accounts, governance ---------- */
-V.welcome = () => `<section class="hero"><span class="eyebrow">Gynaecological oncology · Malaysia</span>
+V.welcome = () => `<section class="hero hero-welcome"><span class="eyebrow">Gynaecological oncology · Malaysia</span>
   <h1>DR ARVEEN — Evidence-Based Gynaecological Oncology.</h1>
   <p>Clinical guidelines, staging, treatment protocols and trial evidence for healthcare professionals, and clear, reliable information for patients and the people who care for them.</p></section>
   <div class="cols">
