@@ -459,9 +459,9 @@ V.home = () => `
     ${D.trials.filter(t => t.outcome).map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)}</div></td><td style="font-size:.86rem">${esc(t.intervention)} vs ${esc(t.comparator)}</td><td style="font-size:.86rem">${esc(headline(t))}</td><td>${statusPill(t.outcome.status)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Trial results load from the database. If this is empty, the latest seed.sql has not been run.</td></tr>`}
     </tbody></table></div></section>
   <section class="section"><h2>Clinical tools</h2><div class="grid">
-    <a class="tile" href="${url(`calculators`)}">${ic("calculators")}<b>Calculators</b><span>BSA, BMI, Cockcroft–Gault, CKD-EPI 2021, Calvert dose support.</span></a>
+    <a class="tile" href="${url(`calculators`)}">${ic("calculators")}<b>Calculators</b><span>BSA, BMI, Cockcroft–Gault, CKD-EPI 2021, RMI, Calvert dose support.</span></a>
     <a class="tile" href="${url(`staging`)}">${ic("staging")}<b>Staging systems</b><span>${D.staging.filter(s => !s.superseded).length} current FIGO systems with searchable criteria.</span></a>
-    <a class="tile" href="${url(`algorithms`)}">${ic("algorithms")}<b>Clinical pathways</b><span>Step-by-step work-up that shows missing information.</span></a>
+    <a class="tile" href="${url(`algorithms`)}">${ic("algorithms")}<b>Clinical pathways</b><span>Six step-by-step pathways: cervical work-up, suspected ovarian and endometrial cancer, endometrial risk group, recurrence, biomarkers.</span></a>
     <a class="tile" href="${url(`education`)}">${ic("education")}<b>Staging exercises</b><span>${D.quiz.length} questions with explanations.</span></a></div></section>
   <section class="section"><h2>Browse by resource</h2>
     <div class="grid">${[["guidelines", "Clinical guidelines", D.guidelines.length + " records"], ["staging", "Staging systems", D.staging.length + " systems"], ["protocols", "Treatment protocols", D.protocols.length + " regimens"], ["algorithms", "Clinical algorithms", D.algorithms.length + " pathway"], ["drugs", "Drug monographs", D.drugs.length + " drugs"], ["trials", "Clinical trials", D.trials.length + " trials"], ["compare", "Guideline comparisons", "By clinical question"], ["calculators", "Calculators", "BSA, BMI, renal function, Calvert"], ["education", "Educational resources", "Staging exercises"], ["updates", "Recent updates", D.updates.length + " surveillance items"]].map(([r, t, s]) => `<a class="tile" href="${url(`${r}`)}">${ic(r)}<b>${t}</b><span>${s}</span></a>`).join("")}</div></section>
@@ -483,6 +483,7 @@ V.guidelines = () => {
   const list = D.guidelines.filter(g => (!f.disease || dname(g.disease) === f.disease) && (!f.org || g.org.includes(f.org)) && (!f.year || g.pubDate === f.year) && (!f.domain || g.domain.includes(f.domain)) && (!f.cur || (f.cur === "Active" ? g.superseded === "active" : f.cur === "Superseded" ? g.superseded === "superseded" : g.superseded === "uncertain")));
   return `<div class="section-h"><div><span class="eyebrow">Repository</span><h1>Clinical guidelines</h1></div><div class="toc"><a class="btn" aria-pressed="true" href="${url(`guidelines`)}">Guidelines</a><a class="btn" href="${url(`recs`)}">Recommendations (${D.recommendations.length})</a></div></div>
   ${seedBanner()}
+  ${(D.organisations || []).length ? `<details class="section"><summary><b>Guideline organisations and official websites (${D.organisations.length})</b></summary><div class="tablewrap"><table><thead><tr><th>Abbreviation</th><th>Full name</th><th>Official website</th></tr></thead><tbody>${D.organisations.map(o => `<tr><td><b>${esc(o.id)}</b></td><td>${esc(o.name)}</td><td><a href="${esc(o.url)}" target="_blank" rel="noopener">${esc(o.label || new URL(o.url).hostname.replace(/^www\./, ""))} ↗</a></td></tr>`).join("")}</tbody></table></div></details>` : ""}
   <div class="layout"><aside class="filters" id="gf">
     <label>Disease<select data-f="disease">${opts("disease", D.diseases.map(d => d.name))}</select></label>
     <label>Organisation<select data-f="org">${opts("org", orgList)}</select></label>
@@ -650,22 +651,32 @@ V.t = id => {
   ${noteBox(t.id)}</article>`;
 };
 
-let algoPath = [];
+let algoPath = [], algoId = new URLSearchParams(location.search).get("id");
+const refLink = id => {
+  const r = byId(D.recommendations, id); if (r) return `<a href="${url(`g.${r.guideline}`)}#${esc(id)}">${esc(id)}</a> <span class="muted">(${esc(r.grade)}, ${esc(r.strength)})</span>`;
+  if (byId(D.trials, id)) return `<a href="${url(`t.${id}`)}">${esc(byId(D.trials, id).name)}</a>`;
+  if (byId(D.guidelines, id)) return `<a href="${url(`g.${id}`)}">${esc(id)}</a>`;
+  if (byId(D.protocols, id)) return `<a href="${url(`p.${id}`)}">${esc(byId(D.protocols, id).name)}</a>`;
+  const l = (D.literature || []).find(x => x.id === id); if (l) return `<a href="https://doi.org/${esc(l.doi)}" target="_blank" rel="noopener">${esc(l.authors.split(",")[0])} ${esc(l.citation.match(/20\d\d/)?.[0] || "")} ↗</a>`;
+  return esc(id);
+};
 V.algorithms = () => {
-  const a = D.algorithms[0];
-  if (!algoPath.length) algoPath = ["start"];
+  const a = byId(D.algorithms, algoId) || D.algorithms[0];
+  if (!algoPath.length || !a.nodes[algoPath[0]]) algoPath = ["start"];
+  const picker = D.algorithms.length > 1 ? `<div class="chips" role="group" aria-label="Choose a pathway">${D.algorithms.map(x => `<button class="chip" data-algo="${esc(x.id)}" aria-pressed="${x.id === a.id}">${esc(x.title.split(":")[0])}</button>`).join("")}</div>` : "";
   const steps = algoPath.map((k, i) => {
     const n = a.nodes[k]; const last = i === algoPath.length - 1;
-    if (n.end) return `<div class="step end ${n.kind}"><span class="eyebrow">${n.kind === "missing" ? "Missing information" : n.kind === "escalate" ? "Referral / escalation" : n.kind === "action" ? "Required investigation" : "Outcome"}</span><p>${esc(n.end)}</p></div>`;
+    if (n.end) return `<div class="step end ${n.kind}"><span class="eyebrow">${n.kind === "missing" ? "Missing information" : n.kind === "escalate" ? "Referral / escalation" : n.kind === "action" ? "Required investigation" : "Outcome"}</span><p>${esc(n.end)}</p>${n.refs?.length ? `<p class="muted" style="font-size:.84rem">Based on: ${n.refs.map(refLink).join(" · ")}</p>` : ""}</div>`;
     const chosen = algoPath[i + 1];
     return `<div class="step ${last ? "" : "past"}"><p><b>${esc(n.q)}</b></p><div class="opts">${n.options.map(([t, to]) => `<button class="btn" data-step="${i}" data-to="${to}" aria-pressed="${chosen === to}">${esc(t)}</button>`).join("")}</div></div>`;
   }).join("");
-  return `<span class="eyebrow">Clinical algorithms</span><h1>${esc(a.title)}</h1>
-  <div class="row-m">${statusPill(a.status)} <span>Source: <a href="${url(`g.${a.source}`)}">${esc(a.source)}</a> (version Update 2023, not verified)</span><span>Verification date: <span class="na">Not yet verified</span></span></div>
-  <p class="banner info">Educational pathway. Where information is missing it says so instead of forcing a conclusion. It does not select treatment.</p>
+  const g = byId(D.guidelines, a.source);
+  return `<span class="eyebrow">Clinical algorithms</span>${picker}<h1>${esc(a.title)}</h1>
+  <div class="row-m">${statusPill(a.status)} <span>Main source: <a href="${url(`g.${a.source}`)}">${esc(a.source)}</a>${g ? ` (${esc(g.version || "")}, ${esc(g.status || "not verified")})` : ""}</span><span>Verification date: <span class="na">Not yet verified</span></span></div>
+  ${a.sourceNote ? `<p class="muted" style="font-size:.86rem">${esc(a.sourceNote)}</p>` : ""}
+  <p class="banner info">Educational pathway. Where information is missing it says so instead of forcing a conclusion. It does not select treatment: the MDT decides.</p>
   <p class="prose"><b>Entry criteria:</b> ${esc(a.entry)}</p>
-  <div class="algo" aria-live="polite">${steps}<div><button class="btn" id="algoreset">Start again</button></div></div>
-  <p class="muted">Further pathways planned: suspected ovarian malignancy, suspected endometrial malignancy, endometrial risk stratification, suspected recurrence, biomarker-directed selection.</p>`;
+  <div class="algo" aria-live="polite">${steps}<div><button class="btn" id="algoreset">Start again</button></div></div>`;
 };
 
 V.calculators = () => `<span class="eyebrow">Calculator library</span><h1>Calculators</h1>
@@ -675,6 +686,7 @@ V.calculators = () => `<span class="eyebrow">Calculator library</span><h1>Calcul
     ${calcCard("bmi", "Body mass index", [["h", "Height (cm)", 100, 230], ["w", "Weight (kg)", 25, 250]], "Weight (kg) / height (m)². WHO adult categories; Asian populations may use lower action thresholds.", "Adults only. Does not reflect body composition.")}
     ${calcCard("crcl", "Creatinine clearance (Cockcroft–Gault)", [["age", "Age (years)", 18, 110], ["w", "Weight (kg)", 25, 250], ["cr", "Serum creatinine (µmol/L)", 20, 1500], ["sex", "Sex", null, null, ["female", "male"]]], "((140 − age) × weight × K) / creatinine (µmol/L); K = 1.04 female, 1.23 male.", "Unreliable with unstable renal function, extremes of body weight or low muscle mass. The weight used (actual, ideal, adjusted) varies by protocol.")}
     ${calcCard("egfr", "eGFR (CKD-EPI 2021, race-free)", [["age", "Age (years)", 18, 110], ["cr", "Serum creatinine (µmol/L)", 20, 1500], ["sex", "Sex", null, null, ["female", "male"]]], "142 × min(Scr/κ,1)^α × max(Scr/κ,1)^−1.200 × 0.9938^age × 1.012 if female. κ 0.7 F / 0.9 M; α −0.241 F / −0.302 M. Scr in mg/dL (µmol/L ÷ 88.4).", "Indexed to 1.73 m². Do not substitute into the Calvert formula without de-indexing per protocol.")}
+    ${calcCard("rmi", "Risk of Malignancy Index (RMI I)", [["f", "Ultrasound features present (0–5)", 0, 5], ["meno", "Menopausal status", null, null, ["postmenopausal", "premenopausal"]], ["ca", "Serum CA125 (IU/mL)", 0, 100000]], "RMI = U × M × CA125. U = 0 (no features), 1 (one feature) or 3 (two to five) of: multilocular cyst, solid areas, metastases, ascites, bilateral lesions. M = 3 postmenopausal, 1 premenopausal. NICE CG122: refer to the specialist MDT if RMI is 250 or more.", "Adnexal masses only. Not valid in pregnancy. CA125 can rise in benign conditions (endometriosis, infection, menstruation). Threshold from NICE CG122 (not yet verified against the PDF).")}
     ${calcCard("calvert", "Carboplatin dose support (Calvert)", [["auc", "Target AUC (mg/mL·min)", 1, 8], ["gfr", "GFR (mL/min)", 5, 200]], "Dose (mg) = target AUC × (GFR + 25).", "Target AUC comes from the verified protocol only. Many protocols cap GFR (for example at 125 mL/min); no cap is applied here.")}
   </div>`;
 function calcCard(id, title, fields, formula, limits) {
@@ -689,7 +701,8 @@ const CALC = {
   bmi: v => { const b = v.w / Math.pow(v.h / 100, 2); return `${b.toFixed(1)} kg/m²`; },
   crcl: v => { const k = v.sex === "female" ? 1.04 : 1.23; return `${((140 - v.age) * v.w * k / v.cr).toFixed(0)} mL/min`; },
   egfr: v => { const f = v.sex === "female", s = v.cr / 88.4, k = f ? .7 : .9, a = f ? -.241 : -.302; const e = 142 * Math.pow(Math.min(s / k, 1), a) * Math.pow(Math.max(s / k, 1), -1.2) * Math.pow(.9938, v.age) * (f ? 1.012 : 1); return `${e.toFixed(0)} mL/min/1.73 m²`; },
-  calvert: v => `${(v.auc * (v.gfr + 25)).toFixed(0)} mg (unrounded, uncapped)`
+  calvert: v => `${(v.auc * (v.gfr + 25)).toFixed(0)} mg (unrounded, uncapped)`,
+  rmi: v => { if (!Number.isInteger(v.f)) return "Features must be a whole number from 0 to 5."; const u = v.f === 0 ? 0 : v.f === 1 ? 1 : 3, m = v.meno === "postmenopausal" ? 3 : 1, r = u * m * v.ca; return `RMI ${r.toFixed(0)} (U ${u} × M ${m} × CA125 ${v.ca}) — ${r >= 250 ? "250 or more: refer to the specialist MDT (NICE CG122)" : "below 250"}`; }
 };
 function bindCalcs() {
   app.querySelectorAll("[data-calc]").forEach(f => {
@@ -1119,6 +1132,7 @@ function render() {
   app.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => { let s = store.get("subs", []); s = s.includes(b.dataset.sub) ? s.filter(x => x !== b.dataset.sub) : [...s, b.dataset.sub]; store.set("subs", s); b.setAttribute("aria-pressed", s.includes(b.dataset.sub)); });
   app.querySelectorAll("[data-step]").forEach(b => b.onclick = () => { algoPath = algoPath.slice(0, +b.dataset.step + 1).concat(b.dataset.to); render(); });
   const ar = $("#algoreset"); if (ar) ar.onclick = () => { algoPath = []; render(); };
+  app.querySelectorAll("[data-algo]").forEach(b => b.onclick = () => { algoId = b.dataset.algo; algoPath = []; history.replaceState(null, "", "?id=" + encodeURIComponent(algoId)); render(); });
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
