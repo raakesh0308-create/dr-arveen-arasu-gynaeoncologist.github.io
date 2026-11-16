@@ -537,3 +537,34 @@ details.rq[open] { box-shadow: inset 3px 0 0 var(--teal) }
 details.recgrp { border: 1px solid var(--line); border-radius: var(--r); padding: 4px 14px; margin-bottom: 10px; background: var(--surface) }
 details.recgrp > summary { cursor: pointer; padding: 10px 0 }
 .cols-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px }
+
+/* Textbook notes */
+.nsearch { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0 6px; max-width: 640px }
+.nsearch label { font-weight: 600; font-size: .86rem }
+.nsearch input { flex: 1 1 260px; padding: 10px 12px; border: 1px solid var(--field); border-radius: var(--r); font: inherit; background: var(--surface); color: var(--fg) }
+.nsearch output { font: .8rem var(--f-mono); color: var(--muted) }
+.nlayout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 32px; margin-top: 14px }
+.nrail { position: sticky; top: 90px; align-self: start; display: grid; gap: 4px }
+.nrail-a { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--r); color: var(--fg); text-decoration: none; font-size: .9rem }
+.nrail-a:hover { background: var(--teal-soft) }
+.nrail-a .dbadge { min-width: 30px; height: 30px; font-size: .66rem; margin: 0 }
+.nmain { min-width: 0; display: grid; gap: 40px }
+.nchap { scroll-margin-top: 100px }
+.nchap-h { display: flex; gap: 14px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid var(--teal); margin-bottom: 10px }
+.nchap-h h2 { margin: 0 }
+.nchap-h p { margin: 2px 0 0; font-size: .86rem }
+.nflags { border: 1px solid var(--warn); background: var(--warn-bg); border-radius: var(--r); padding: 8px 14px; margin: 10px 0 6px }
+.nflags summary { cursor: pointer; color: var(--fg) }
+.nflags ul { margin: 8px 0 4px 1.1rem; color: var(--fg) }
+.nflags li { margin-bottom: 6px; font-size: .9rem }
+section.nblock { padding-top: 16px }
+section.nblock h3 { margin: 0 0 8px; color: var(--teal) }
+.nmain p, .nmain li { max-width: 78ch }
+.nmain h2.npart { margin-top: 30px }
+.nnote { font-size: .86rem; color: var(--muted); font-style: italic }
+.nmain mark { background: var(--warn-bg); color: inherit; outline: 1px solid var(--warn); border-radius: 2px }
+@media (max-width: 860px) {
+  .nlayout { grid-template-columns: minmax(0, 1fr); gap: 14px }
+  .nrail { position: static; display: flex; overflow-x: auto; gap: 6px; padding-bottom: 6px }
+  .nrail-a { white-space: nowrap; border: 1px solid var(--line); background: var(--surface) }
+}

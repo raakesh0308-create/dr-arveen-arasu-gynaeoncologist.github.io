@@ -46,7 +46,7 @@ const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"],
   { label: "Tools", items: [["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["workspace", "Saved pages"]] },
   ["guide", "Help"]];
 /* Each route name maps to its own HTML file; records use ?id= */
-const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", guide: "guide.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
+const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", guide: "guide.html", notes: "textbook-notes.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
@@ -110,7 +110,7 @@ renderShell();
 /* Professional menu grouped so the bar stays short; patient menu stays flat */
 const NAV_PRO_GROUPS = [["home", "Home"],
   { label: "Reference", items: [["guidelines", "Guidelines"], ["recs", "Recommendations"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"], ["updates", "Guideline updates"]] },
-  { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"], ["sdm", "Shared decisions"]] },
+  { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"], ["notes", "Textbook notes"], ["sdm", "Shared decisions"]] },
   ["pt", "Patients"], ["guide", "Help"]];
 /* Account menu (top right): personal and admin pages, shown only to the roles that can use them */
 const ACCT_ITEMS = [["workspace", "My Workspace"], ["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial dashboard"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
@@ -825,6 +825,7 @@ V.updates = () => `<span class="eyebrow">Guideline update intelligence</span><h1
   <div class="chips">${D.diseases.slice(0, 6).map(d => { const s = store.get("subs", []).includes(d.id); return `<button class="chip" data-sub="${d.id}" aria-pressed="${s}">${esc(d.name)}</button>` }).join("")}</div></section>`;
 
 V.education = () => `<span class="eyebrow">Postgraduate education</span><h1>Staging exercises</h1>
+  ${D.notes?.chapters?.length ? `<a class="tile entry" href="${url("notes")}" style="margin:12px 0 18px"><span class="eyebrow">Revision</span><b>Textbook notes: Chapters 37–42</b><span>Searchable chapter notes on uterine, cervical and vaginal, ovarian, vulvar, trophoblastic and breast cancer, with flags where they differ from current guidelines.</span></a>` : ""}
   <p class="banner info">Educational exercises. They are not a validated clinical decision-support tool. Answers follow the ARVEEN paraphrase of each FIGO version, which is NOT VERIFIED.</p>
   <div class="cols quiz">${D.quiz.map(q => { const s = byId(D.staging, q.system); return `<div class="calc" data-quiz="${q.id}"><span class="eyebrow">${esc(s.authority)} ${esc(s.version)} · ${dname(s.cancer)}</span><p><b>${esc(q.q)}</b></p>
     <div style="display:grid;gap:6px">${q.options.map((o, i) => `<button class="btn opt" data-qi="${i}">${esc(o)}</button>`).join("")}</div><p class="why muted" role="status" hidden>${esc(q.why)} <a href="${url(`s.${s.id}`)}">Reference: ${esc(s.authority)} ${esc(s.version)}</a></p></div>` }).join("")}</div>
@@ -1243,8 +1244,43 @@ function render() {
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
-  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview();
+  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes();
 }
+/* ---------- textbook study notes (Berek & Novak's, Ch 37–42), professional only ---------- */
+V.notes = () => {
+  const N = D.notes;
+  if (!N?.chapters?.length) return `<span class="eyebrow">Education</span><h1>Textbook notes</h1><p class="banner">The notes have not been loaded yet. The site owner needs to run the latest seed.sql in Supabase.</p>`;
+  const rail = N.chapters.map(c => `<a href="#nb-${c.id}" class="nrail-a">${badge(c.disease === "all" ? "all" : c.disease)}<span><b>Ch ${c.n}</b> ${esc(c.short)}</span></a>`).join("");
+  const flagBox = c => c.flags?.length ? `<details class="nflags" open><summary><b>Check against current guidance</b> <span class="muted">${c.flags.length} point${c.flags.length > 1 ? "s" : ""} where these notes differ from guidelines on DR ARVEEN</span></summary><ul>${c.flags.map(([t, d, link]) => `<li><b>${esc(t)}:</b> ${esc(d)}${link ? ` <a href="${url(link)}">Open on DR ARVEEN →</a>` : ""}</li>`).join("")}</ul></details>` : "";
+  return `<span class="eyebrow">Education · Textbook study notes</span><h1>Gynaecologic oncology notes</h1>
+  <p class="prose">Chapter notes on uterine, cervical and vaginal, ovarian, vulvar, gestational trophoblastic and breast cancer: staging tables, landmark trials and treatment by stage.</p>
+  <p class="banner slim">${esc(N.source)} For learning, not for clinical decisions: textbook content can be older than current guidelines, so each chapter lists where it differs from guidance on this site. Doses in these notes are not pharmacist-verified. ${statusPill(N.reviewStatus || N.status)}</p>
+  <div class="nsearch"><label for="nq">Search the notes</label><input id="nq" type="search" placeholder="Try LACC, BRCA, Sedlis, p57, EMA-CO" autocomplete="off"><output id="ncount" for="nq"></output></div>
+  <div class="nlayout"><nav class="nrail" aria-label="Chapters">${rail}</nav>
+  <div class="nmain"><p class="banner" id="nempty" hidden>No section matches that search. Try a shorter term, such as a trial name or a gene.</p>
+  ${N.chapters.map(c => `<article class="nchap" id="nb-${c.id}"><div class="nchap-h">${badge(c.disease === "all" ? "all" : c.disease, true)}<div><span class="eyebrow">Chapter ${c.n}</span><h2>${esc(c.title)}</h2><p class="muted">${esc(c.byline)}</p></div></div>
+    ${flagBox(c)}${c.html}</article>`).join("")}</div></div>`;
+};
+function bindNotes() {
+  if (PAGE !== "notes" || !D.notes) return;
+  const input = $("#nq"), out = $("#ncount"), empty = $("#nempty"), blocks = [...app.querySelectorAll("section.nblock")], originals = blocks.map(b => b.innerHTML);
+  const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const mark = (el, re) => {
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), nodes = []; let n; while ((n = w.nextNode())) nodes.push(n);
+    nodes.forEach(t => { re.lastIndex = 0; if (!re.test(t.nodeValue)) return; re.lastIndex = 0; const f = document.createDocumentFragment(); let last = 0, m;
+      while ((m = re.exec(t.nodeValue))) { f.appendChild(document.createTextNode(t.nodeValue.slice(last, m.index))); const k = document.createElement("mark"); k.textContent = m[0]; f.appendChild(k); last = m.index + m[0].length; }
+      f.appendChild(document.createTextNode(t.nodeValue.slice(last))); t.parentNode.replaceChild(f, t); });
+  };
+  const run = () => {
+    const q = input.value.trim(), re = q.length > 1 ? new RegExp(escRe(q), "gi") : null; let shown = 0;
+    blocks.forEach((b, i) => { b.innerHTML = originals[i]; let hit = true; if (re) { hit = re.test(b.textContent); re.lastIndex = 0; } b.hidden = !hit; if (hit) { shown++; if (re) mark(b, re); } });
+    app.querySelectorAll("article.nchap").forEach(a => a.hidden = !!re && !a.querySelector("section.nblock:not([hidden])"));
+    app.querySelectorAll("h2.npart, .nflags").forEach(h => h.hidden = !!re);
+    out.value = re ? `${shown} of ${blocks.length} sections` : `${blocks.length} sections`; empty.hidden = shown > 0;
+  };
+  input.oninput = run; run();
+}
+
 /* ---------- site guide: every page, what it is for, how to use it ---------- */
 V.guide = () => {
   const signedIn = approved(), lock = signedIn ? "" : ` <span class="pill">Sign-in required</span>`;
@@ -1287,7 +1323,8 @@ V.guide = () => {
     ["algorithms", "Clinical pathways", "Six step-by-step pathways: cervical staging work-up, suspected ovarian cancer, suspected endometrial cancer, endometrial risk group, suspected recurrence, biomarker testing.", "Choose a pathway at the top, then answer one question at a time. Each end point shows the recommendations it is based on. It does not choose treatment.", 1],
     ["calculators", "Calculators", "BSA, BMI, creatinine clearance, eGFR, RMI, carboplatin (Calvert).", "Type the values; the answer appears as you type. Open 'Formula and limitations' before using it.", 1],
     ["compare", "Evidence and comparisons", "Compare guideline recommendations on one question, plus the Research library of summarised studies.", "Choose a clinical question from the list. Scroll down for the Research library; click a study to open its summary.", 1],
-    ["education", "Education", "FIGO staging quiz, reviews, surgical videos and teaching cases.", "Answer quiz questions to see the explanation. Videos open on the journal website.", 1]])}
+    ["education", "Education", "FIGO staging quiz, reviews, surgical videos and teaching cases.", "Answer quiz questions to see the explanation. Videos open on the journal website.", 1],
+    ["notes", "Textbook notes", "Revision notes on Chapters 37–42 of Berek & Novak's Gynecology (uterine, cervix and vagina, ovary, vulva, trophoblastic disease, breast).", "Pick a chapter on the left or type in the search box (e.g. LACC, p57). Read the orange 'Check against current guidance' box at the top of each chapter first.", 1]])}
   <h3>Other pages</h3>
   ${table([
     ["home", "Clinical reference home", "Search, disease hubs, review progress and key evidence.", "Start with the big search box, or click a disease hub.", 1],
