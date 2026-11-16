@@ -408,3 +408,10 @@ details.rq summary::-webkit-details-marker { display: none; }
 .rq-form .wide { grid-column: 1 / -1; }
 .rq-msg.err { color: var(--bad, #b42318); }
 
+
+/* Site guide */
+.guide-t td:first-child { white-space: nowrap; }
+.guide-t td { vertical-align: top; font-size: .9rem; }
+@media (max-width: 640px) { .guide-t td:first-child { white-space: normal; } }
+#g-patients, #g-pro, #g-tasks, #g-labels, #g-team, #g-owner, #g-faq { scroll-margin-top: 90px; }
+

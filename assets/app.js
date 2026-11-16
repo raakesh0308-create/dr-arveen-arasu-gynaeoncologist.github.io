@@ -35,9 +35,9 @@ const orgs = g => g.org.join(" / ");
 
 /* ---------- navigation ---------- */
 const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
-const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["articles", "Articles"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["governance", "How we check information"], ["about", "About"]];
+const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["articles", "Articles"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["governance", "How we check information"], ["about", "About"], ["guide", "Help"]];
 /* Each route name maps to its own HTML file; records use ?id= */
-const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
+const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", guide: "guide.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
@@ -51,7 +51,7 @@ function url(route) {
 const PARAMS = new URLSearchParams(location.search);
 const PAGE = document.body.dataset.page || PAGE_BY_FILE[location.pathname.split("/").pop()] || "welcome";
 const PT_PAGES = ["pt", "ptcancers", "ptd", "leaflets", "l", "articles", "a", "tracker", "glossary"];
-const SHARED_PAGES = ["welcome", "login", "register", "reset", "governance", "privacy", "workspace", "about", "sdm", "search"];
+const SHARED_PAGES = ["welcome", "login", "register", "reset", "governance", "privacy", "workspace", "about", "sdm", "search", "guide"];
 const PUBLIC_PAGES = [...PT_PAGES, ...SHARED_PAGES];
 const GATED = !PUBLIC_PAGES.includes(PAGE);
 if (PT_PAGES.includes(PAGE)) state.aud = "pt"; else if (!SHARED_PAGES.includes(PAGE)) state.aud = "pro";
@@ -82,7 +82,7 @@ function renderShell() {
       </form></details></section>
     <p><b>DR ARVEEN</b> — Advanced Reference and Verified Evidence Network for Gynaecological Oncology.</p>
     <p>Educational reference only. It does not replace clinical assessment, an authorised prescription or your institution's protocols. Professional content is for registered healthcare professionals.</p>
-    <p class="footlinks"><a href="about.html">About and disclosures</a><a href="governance.html">How content is checked and approved</a><a href="privacy.html">Privacy notice</a><a href="patients.html">Patient Education Centre</a></p></div>
+    <p class="footlinks"><a href="guide.html">Site guide and help</a><a href="about.html">About and disclosures</a><a href="governance.html">How content is checked and approved</a><a href="privacy.html">Privacy notice</a><a href="patients.html">Patient Education Centre</a></p></div>
     <div class="storage-note" id="storenote" hidden><p>DR ARVEEN keeps your settings, bookmarks, notes and tracker entries in this browser only. <a href="privacy.html">Privacy notice</a></p><button class="btn" type="button" id="storeok">OK</button></div>`;
   if (!store.get("storeok", false)) { $("#storenote").hidden = false; $("#storeok").onclick = () => { store.set("storeok", true); $("#storenote").hidden = true; }; }
   $("#reportf").onsubmit = async e => {
@@ -101,7 +101,7 @@ renderShell();
 const NAV_PRO_GROUPS = [["home", "Home"],
   { label: "Reference", items: [["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
   { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"]] },
-  ["updates", "Updates"], ["pt", "Patient Education"], ["sdm", "Shared decisions"], ["workspace", "My Workspace"],
+  ["updates", "Updates"], ["pt", "Patient Education"], ["sdm", "Shared decisions"], ["workspace", "My Workspace"], ["guide", "Site guide"],
   { label: "More", items: [["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]] }];
 function renderNav() {
   renderAcct();
@@ -1052,6 +1052,7 @@ V.welcome = () => `<section class="hero hero-welcome"><span class="eyebrow">Gyna
     <a class="tile entry" href="professional.html"><span class="eyebrow">For healthcare professionals</span><b>Clinical reference</b><span>Guidelines, recommendations, FIGO staging, protocols, drug monographs, trials, calculators and education. Sign-in required: accounts are approved after we verify your professional registration.</span><span class="btn primary">${state.user ? "Open the clinical reference" : "Sign in"}</span></a>
     <a class="tile entry" href="patients.html"><span class="eyebrow">For patients and caregivers</span><b>Patient Education Centre</b><span>Understand your diagnosis, prepare for treatment and appointments, and track side effects. No account needed.</span><span class="btn">Go to patient information</span></a>
   </div>
+  <p class="banner info"><b>New here or not sure where to go?</b> The <a href="guide.html">Site guide</a> lists every page, what it is for and how to use it.</p>
   <p class="muted"><a href="governance.html">How DR ARVEEN checks and approves its information</a></p>`;
 V.login = () => !sb ? `<h1>Sign in</h1>${notConfigured()}` : state.user ? `<h1>You're signed in</h1><p><a class="btn primary" href="professional.html">Open the clinical reference</a></p>` : `<span class="eyebrow">Healthcare professionals</span><h1>Sign in</h1>${loginForm()}`;
 V.register = () => !sb ? `<h1>Request an account</h1>${notConfigured()}` : `<span class="eyebrow">Healthcare professionals</span><h1>Request an account</h1>
@@ -1161,6 +1162,100 @@ function render() {
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
   bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview();
 }
+/* ---------- site guide: every page, what it is for, how to use it ---------- */
+V.guide = () => {
+  const signedIn = approved(), lock = signedIn ? "" : ` <span class="pill">Sign-in required</span>`;
+  const table = rows => `<div class="tablewrap"><table class="guide-t"><thead><tr><th>Page</th><th>What it is for</th><th>How to use it</th></tr></thead><tbody>${rows.map(([r, name, what, how, pro]) => `<tr><td><a href="${url(r)}"><b>${name}</b></a>${pro ? lock : ""}</td><td>${what}</td><td>${how}</td></tr>`).join("")}</tbody></table></div>`;
+  const steps = (title, list) => `<div class="calc"><h3>${title}</h3><ol>${list.map(s => `<li>${s}</li>`).join("")}</ol></div>`;
+  const S = [["NOT VERIFIED", "Entered by the DR ARVEEN team but not yet checked against its source. Treat with caution."], ["EXTRACTED", "Copied (in our own words) from a guideline we have read, with the original grade; waiting for a clinician to check it."], ["PARTIALLY VERIFIED", "Trial results taken from the published abstract; the full paper still needs checking."], ["PENDING PHARMACIST REVIEW", "A dose with its source shown, not yet checked by a pharmacist. Not for prescribing."], ["PHARMACIST VERIFIED", "A pharmacist has checked the dose. Still confirm against your local protocol."], ["VERIFIED AGAINST SOURCE", "A reviewer has checked it word-for-word against the source document."], ["CLINICALLY REVIEWED", "A clinician has reviewed it for accuracy and relevance."], ["APPROVED", "Signed off by a named reviewer. For patient pages: approved for patient use."], ["CHANGES NEEDED", "A reviewer found a problem; see the reviewer note."], ["DRAFT", "Patient material still being written or reviewed. Printed copies are marked DRAFT."]];
+  return `<span class="eyebrow">Help</span><h1>Site guide</h1>
+  <p class="prose">DR ARVEEN has two parts: a <b>Patient Education Centre</b>, open to everyone, and a <b>clinical reference</b> for approved healthcare professionals. This page lists every page, what it is for and how to use it.</p>
+  <nav class="chips" aria-label="Jump to"><a class="chip" href="#g-patients">Patients and families</a><a class="chip" href="#g-pro">Healthcare professionals</a><a class="chip" href="#g-tasks">How do I…?</a><a class="chip" href="#g-labels">What the labels mean</a>${isEditor() ? `<a class="chip" href="#g-team">Reviewers and admins</a>` : ""}${isAdmin() ? `<a class="chip" href="#g-owner">Site owner</a>` : ""}<a class="chip" href="#g-faq">Questions</a></nav>
+  <div class="grid two" style="margin:1rem 0">
+    <a class="tile entry" href="patients.html"><span class="eyebrow">I am a patient or carer</span><b>Patient Education Centre</b><span>Plain-language information. No account needed.</span><span class="btn primary">Start here</span></a>
+    <a class="tile entry" href="professional.html"><span class="eyebrow">I am a healthcare professional</span><b>Clinical reference</b><span>${signedIn ? "You're signed in and approved." : "Request an account, confirm your email, wait for approval, then sign in."}</span><span class="btn primary">${signedIn ? "Open" : "Sign in or request an account"}</span></a></div>
+
+  <section class="section" id="g-patients"><h2>1. For patients and families</h2>
+  <p class="muted">Open to everyone. Choose <b>For patients and caregivers</b> at the top of any page.</p>
+  ${table([
+    ["pt", "Patient home", "Where to start: your cancer, your treatment journey, common worries.", "Pick your cancer or a stage of your journey (just diagnosed, in treatment, after treatment)."],
+    ["ptcancers", "Your cancer", "A plain guide to each gynaecological cancer.", "Choose your cancer. Each page explains the tests, treatments and support, with a body diagram."],
+    ["leaflets", "Information leaflets", "Printable leaflets about cancers, tests and treatments.", "Open a leaflet and press <b>Print or save as PDF</b>. Some are in Bahasa Malaysia: use the language buttons."],
+    ["articles", "Articles", "Short articles on side effects, fertility, menopause, feelings and life after cancer.", "Browse by topic, or use the search box at the top."],
+    ["sdm", "Prepare for appointments", "Questions to ask your doctor and a worksheet for treatment decisions.", "Tick the questions you want to ask, then print the list and take it with you."],
+    ["tracker", "Side-effect tracker", "A private diary of side effects to show your team.", "Add an entry each day you have symptoms. It stays only on this device; print it for appointments."],
+    ["glossary", "Medical glossary", "Medical words explained simply.", "Type a word in the filter box."],
+    ["workspace", "Saved", "Pages you bookmarked with ☆ Save.", "Click ☆ Save on any page; find it here later. Saved on this device only."]])}
+  </section>
+
+  <section class="section" id="g-pro"><h2>2. For healthcare professionals</h2>
+  <p class="muted">Needs an approved account. The menu has three dropdowns: <b>Reference</b>, <b>Tools</b> and <b>More</b>.</p>
+  <h3>Reference menu</h3>
+  ${table([
+    ["guidelines", "Guidelines", "Every guideline we hold, with version, status and its extracted recommendations.", "Filter by cancer. Open a guideline to read its summary and the table of recommendations with original levels and grades.", 1],
+    ["recs", "Recommendations", "All recommendations in one searchable list.", "Filter by cancer, setting or status; click an ID to see its guideline.", 1],
+    ["diseases", "Diseases", "A 24-section reference for each cancer: pathology, staging, treatment, follow-up, pearls, exam questions.", "Open a cancer; use the section list to jump around.", 1],
+    ["staging", "Staging", "FIGO staging systems (cervix, ovary, endometrium, vulva, vagina, sarcoma, GTN).", "Open a system and use the filter box to find a stage.", 1],
+    ["protocols", "Treatment protocols", "Regimens with doses, schedule and source.", "Check the dose status label first. Doses PENDING PHARMACIST REVIEW are not for prescribing.", 1],
+    ["drugs", "Drug reference", "Monographs: class, side effects, interactions, monitoring, doses by indication.", "Open a drug; doses show their source and review status.", 1],
+    ["trials", "Clinical trials", "Pivotal and ongoing trials with headline results.", "Filter by cancer; open a trial for numbers, PubMed link and limitations.", 1]])}
+  <h3>Tools menu</h3>
+  ${table([
+    ["algorithms", "Clinical pathways", "Six step-by-step pathways: cervical staging work-up, suspected ovarian cancer, suspected endometrial cancer, endometrial risk group, suspected recurrence, biomarker testing.", "Choose a pathway at the top, then answer one question at a time. Each end point shows the recommendations it is based on. It does not choose treatment.", 1],
+    ["calculators", "Calculators", "BSA, BMI, creatinine clearance, eGFR, RMI, carboplatin (Calvert).", "Type the values; the answer appears as you type. Open 'Formula and limitations' before using it.", 1],
+    ["compare", "Evidence and comparisons", "Compare guideline recommendations on one question, plus the Research library of summarised studies.", "Choose a clinical question from the list. Scroll down for the Research library; click a study to open its summary.", 1],
+    ["education", "Education", "FIGO staging quiz, reviews, surgical videos and teaching cases.", "Answer quiz questions to see the explanation. Videos open on the journal website.", 1]])}
+  <h3>Other pages</h3>
+  ${table([
+    ["home", "Clinical reference home", "Search, disease hubs, review progress and key evidence.", "Start with the big search box, or click a disease hub.", 1],
+    ["updates", "Updates", "Guideline changes detected and what they affect.", "Check after logging in to see what is new or under review.", 1],
+    ["sdm", "Shared decisions", "Question prompts to use with patients.", "Print and use in clinic."],
+    ["workspace", "My Workspace", "Your bookmarks and private notes.", "Add notes at the bottom of any record; they stay in this browser."],
+    ["search", "Search", "Search across everything you can see.", "Type in the box at the top of any page."]])}
+  </section>
+
+  <section class="section" id="g-tasks"><h2>3. How do I…?</h2><div class="cols">
+    ${steps("Find what a guideline recommends", ["Reference → <b>Guidelines</b>.", "Filter by cancer and open the guideline.", "Scroll to the recommendations table: each row shows the text, original level and grade, and status."])}
+    ${steps("Check a drug dose", ["Reference → <b>Drug reference</b> → choose the drug.", "Read <b>Dose by indication</b> and its source.", "Check the label: only PHARMACIST VERIFIED doses have been checked, and you must still follow your local protocol."])}
+    ${steps("Stage a cancer", ["Reference → <b>Staging</b> → choose the system.", "Type in the filter box (for example 'IB2').", "Practise with the quiz in Tools → Education."])}
+    ${steps("Work through a patient's work-up", ["Tools → <b>Clinical pathways</b>.", "Choose the pathway at the top.", "Answer each question; at the end, read the linked recommendations."])}
+    ${steps("Give a patient written information", ["Switch to <b>For patients and caregivers</b>.", "Open <b>Information leaflets</b>, choose the leaflet and language.", "Click <b>Print or save as PDF</b>. Leaflets marked DRAFT are not for patients yet."])}
+    ${steps("Report a mistake", ["Scroll to the bottom of the page with the problem.", "Click <b>Report a problem</b>, describe it and send.", "Don't include any patient's details."])}
+  </div></section>
+
+  <section class="section" id="g-labels"><h2>4. What the labels mean</h2>
+  <div class="tablewrap"><table><thead><tr><th>Label</th><th>Meaning</th></tr></thead><tbody>${S.map(([s, m]) => `<tr><td>${statusPill(s)}</td><td>${m}</td></tr>`).join("")}</tbody></table></div></section>
+
+  ${isEditor() ? `<section class="section" id="g-team"><h2>5. For reviewers, editors and admins</h2><p class="muted">These pages are in the <b>More</b> menu and appear only for the right roles.</p>
+  ${table([
+    ["review", "Review queue", "Sign off professional content: recommendations, doses, guidelines, drugs, protocols, trials, staging, pathways, research summaries.", "Choose a section; open an item; check it against the source; pick a decision, add a note and click <b>Save sign-off</b>. Doses can be verified only by a Pharmacist account. (Reviewer or admin role.)"],
+    ["cms", "Edit content", "Edit patient articles, leaflets and cancer pages, and add pictures.", "Choose an item on the left, edit, set the status and save. Approving needs the reviewer or admin role, a reviewer name and a date."],
+    ["admin", "Editorial", "Overview of every record and when it is due for review.", "Use it to plan review sessions."],
+    ["accounts", "Accounts", "Approve or reject account requests, set roles, read reported problems.", "Check the registration number on the MMC, Pharmacy Board or Nursing Board register before approving. (Admin only.)"],
+    ["governance", "Governance", "The written review and approval process.", "Share with reviewers so everyone follows the same steps."]])}
+  <div class="tablewrap"><table><thead><tr><th>Role</th><th>Can do</th></tr></thead><tbody>
+    <tr><td>reader</td><td>Read the clinical reference.</td></tr>
+    <tr><td>editor</td><td>Also edit patient content (not approve).</td></tr>
+    <tr><td>reviewer</td><td>Also approve patient content and use the Review queue. With profession Pharmacist: verify doses.</td></tr>
+    <tr><td>admin</td><td>Everything, including approving accounts and changing roles.</td></tr></tbody></table></div></section>` : ""}
+
+  ${isAdmin() ? `<section class="section" id="g-owner"><h2>6. Site owner: how content gets onto the site</h2>
+  <div class="cols">
+    ${steps("Adding a new guideline or article", ["Save the PDF in <code>Documents\\dr-arveen-content\\sources</code> (private, never online).", "Ask Claude to process it. Claude extracts recommendations with original grades and rebuilds <code>seed.sql</code>.", "In Supabase → SQL Editor → New query, paste all of <code>seed.sql</code> and click <b>Run</b>.", "Review the new items in the <b>Review queue</b>."])}
+    ${steps("When Claude changes how the site looks or works", ["Open PowerShell: <code>cd C:\\Users\\0308\\Documents\\dr-arveen-site</code>", "Run <code>git push</code>.", "Wait about a minute, then press Ctrl+F5 on the site."])}
+    ${steps("Approving content", ["Professional content: More → <b>Review queue</b>.", "Patient content: More → <b>Edit content</b> → set status APPROVED with reviewer name and date.", "Doses: your pharmacist signs in (profession Pharmacist, role reviewer) and uses the Review queue → Doses."])}
+  </div>
+  <p class="banner info">Rule of thumb: <b>content</b> changes (guidelines, doses, trials, pathways, research) need <b>seed.sql</b> run in Supabase. <b>Look and features</b> changes need <b>git push</b>. Patient leaflets and articles written by Claude need git push; edits you make online in Edit content appear immediately.</p></section>` : ""}
+
+  <section class="section" id="g-faq"><h2>Questions</h2>
+  <details class="row"><summary><b>Why can't I see the professional pages?</b></summary><p class="prose">You need an account that an administrator has approved. Request one on <a href="register.html">Request an account</a>, confirm your email, then wait for approval. If you're approved, <a href="login.html">sign in</a>.</p></details>
+  <details class="row"><summary><b>Why does so much say NOT VERIFIED?</b></summary><p class="prose">DR ARVEEN never presents unchecked information as approved. Each item keeps its label until a named reviewer signs it off. See <a href="#g-labels">What the labels mean</a> and <a href="governance.html">Governance</a>.</p></details>
+  <details class="row"><summary><b>Something changed but I can't see it.</b></summary><p class="prose">Press <b>Ctrl+F5</b> to reload without the old copy. If it still looks old, the site owner may not have run the latest update yet.</p></details>
+  <details class="row"><summary><b>Where are my bookmarks, notes and tracker entries kept?</b></summary><p class="prose">Only in this browser on this device. They are not sent to DR ARVEEN. Clearing your browser data deletes them.</p></details>
+  <details class="row"><summary><b>Is this medical advice?</b></summary><p class="prose">No. DR ARVEEN is an educational reference. Patients should talk to their own treatment team; professionals must follow their institution's protocols.</p></details>
+  </section>`;
+};
+
 /* ---------- review queue (reviewers and admins; doses by pharmacists) ---------- */
 const DONE = ["VERIFIED AGAINST SOURCE", "CLINICALLY REVIEWED", "APPROVED", "PHARMACIST VERIFIED"];
 const RQ_TABS = [["recommendation", "Recommendations"], ["dose", "Doses"], ["guideline", "Guidelines"], ["drug", "Drug monographs"], ["protocol", "Protocols"], ["trial", "Trials"], ["staging", "Staging"], ["algorithm", "Pathways"], ["literature", "Research library"], ["disease", "Disease references"]];
