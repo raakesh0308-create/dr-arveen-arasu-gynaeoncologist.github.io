@@ -385,3 +385,8 @@ th, td { padding: 12px 14px }
 .photo { margin: 0; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-1); max-width: 760px }
 .photo img { width: 100%; max-height: 420px; object-fit: cover; display: block }
 .photo figcaption { font-size: .84rem; color: var(--muted); padding: 8px 14px }
+/* Doses on drug pages */
+.doses { margin: .4rem 0 0; padding-left: 1.1rem; }
+.doses li { margin-bottom: .45rem; }
+.doses .muted { display: block; font-size: .82rem; }
+

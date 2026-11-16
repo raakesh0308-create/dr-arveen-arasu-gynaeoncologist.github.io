@@ -27,7 +27,7 @@ const MY = {
 };
 const myLabel = k => { const [t, c] = MY[k] || MY["not-verified"]; return `<span class="pill ${c}">${esc(t)}</span>` };
 const statusPill = s => {
-  const c = { "VERIFIED AGAINST SOURCE": "ok", "CLINICALLY REVIEWED": "ok", "APPROVED": "ok", "PARTIALLY VERIFIED": "warn", "NOT VERIFIED": "warn", "DRAFT": "warn", "SUPERSEDED": "bad", "NOT STARTED": "", "DETECTED": "warn", "SEARCH TASK": "teal", "EXTRACTED": "teal" }[s] ?? "";
+  const c = { "VERIFIED AGAINST SOURCE": "ok", "CLINICALLY REVIEWED": "ok", "APPROVED": "ok", "PARTIALLY VERIFIED": "warn", "NOT VERIFIED": "warn", "DRAFT": "warn", "SUPERSEDED": "bad", "NOT STARTED": "", "DETECTED": "warn", "SEARCH TASK": "teal", "EXTRACTED": "teal", "PENDING PHARMACIST REVIEW": "warn" }[s] ?? "";
   return `<span class="pill ${c}">${esc(s)}</span>`;
 };
 const supPill = g => g.superseded === "superseded" ? `<span class="pill bad">Superseded</span>` : g.superseded === "uncertain" ? `<span class="pill warn">Currency uncertain</span>` : `<span class="pill ok">Active</span>`;
@@ -396,7 +396,7 @@ function resultRow(r) {
 }
 
 /* ---------- shared bits ---------- */
-const seedBanner = () => `<p class="banner">Content is awaiting clinical review. Trial results come from published abstracts (<b>PARTIALLY VERIFIED</b>); other records are <b>NOT VERIFIED</b> until a named reviewer checks them. Doses and recommendation grades are not shown until verified.</p>`;
+const seedBanner = () => `<p class="banner">Content is awaiting clinical review. Trial results come from published abstracts (<b>PARTIALLY VERIFIED</b>); other records are <b>NOT VERIFIED</b> until a named reviewer checks them. Doses are shown with their source and are <b>PENDING PHARMACIST REVIEW</b>: check the product information and your local protocol before prescribing.</p>`;
 /* One-line headline result for a trial, taken from its primary endpoint */
 function headline(t) {
   const o = t.outcome; if (!o) return "";
@@ -450,7 +450,7 @@ V.home = () => `
     <div class="section-h"><h2>Review progress</h2><span class="muted">${v.tot} professional records</span></div>
     <div class="vbar" role="img" aria-label="${v.ver} verified, ${v.part} partially verified, ${v.not} not yet verified"><span class="v-ok" style="width:${pct(v.ver)}%"></span><span class="v-part" style="width:${pct(v.part)}%"></span><span class="v-not" style="width:${pct(v.not)}%"></span></div>
     <div class="vlegend"><span><i class="v-ok"></i>Verified ${v.ver}</span><span><i class="v-part"></i>Partially verified ${v.part}</span><span><i class="v-not"></i>Not yet verified ${v.not}</span>${isAdmin() ? `<a href="${url(`admin`)}">Open the review tracker</a>` : ""}</div>
-    <p class="muted" style="font-size:.84rem">Doses and recommendation grades are shown only after verification. Check every record's status label before relying on it.</p></section>`; })()}
+    <p class="muted" style="font-size:.84rem">Doses are pending pharmacist review and recommendation grades are transcribed from the source but await clinical review. Check every record's status label before relying on it.</p></section>`; })()}
   <section class="section"><div class="section-h"><h2>Disease hubs</h2><a href="${url(`diseases`)}">All diseases</a></div>
     <div class="grid">${D.diseases.map(d => { const nt = D.trials.filter(t => t.disease === d.id).length, ng = D.guidelines.filter(g => g.disease === d.id).length, ns = D.staging.filter(s => s.cancer === d.id && !s.superseded).length;
       return `<a class="tile hub" href="${url(`d.${d.id}`)}">${badge(d.id)}<b>${esc(d.name)}</b><span>${esc(d.short)}</span><span class="hubmeta">${[ng && `${ng} guideline${ng > 1 ? "s" : ""}`, ns && `${ns} staging`, nt && `${nt} trial${nt > 1 ? "s" : ""}`, d.reference && "24-section reference"].filter(Boolean).join(" · ") || "Reference in progress"}</span></a>`; }).join("")}</div></section>
@@ -569,7 +569,7 @@ V.d = id => {
     <div><span class="eyebrow">Guidelines</span>${gl.map(g => `<a href="${url(`g.${g.id}`)}">${esc(orgs(g))} ${esc(g.version || "")}</a>`).join("") || `<span class="na">None entered</span>`}</div>
     <div><span class="eyebrow">For patients</span><a href="${url(`ptd.${d.id}`)}">Patient page</a>${D.leaflets.filter(l => l.disease === id && (l.sections || []).length).map(l => `<a href="${url(`l.${l.id}`)}">${esc(l.title)}</a>`).join("")}</div>
   </section>
-  ${d.reference ? `<p class="banner"><span class="pill teal">ARVEEN educational summary</span> ${statusPill("NOT VERIFIED")} Written for education and awaiting clinical review against the cited guidelines. No doses are given. Do not use for prescribing.</p>` : ""}
+  ${d.reference ? `<p class="banner"><span class="pill teal">ARVEEN educational summary</span> ${statusPill("NOT VERIFIED")} Written for education and awaiting clinical review against the cited guidelines. For doses see the drug and protocol pages. Do not use for prescribing.</p>` : ""}
   ${mode !== "quick" ? `<p class="banner info">Comprehensive reference uses the standard 24-section template.</p>` : ""}
   <div class="list">${secs.map((s, i) => `<div class="row"><span class="row-t">${mode !== "quick" ? `<span class="mono muted">${String(DTEMPLATE.indexOf(s) + 1).padStart(2, "0")}</span>` : ""} ${s}</span>
     ${body(s)}</div>`).join("")}</div>
@@ -597,7 +597,7 @@ V.s = id => {
 };
 
 V.protocols = () => `<span class="eyebrow">Treatment protocol library</span><h1>Treatment protocols</h1>
-  <p class="banner bad"><b>No doses are shown.</b> Doses and schedules are published only after verification against an authoritative protocol source and the required clinical approval. A trial publication alone is not treated as a prescribing protocol.</p>
+  <p class="banner bad"><b>Doses are pending pharmacist review.</b> Each dose shows its source (guideline, product information or trial). Check it against the Malaysian product information and your institutional protocol before prescribing.</p>
   <div class="list">${D.protocols.map(p => `<a class="row" href="${url(`p.${p.id}`)}"><span class="row-t">${esc(p.name)} ${statusPill(p.status)} ${p.labels.map(l => `<span class="pill bad">${esc(l)}</span>`).join("")}</span>
     <span class="row-m"><span>${dname(p.disease)}</span><span>${esc(p.line)}</span><span>${esc(p.modality)}</span><span>Biomarker: ${esc(p.biomarker)}</span></span></a>`).join("")}</div>`;
 V.p = id => {
@@ -606,9 +606,9 @@ V.p = id => {
   const W = `<span class="withheld">withheld · not verified</span>`;
   const fields = [["Regimen", esc(p.name)], ["Clinical indication", esc(p.indication)], ["Disease and histology", `${dname(p.disease)} · ${esc(p.histology)}`], ["Stage", na(p.stage)], ["Treatment intent", na(p.intent)], ["Treatment line", na(p.line)], ["Eligibility", W], ["Biomarker requirements", na(p.biomarker)], ["Cycle length", na(p.cycle)], ["Treatment duration", na(p.duration)], ["Premedication", W], ["Supportive medications", W], ["Baseline investigations", W], ["Monitoring", W], ["Renal adjustments", W], ["Hepatic adjustments", W], ["Haematological criteria", W], ["Dose modifications", W], ["Contraindications", W], ["Important interactions", W], ["Toxicity management", W], ["Interruption / restart criteria", W], ["Source protocol", esc(p.sourceType)], ["Version", '<span class="na">Not recorded</span>'], ["Verification status", statusPill(p.status)], ["Malaysian applicability", myLabel(p.malaysia)]];
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Treatment protocol · ${esc(p.modality)}</span><h1>${esc(p.name)}</h1><div class="row-m">${statusPill(p.status)} ${myLabel(p.malaysia)} ${p.labels.map(l => `<span class="pill bad">${esc(l)}</span>`).join("")}</div><div class="actions">${bmBtn("Protocol", p.id, p.name)}</div></div>
-  <p class="banner bad">Not for prescribing. This record has no verified source protocol. Dose fields stay empty until a reviewer enters them from an authoritative source and clinical approval is recorded.</p>
+  ${p.doseStatus ? `<p class="banner bad">${statusPill(p.doseStatus)} Not for prescribing until a pharmacist has checked these doses. Dose source: ${esc(p.doseSource)}.</p>` : `<p class="banner bad">Not for prescribing. This record has no verified source protocol. Dose fields stay empty until a reviewer enters them from an authoritative source and clinical approval is recorded.</p>`}
   <section class="section"><h2>Regimen components</h2><div class="tablewrap"><table><thead><tr><th>Drug</th><th>Calculation basis</th><th>Dose</th><th>Route</th><th>Schedule</th></tr></thead><tbody>
-    ${p.components.map(c => `<tr><td><a href="${url(`dr.${c.drug}`)}">${esc(byId(D.drugs, c.drug)?.name || c.drug)}</a></td><td>${esc(c.basis)}</td><td>${W}</td><td>${esc(c.route)}</td><td>${c.schedule ? esc(c.schedule) : W}</td></tr>`).join("")}</tbody></table></div></section>
+    ${p.components.map(c => `<tr><td><a href="${url(`dr.${c.drug}`)}">${esc(byId(D.drugs, c.drug)?.name || c.drug)}</a></td><td>${esc(c.basis)}</td><td>${c.dose ? `<b>${esc(c.dose)}</b>` : W}</td><td>${esc(c.route)}</td><td>${c.schedule ? esc(c.schedule) : W}</td></tr>`).join("")}</tbody></table></div></section>
   <section class="section"><h2>Protocol fields</h2><div class="kv">${fields.map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div></section>
   ${noteBox(p.id)}</article>`;
 };
@@ -622,7 +622,7 @@ V.dr = id => {
   const W = `<span class="withheld">not entered · verify against product information</span>`;
   const pr = D.protocols.filter(p => p.components.some(c => c.drug === id));
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Drug monograph</span><h1>${esc(d.name)}</h1><div class="row-m"><span class="pill teal">ARVEEN educational summary</span> ${statusPill("NOT VERIFIED")} ${myLabel("regulatory")}</div><div class="actions">${bmBtn("Drug", d.id, d.name)}</div></div>
-  <div class="kv">${[["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", `<span class="withheld">withheld · doses only from verified product information or protocol</span>`], ["Administration", d.admin ? esc(d.admin) : W], ["Contraindications", d.contra ? esc(d.contra) : W], ["Drug interactions", d.interactions ? esc(d.interactions) : W], ["Hepatic considerations", d.hepatic ? esc(d.hepatic) : W], ["Pregnancy and breastfeeding", d.pregnancy ? esc(d.pregnancy) : W], ["Fertility considerations", d.fertility ? esc(d.fertility) : W], ["Monitoring", d.monitoring ? esc(d.monitoring) : W], ["Dose modifications", `<span class="withheld">withheld · per verified protocol only</span>`], ["Patient counselling", d.counselling ? esc(d.counselling) : W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
+  <div class="kv">${[["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", d.doses ? `${statusPill(d.doseStatus)}<ul class="doses">${d.doses.map(x => `<li><b>${esc(x.indication)}:</b> ${esc(x.dose)} <span class="muted">Source: ${esc(x.source)}</span></li>`).join("")}</ul>` : `<span class="withheld">not entered</span>`], ["Administration", d.admin ? esc(d.admin) : W], ["Contraindications", d.contra ? esc(d.contra) : W], ["Drug interactions", d.interactions ? esc(d.interactions) : W], ["Hepatic considerations", d.hepatic ? esc(d.hepatic) : W], ["Pregnancy and breastfeeding", d.pregnancy ? esc(d.pregnancy) : W], ["Fertility considerations", d.fertility ? esc(d.fertility) : W], ["Monitoring", d.monitoring ? esc(d.monitoring) : W], ["Dose modifications", `<span class="withheld">withheld · per verified protocol only</span>`], ["Patient counselling", d.counselling ? esc(d.counselling) : W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
   ${noteBox(d.id)}</article>`;
 };
 
