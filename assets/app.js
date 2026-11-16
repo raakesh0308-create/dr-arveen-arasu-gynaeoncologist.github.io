@@ -153,6 +153,16 @@ ICON.recs = ICON.guidelines; ICON.diseases = ICON.articles;
 const ic = name => ICON[name] ? `<span class="ticon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[name]}</svg></span>` : "";
 const HUE = { cervical: "#0e7c86", ovarian: "#5f4dbf", tubal: "#7046a8", peritoneal: "#4b5bb0", endometrial: "#b04a26", vulvar: "#a3316f", vaginal: "#1f6aa8", sarcoma: "#2f7a3e", gtn: "#875800", rare: "#4a5868" };
 const ABBR = { cervical: "CX", ovarian: "OV", tubal: "FT", peritoneal: "PP", endometrial: "EN", vulvar: "VU", vaginal: "VA", sarcoma: "US", gtn: "GTN", rare: "RG" };
+/* One order everywhere: the disease list order (cervical, ovarian, tubal, peritoneal, endometrial, vulvar, vaginal, sarcoma, GTN, rare), general items last. */
+const DIS_ORDER = id => { const i = D.diseases.findIndex(d => d.id === id); return i < 0 ? 999 : i; };
+const disLabel = (k, pt) => k === "all" || !k ? (pt ? "For all gynaecological cancers" : "All gynaecological cancers / general") : dname(k);
+function byDisease(items, dis, renderGroup, pt) {
+  const keyOf = x => { const v = [].concat(dis(x)).filter(Boolean); return v.length ? v : ["all"]; };
+  const keys = [...new Set(items.flatMap(keyOf))].sort((a, b) => DIS_ORDER(a) - DIS_ORDER(b));
+  if (!keys.length) return "";
+  const jump = keys.length > 1 ? `<nav class="djump" aria-label="Jump to cancer type">${keys.map(k => `<a href="#dg-${k}">${badge(k)}<span>${esc(disLabel(k, pt))}</span></a>`).join("")}</nav>` : "";
+  return jump + keys.map(k => { const its = items.filter(x => keyOf(x).includes(k)); return `<section class="dgroup" id="dg-${k}"><h2 class="dgroup-h">${badge(k)}<span>${esc(disLabel(k, pt))}</span><span class="dcount">${its.length}</span></h2>${renderGroup(its)}</section>`; }).join("");
+}
 const badge = (id, big) => `<span class="dbadge${big ? " big" : ""}" style="--hue:${HUE[id] || "#4a5868"}" aria-hidden="true">${ABBR[id] || "•"}</span>`;
 /* Simplified front view of the female reproductive organs; the organ where the cancer starts is highlighted */
 function anatomySvg(id) {
@@ -503,7 +513,7 @@ V.home = () => `
       return `<a class="tile hub" href="${url(`d.${d.id}`)}">${badge(d.id)}<b>${esc(d.name)}</b><span>${esc(d.short)}</span><span class="hubmeta">${[ng && `${ng} guideline${ng > 1 ? "s" : ""}`, ns && `${ns} staging`, nt && `${nt} trial${nt > 1 ? "s" : ""}`, d.reference && "24-section reference"].filter(Boolean).join(" · ") || "Reference in progress"}</span></a>`; }).join("")}</div></section>
   <section class="section band"><div class="section-h"><h2>Key evidence</h2><a href="${url(`trials`)}">All trials</a></div>
     <div class="tablewrap"><table><thead><tr><th>Trial</th><th>Question</th><th>Headline result</th><th>Status</th></tr></thead><tbody>
-    ${D.trials.filter(t => t.outcome).map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)}</div></td><td style="font-size:.86rem">${esc(t.intervention)} vs ${esc(t.comparator)}</td><td style="font-size:.86rem">${esc(headline(t))}</td><td>${statusPill(t.outcome.status)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Trial results load from the database. If this is empty, the latest seed.sql has not been run.</td></tr>`}
+    ${D.trials.filter(t => t.outcome).sort((a, b) => DIS_ORDER(a.disease) - DIS_ORDER(b.disease)).map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)}</div></td><td style="font-size:.86rem">${esc(t.intervention)} vs ${esc(t.comparator)}</td><td style="font-size:.86rem">${esc(headline(t))}</td><td>${statusPill(t.outcome.status)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Trial results load from the database. If this is empty, the latest seed.sql has not been run.</td></tr>`}
     </tbody></table></div></section>
   <section class="section"><h2>Clinical tools</h2><div class="grid">
     <a class="tile" href="${url(`calculators`)}">${ic("calculators")}<b>Calculators</b><span>BSA, BMI, Cockcroft–Gault, CKD-EPI 2021, RMI, Calvert dose support.</span></a>
@@ -541,9 +551,9 @@ V.guidelines = () => {
     <button class="btn" id="clearf" type="button">Clear filters</button>
   </aside>
   <div class="section"><p class="muted">${list.length} of ${D.guidelines.length} records. Original grading frameworks are kept as published; ARVEEN does not map them onto a common scale.</p>
-  <div class="list">${list.map(g => `<a class="row" href="${url(`g.${g.id}`)}"><span class="row-t">${esc(g.title)}</span>
-    <span class="row-m"><span>${esc(orgs(g))}</span><span>${dname(g.disease)}</span><span>${g.pubDate ? esc(g.pubDate) : "Date not recorded"}</span><span class="mono">${esc(g.id)}</span></span>
-    <span class="row-m">${supPill(g)} ${listPill(g.status)} ${myLabel(g.malaysia)}</span></a>`).join("") || `<div class="row muted">No guidelines match these filters.</div>`}</div></div></div>`;
+  ${byDisease(list, g => g.disease, its => `<div class="list">${its.map(g => `<a class="row" href="${url(`g.${g.id}`)}"><span class="row-t">${esc(g.title)}</span>
+    <span class="row-m"><span>${esc(orgs(g))}</span><span>${g.pubDate ? esc(g.pubDate) : "Date not recorded"}</span><span>${D.recommendations.filter(r => r.guideline === g.id).length} recommendations</span><span class="mono">${esc(g.id)}</span></span>
+    <span class="row-m">${supPill(g)} ${listPill(g.status)} ${myLabel(g.malaysia)}</span></a>`).join("")}</div>`) || `<div class="row muted">No guidelines match these filters.</div>`}</div></div>`;
 };
 function bindFilters() {
   app.querySelectorAll("[data-f]").forEach(s => s.onchange = () => { state.filters[s.dataset.f] = s.value; render(); });
@@ -552,7 +562,7 @@ function bindFilters() {
 
 V.recs = () => `<div class="section-h"><div><span class="eyebrow">Recommendation-level database</span><h1>Recommendations</h1></div><div class="toc"><a class="btn" href="${url(`guidelines`)}">Guidelines</a><a class="btn" aria-pressed="true" href="${url(`recs`)}">Recommendations</a></div></div>
   ${seedBanner()}<p class="banner info">Recommendation text below is an <b>ARVEEN paraphrase</b>, not a quotation. Grades and strengths are blank until transcribed from the source in its original framework.</p>
-  ${recTable(D.recommendations)}`;
+  ${byDisease(D.recommendations, r => r.disease, its => [...new Set(its.map(r => r.guideline))].map(gid => { const g = byId(D.guidelines, gid); return `<details class="recgrp"><summary><b>${esc(g ? `${orgs(g)} ${g.version || ""}` : gid)}</b> <span class="muted">${esc(g?.title || "")} · ${its.filter(r => r.guideline === gid).length} recommendations</span></summary>${recTable(its.filter(r => r.guideline === gid))}</details>`; }).join(""))}`;
 function recTable(recs) {
   return `<div class="tablewrap"><table><thead><tr><th>ID</th><th>Recommendation</th><th>Context</th><th>Original grade / strength</th><th>Malaysia</th><th>Links</th></tr></thead><tbody>
   ${recs.map(r => { const g = byId(D.guidelines, r.guideline); return `<tr><td class="mono">${r.id}</td><td>${esc(r.text)}<div class="muted" style="font-size:.78rem">${esc(r.textType)} · ${listPill(r.status)}</div></td>
@@ -626,7 +636,7 @@ V.d = id => {
 
 V.staging = () => `<span class="eyebrow">Staging module</span><h1>Staging systems</h1>
   <p class="banner info">Definitions are <b>ARVEEN educational paraphrases</b> of the FIGO criteria, not the published text, and are NOT VERIFIED. Formal staging is kept separate from treatment recommendations. Do not mix criteria between versions.</p>
-  <div class="list">${D.staging.map(s => `<a class="row" href="${url(`s.${s.id}`)}"><span class="row-t">${esc(s.name)} <span class="mono">${esc(s.authority)} ${esc(s.version)}</span> ${s.superseded ? '<span class="pill bad">Superseded</span>' : ""} ${listPill(s.status || "NOT VERIFIED")}</span><span class="row-m">${dname(s.cancer)} · ${s.stages.length ? s.stages.length + " main stages" : "criteria not entered"}</span></a>`).join("")}</div>
+  ${byDisease(D.staging, s => s.cancer, its => `<div class="list">${its.map(s => `<a class="row" href="${url(`s.${s.id}`)}"><span class="row-t">${esc(s.name)} <span class="mono">${esc(s.authority)} ${esc(s.version)}</span> ${s.superseded ? '<span class="pill bad">Superseded</span>' : ""} ${listPill(s.status || "NOT VERIFIED")}</span><span class="row-m">${s.stages.length ? s.stages.length + " main stages" : "criteria not entered"}</span></a>`).join("")}</div>`)}
   <p><a class="btn" href="${url(`education`)}">Practise with staging exercises →</a></p>`;
 function stageTree(list) {
   return list.map(x => x.sub ? `<details class="stage" open><summary><span class="code">${esc(x.s)}</span><span>${esc(x.d)}</span></summary><div class="kids">${stageTree(x.sub)}</div></details>`
@@ -646,8 +656,8 @@ V.s = id => {
 
 V.protocols = () => `<span class="eyebrow">Treatment protocol library</span><h1>Treatment protocols</h1>
   <p class="banner bad"><b>Doses are pending pharmacist review.</b> Each dose shows its source (guideline, product information or trial). Check it against the Malaysian product information and your institutional protocol before prescribing.</p>
-  <div class="list">${D.protocols.map(p => `<a class="row" href="${url(`p.${p.id}`)}"><span class="row-t">${esc(p.name)} ${listPill(p.status)} ${p.labels.map(l => `<span class="pill bad">${esc(l)}</span>`).join("")}</span>
-    <span class="row-m"><span>${dname(p.disease)}</span><span>${esc(p.line)}</span><span>${esc(p.modality)}</span><span>Biomarker: ${esc(p.biomarker)}</span></span></a>`).join("")}</div>`;
+  ${byDisease(D.protocols, p => p.disease, its => `<div class="list">${its.map(p => `<a class="row" href="${url(`p.${p.id}`)}"><span class="row-t">${esc(p.name)} ${listPill(p.status)} ${p.labels.map(l => `<span class="pill bad">${esc(l)}</span>`).join("")}</span>
+    <span class="row-m"><span>${esc(p.line)}</span><span>${esc(p.modality)}</span><span>Biomarker: ${esc(p.biomarker)}</span></span></a>`).join("")}</div>`)}`;
 V.p = id => {
   const p = byId(D.protocols, id); if (!p) return notFound();
   recent("Protocol", p.id, p.name);
@@ -664,7 +674,8 @@ V.p = id => {
 
 V.drugs = () => `<span class="eyebrow">Oncology drug reference</span><h1>Drug monographs</h1>
   <p class="banner info">Monographs are <b>ARVEEN educational summaries</b>, not official product information. Malaysian (NPRA) registration is not verified for any drug.</p>${reviewStrip(false)}
-  <div class="list">${D.drugs.map(d => `<a class="row" href="${url(`dr.${d.id}`)}"><span class="row-t">${esc(d.name)} ${listPill(d.status || "NOT VERIFIED")}${d.doseStatus ? " " + listPill(d.doseStatus) : ""}</span><span class="row-m"><span>${esc(d.cls)}</span><span>${d.cancers.map(dname).join(", ")}</span></span></a>`).join("")}</div>`;
+  <p class="muted">A drug used for several cancers appears under each of them.</p>
+  ${byDisease(D.drugs, d => d.cancers, its => `<div class="list cols-list">${[...its].sort((a, b) => a.name.localeCompare(b.name)).map(d => `<a class="row" href="${url(`dr.${d.id}`)}"><span class="row-t">${esc(d.name)} ${listPill(d.status || "NOT VERIFIED")}${d.doseStatus ? " " + listPill(d.doseStatus) : ""}</span><span class="row-m"><span>${esc(d.cls)}</span></span></a>`).join("")}</div>`)}`;
 /* Drug page: dose and key safety facts first, the rest of the monograph folded underneath */
 const GLANCE = ["Dose by indication", "Major adverse effects", "Contraindications", "Monitoring", "Renal considerations", "Hepatic considerations"];
 const drugLayout = rows => {
@@ -684,14 +695,11 @@ V.dr = id => {
 };
 
 V.trials = () => {
-  const f = state.filters.trialDisease || "";
-  const list = D.trials.filter(t => !f || t.disease === f);
   return `<span class="eyebrow">Clinical trials and evidence</span><h1>Clinical trials</h1>
   <p class="banner">Outcomes are entered from the published abstracts on PubMed, with the PubMed ID on each trial page. They are <b>PARTIALLY VERIFIED</b> until a clinical reviewer checks them against the full paper. Subgroup and interim results are labelled as such.</p>
-  <div class="chips"><button class="chip" data-td="" aria-pressed="${!f}">All</button>${[...new Set(D.trials.map(t => t.disease))].map(d => `<button class="chip" data-td="${d}" aria-pressed="${f === d}">${dname(d)}</button>`).join("")}</div>
-  <div class="tablewrap"><table><thead><tr><th>Trial</th><th>Intervention vs comparator</th><th>Primary endpoint</th><th>Headline result</th><th>Source</th></tr></thead><tbody>
-  ${list.map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)} · Phase ${esc(t.phase)}</div><div class="mono muted" style="font-size:.74rem">${esc(t.reg)}</div></td><td>${esc(t.intervention)}<div class="muted">vs ${esc(t.comparator)}</div></td><td>${esc(t.primary)}</td><td style="font-size:.86rem">${t.outcome ? esc(headline(t)) : '<span class="na">Not entered</span>'}</td><td style="font-size:.82rem">${esc(t.pub)}<div>${listPill(t.outcome?.status || "NOT VERIFIED")}</div></td></tr>`).join("")}
-  </tbody></table></div>`;
+  ${byDisease(D.trials, t => t.disease, its => `<div class="tablewrap"><table><thead><tr><th>Trial</th><th>Intervention vs comparator</th><th>Primary endpoint</th><th>Headline result</th><th>Source</th></tr></thead><tbody>
+  ${its.map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">Phase ${esc(t.phase)}${t.outcome ? "" : " · ongoing / results not entered"}</div><div class="mono muted" style="font-size:.74rem">${esc(t.reg)}</div></td><td>${esc(t.intervention)}<div class="muted">vs ${esc(t.comparator)}</div></td><td>${esc(t.primary)}</td><td style="font-size:.86rem">${t.outcome ? esc(headline(t)) : '<span class="na">Not entered</span>'}</td><td style="font-size:.82rem">${esc(t.pub)}<div>${listPill(t.outcome?.status || "NOT VERIFIED")}</div></td></tr>`).join("")}
+  </tbody></table></div>`)}`;
 };
 V.t = id => {
   const t = byId(D.trials, id); if (!t) return notFound();
@@ -719,7 +727,7 @@ const refLink = id => {
 V.algorithms = () => {
   const a = byId(D.algorithms, algoId) || D.algorithms[0];
   if (!algoPath.length || !a.nodes[algoPath[0]]) algoPath = ["start"];
-  const picker = D.algorithms.length > 1 ? `<div class="chips" role="group" aria-label="Choose a pathway">${D.algorithms.map(x => `<button class="chip" data-algo="${esc(x.id)}" aria-pressed="${x.id === a.id}">${esc(x.title.split(":")[0])}</button>`).join("")}</div>` : "";
+  const picker = D.algorithms.length > 1 ? `<div class="chips" role="group" aria-label="Choose a pathway">${[...D.algorithms].sort((p, q) => DIS_ORDER(p.disease) - DIS_ORDER(q.disease)).map(x => `<button class="chip" data-algo="${esc(x.id)}" aria-pressed="${x.id === a.id}">${esc(x.title.split(":")[0])}</button>`).join("")}</div>` : "";
   const steps = algoPath.map((k, i) => {
     const n = a.nodes[k]; const last = i === algoPath.length - 1;
     if (n.end) return `<div class="step end ${n.kind}"><span class="eyebrow">${n.kind === "missing" ? "Missing information" : n.kind === "escalate" ? "Referral / escalation" : n.kind === "action" ? "Required investigation" : "Outcome"}</span><p>${esc(n.end)}</p>${n.refs?.length ? `<p class="muted" style="font-size:.84rem">Based on: ${n.refs.map(refLink).join(" · ")}</p>` : ""}</div>`;
@@ -798,9 +806,9 @@ const litSection = (place, title, intro) => {
   if (!items.length) return "";
   const dn = d => d === "all" ? "All gynaecological cancers" : dname(d);
   const link = id => id.startsWith("T-") ? `<a href="${url(`t.${id}`)}">${esc(byId(D.trials, id)?.name || id)}</a>` : id.startsWith("G-") ? `<a href="${url(`g.${id}`)}">${esc(id)}</a>` : esc(id);
-  const groups = [...new Set(items.map(x => x.disease))];
+  const groups = [...new Set(items.map(x => x.disease))].sort((a, b) => DIS_ORDER(a) - DIS_ORDER(b));
   return `<section class="section"><h2>${esc(title)}</h2><p class="muted">${esc(intro)}</p>
-    ${groups.map(g => `<h3>${esc(dn(g))}</h3><div class="list">${items.filter(x => x.disease === g).map(x => `<details class="row lit">
+    ${groups.map(g => `<h3 class="dgroup-h small">${badge(g)}<span>${esc(dn(g))}</span></h3><div class="list">${items.filter(x => x.disease === g).map(x => `<details class="row lit">
       <summary><span class="row-t">${esc(x.title)} ${listPill(x.status)}</span><span class="row-m"><span>${esc(x.type)}</span><span>${esc(x.topic)}</span><span>${esc(x.authors)} ${esc(x.citation)}</span></span></summary>
       <p class="prose">${esc(x.summary)}</p><ul>${x.findings.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
       <p class="muted"><b>Caveat:</b> ${esc(x.caveat)}</p>
@@ -1004,7 +1012,7 @@ V.ptd = id => {
 };
 V.leaflets = () => `<div class="patient detail"><span class="eyebrow">Patient information leaflets</span><h1>Information leaflets</h1>${transBanner()}
   <p class="prose muted">Every leaflet follows the same structure, so you always know where to find what to expect, risks, and when to get help.</p>${reviewStrip(true)}
-  <div class="list">${D.leaflets.map(l => `<a class="row" href="${url(`l.${l.id}`)}"><span class="row-t">${esc(l.title)} ${listPill(l.approval)}</span><span class="row-m"><span>${esc(l.audience)}</span><span class="mono">${esc(l.id)} · ${esc(l.version)}</span></span></a>`).join("")}</div></div>`;
+  ${byDisease(D.leaflets, l => l.disease, its => `<div class="list">${its.map(l => `<a class="row" href="${url(`l.${l.id}`)}"><span class="row-t">${esc(l.title)} ${listPill(l.approval)}</span><span class="row-m"><span>${esc(l.audience)}</span><span class="mono">${esc(l.id)} · ${esc(l.version)}</span></span></a>`).join("")}</div>`, true)}</div>`;
 V.l = id => {
   const l = byId(D.leaflets, id); if (!l) return notFound();
   recent("Leaflet", l.id, l.title);
@@ -1366,7 +1374,11 @@ V.review = () => {
       <label class="wide">Note (what you checked, or what must change)<textarea name="note" rows="2" maxlength="2000">${esc(x.review?.note || "")}</textarea></label>
       <div class="wide"><button class="btn primary" type="submit" value="next">Save and open next</button> <button class="btn" type="submit" value="stay">Save</button>${x.review ? ` <button class="btn" type="button" data-rwithdraw="${esc(x.key)}">Withdraw sign-off</button>` : ""} <span class="rq-msg" role="status"></span></div>
       ${x.kind === "dose" && !isPharmacist() ? `<p class="muted wide">Only an account registered as a Pharmacist can mark doses verified. You can record CHANGES NEEDED.</p>` : ""}</form>`;
-  const groups = [...new Set(items.map(x => x.group))];
+  const itemDis = x => { const f = id => [D.recommendations, D.guidelines, D.protocols, D.trials, D.algorithms, D.literature || []].map(c => byId(c, id)).find(Boolean); const r = f(x.id), dr = byId(D.drugs, x.id), st = byId(D.staging, x.id);
+    return x.kind === "disease" ? x.id : dr ? dr.cancers[0] : st ? st.cancer : r?.disease || "all"; };
+  const gOrder = g => Math.min(...items.filter(x => x.group === g).map(x => DIS_ORDER(itemDis(x))));
+  const groups = [...new Set(items.map(x => x.group))].sort((a, b) => gOrder(a) - gOrder(b));
+  const gBadge = g => badge(itemDis(items.find(x => x.group === g)));
   const prog = g => { const inG = all.filter(x => x.kind === tab && x.group === g), d = inG.filter(x => !pending(x)).length; return `<div class="rq-prog" title="${d} of ${inG.length} signed off"><span style="width:${inG.length ? (100 * d / inG.length).toFixed(1) : 0}%"></span></div><span class="muted rq-count">${d} / ${inG.length} signed off</span>`; };
   return `<span class="eyebrow">Governance</span><h1>Review queue</h1>
   <p class="prose muted">Check each item against its source, then record your decision. Sign-offs are saved with your name and date, logged, and shown on the site at once. Doses are verified by pharmacists; other items by reviewers.</p>
@@ -1374,7 +1386,7 @@ V.review = () => {
   <div class="rq-tools"><input type="search" id="rq-search" placeholder="Filter this section (ID, words, drug, guideline…)" aria-label="Filter items" value="${esc(state.filters.rqq || "")}">
     <label class="check"><input type="checkbox" id="rq-all" ${showAll ? "checked" : ""}> Show items already signed off</label>
     <span class="muted rq-keys">Keys: <kbd>j</kbd> next · <kbd>k</kbd> previous · <kbd>x</kbd> select</span></div>
-  ${items.length ? groups.map(g => `<section class="section rq-group"><div class="section-h"><h2>${esc(tab === "recommendation" ? `${g} — ${byId(D.guidelines, g)?.title || ""}` : g)}</h2><label class="check"><input type="checkbox" data-rselgroup> Select all</label></div>${prog(g)}
+  ${items.length ? groups.map(g => `<section class="section rq-group"><div class="section-h"><h2 class="dgroup-h small">${gBadge(g)}${esc(tab === "recommendation" ? `${g} — ${byId(D.guidelines, g)?.title || ""}` : g)}</h2><label class="check"><input type="checkbox" data-rselgroup> Select all</label></div>${prog(g)}
     <div class="list">${items.filter(x => x.group === g).map(x => `<details class="row rq" data-key="${esc(x.key)}" data-search="${esc((x.title + " " + x.text + " " + x.meta + " " + x.group).toLowerCase())}">
     <summary><input type="checkbox" class="rq-sel" data-rsel="${esc(x.key)}" aria-label="Select ${esc(x.title)}"><span class="row-t">${esc(x.title)} ${statusPill(x.status || "NOT VERIFIED")}${x.review ? ` <span class="muted">${esc(x.review.reviewer)}, ${esc(x.review.reviewed_on)}</span>` : ""}</span><span class="row-m"><span>${esc(x.meta || "")}</span></span></summary>
     <p class="prose rq-text">${esc(x.text || "").replace(/\n/g, "<br>")}</p><p><a href="${url(x.route)}" target="_blank" rel="noopener">Open on the site ↗</a></p>${form(x)}</details>`).join("")}</div></section>`).join("")
