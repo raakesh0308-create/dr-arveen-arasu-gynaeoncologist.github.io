@@ -390,3 +390,11 @@ th, td { padding: 12px 14px }
 .doses li { margin-bottom: .45rem; }
 .doses .muted { display: block; font-size: .82rem; }
 
+
+/* Research library */
+details.lit summary { cursor: pointer; display: grid; gap: 4px; list-style: none; }
+details.lit summary::-webkit-details-marker { display: none; }
+details.lit summary .row-t::after { content: ' +'; color: var(--muted, inherit); }
+details.lit[open] summary .row-t::after { content: ' -'; }
+details.lit ul { margin: .3rem 0 .5rem 1.1rem; }
+

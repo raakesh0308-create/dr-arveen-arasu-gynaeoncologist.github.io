@@ -718,7 +718,24 @@ V.compare = () => {
   <label style="display:grid;gap:4px;max-width:480px;font-weight:600;font-size:.84rem" for="cmpq">Clinical question<select id="cmpq">${qs.map(q => `<option ${q === sel ? "selected" : ""}>${esc(q)}</option>`).join("")}</select></label>
   <div class="tablewrap"><table><thead><tr><th>Clinical question</th>${recs.map(r => `<th>${esc(orgs(byId(D.guidelines, r.guideline)))} ${esc(byId(D.guidelines, r.guideline).version || "")}</th>`).join("")}<th>Malaysian guidance</th><th>Interpretation</th></tr></thead>
   <tbody><tr><td>${esc(sel)}</td>${recs.map(r => `<td>${esc(r.text)}<div class="muted" style="font-size:.78rem">Grade: ${esc(r.grade)} · ${esc(r.textType)}</div></td>`).join("")}<td><span class="na">No Malaysian guidance recorded</span></td><td><span class="na">Not written. Requires a reviewer once a second source is extracted for this question.</span></td></tr></tbody></table></div>
-  <p class="muted" style="font-size:.84rem">Only one guideline has been extracted per question in the seed data, so no differences can be shown yet.</p>`;
+  <p class="muted" style="font-size:.84rem">Where only one guideline has been extracted for a question, no differences can be shown yet.</p>
+  ${litSection("evidence", "Research library", "Recent studies relevant to practice, summarised from the articles. Each summary is NOT VERIFIED until a reviewer checks it against the full paper; read the original before applying any finding.")}`;
+};
+
+// Research library (journal articles summarised by ARVEEN), shown on the Evidence and Education pages.
+const litSection = (place, title, intro) => {
+  const items = (D.literature || []).filter(x => x.place === place);
+  if (!items.length) return "";
+  const dn = d => d === "all" ? "All gynaecological cancers" : dname(d);
+  const link = id => id.startsWith("T-") ? `<a href="${url(`t.${id}`)}">${esc(byId(D.trials, id)?.name || id)}</a>` : id.startsWith("G-") ? `<a href="${url(`g.${id}`)}">${esc(id)}</a>` : esc(id);
+  const groups = [...new Set(items.map(x => x.disease))];
+  return `<section class="section"><h2>${esc(title)}</h2><p class="muted">${esc(intro)}</p>
+    ${groups.map(g => `<h3>${esc(dn(g))}</h3><div class="list">${items.filter(x => x.disease === g).map(x => `<details class="row lit">
+      <summary><span class="row-t">${esc(x.title)} ${statusPill(x.status)}</span><span class="row-m"><span>${esc(x.type)}</span><span>${esc(x.topic)}</span><span>${esc(x.authors)} ${esc(x.citation)}</span></span></summary>
+      <p class="prose">${esc(x.summary)}</p><ul>${x.findings.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
+      <p class="muted"><b>Caveat:</b> ${esc(x.caveat)}</p>
+      ${x.related.length || x.drugs.length ? `<p class="muted">Related: ${[...x.related.map(link), ...x.drugs.map(d => `<a href="${url(`dr.${d}`)}">${esc(byId(D.drugs, d)?.name || d)}</a>`)].join(", ")}</p>` : ""}
+      <p><a href="https://doi.org/${encodeURIComponent(x.doi).replace(/%2F/g, "/")}" target="_blank" rel="noopener">Read the article (doi ${esc(x.doi)}) ↗</a></p></details>`).join("")}</div>`).join("")}</section>`;
 };
 
 V.updates = () => `<span class="eyebrow">Guideline update intelligence</span><h1>Guideline updates</h1>
@@ -731,7 +748,8 @@ V.updates = () => `<span class="eyebrow">Guideline update intelligence</span><h1
 V.education = () => `<span class="eyebrow">Postgraduate education</span><h1>Staging exercises</h1>
   <p class="banner info">Educational exercises. They are not a validated clinical decision-support tool. Answers follow the ARVEEN paraphrase of each FIGO version, which is NOT VERIFIED.</p>
   <div class="cols quiz">${D.quiz.map(q => { const s = byId(D.staging, q.system); return `<div class="calc" data-quiz="${q.id}"><span class="eyebrow">${esc(s.authority)} ${esc(s.version)} · ${dname(s.cancer)}</span><p><b>${esc(q.q)}</b></p>
-    <div style="display:grid;gap:6px">${q.options.map((o, i) => `<button class="btn opt" data-qi="${i}">${esc(o)}</button>`).join("")}</div><p class="why muted" role="status" hidden>${esc(q.why)} <a href="${url(`s.${s.id}`)}">Reference: ${esc(s.authority)} ${esc(s.version)}</a></p></div>` }).join("")}</div>`;
+    <div style="display:grid;gap:6px">${q.options.map((o, i) => `<button class="btn opt" data-qi="${i}">${esc(o)}</button>`).join("")}</div><p class="why muted" role="status" hidden>${esc(q.why)} <a href="${url(`s.${s.id}`)}">Reference: ${esc(s.authority)} ${esc(s.version)}</a></p></div>` }).join("")}</div>
+  ${litSection("education", "Reviews, surgical videos and case learning", "Reviews, video articles, images and case reports for teaching. Videos play on the journal website.")}`;
 function bindQuiz() {
   app.querySelectorAll("[data-quiz]").forEach(c => c.onclick = e => {
     const b = e.target.closest("[data-qi]"); if (!b) return;
