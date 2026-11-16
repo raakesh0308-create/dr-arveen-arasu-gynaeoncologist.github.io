@@ -30,12 +30,21 @@ const statusPill = s => {
   const c = { "VERIFIED AGAINST SOURCE": "ok", "CLINICALLY REVIEWED": "ok", "APPROVED": "ok", "PARTIALLY VERIFIED": "warn", "NOT VERIFIED": "warn", "DRAFT": "warn", "SUPERSEDED": "bad", "NOT STARTED": "", "DETECTED": "warn", "SEARCH TASK": "teal", "EXTRACTED": "teal", "PENDING PHARMACIST REVIEW": "warn", "PHARMACIST VERIFIED": "ok", "CHANGES NEEDED": "bad" }[s] ?? "";
   return `<span class="pill ${c}">${esc(s)}</span>`;
 };
+/* In lists, only show labels that carry news (signed off, or needing attention); the page banner covers the rest. */
+const QUIET = ["NOT VERIFIED", "EXTRACTED", "PARTIALLY VERIFIED", "DRAFT", "NOT STARTED", "PENDING PHARMACIST REVIEW", "EDITORIAL REVIEW", "CLINICAL REVIEW"];
+const listPill = s => !s || QUIET.includes(s) ? "" : statusPill(s);
+const reviewStrip = (pt) => pt
+  ? `<p class="banner slim">This information is still being reviewed by our clinical team. It does not replace advice from your own doctors. <a href="guide.html#g-labels">What the labels mean</a></p>`
+  : `<p class="banner slim">Everything here is awaiting clinical review unless it carries a green label. Doses are not for prescribing until marked <b>PHARMACIST VERIFIED</b>. <a href="guide.html#g-labels">What the labels mean</a></p>`;
 const supPill = g => g.superseded === "superseded" ? `<span class="pill bad">Superseded</span>` : g.superseded === "uncertain" ? `<span class="pill warn">Currency uncertain</span>` : `<span class="pill ok">Active</span>`;
 const orgs = g => g.org.join(" / ");
 
 /* ---------- navigation ---------- */
 const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
-const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["articles", "Articles"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["governance", "How we check information"], ["about", "About"], ["guide", "Help"]];
+const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"],
+  { label: "Leaflets & articles", items: [["leaflets", "Information leaflets"], ["articles", "Articles"], ["glossary", "Medical glossary"]] },
+  { label: "Tools", items: [["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["workspace", "Saved pages"]] },
+  ["guide", "Help"]];
 /* Each route name maps to its own HTML file; records use ?id= */
 const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", guide: "guide.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
@@ -66,6 +75,7 @@ function renderShell() {
     <form class="msearch" id="msearch" role="search" action="search.html"><input id="mq" name="q" type="search" aria-label="Search DR ARVEEN"><button type="submit">Search</button></form>
     <div class="aud" role="group" aria-label="Audience"><a id="aud-pro" href="professional.html">For healthcare professionals</a><a id="aud-pt" href="patients.html">For patients and caregivers</a></div>
     <select class="lang" id="lang" aria-label="Language"><option value="en">English</option><option value="ms">Bahasa Malaysia</option><option value="zh">中文</option><option value="ta">தமிழ்</option></select>
+    <button class="theme-btn" id="textsize" type="button" title="Make text larger or smaller" aria-pressed="false">A<span aria-hidden="true">+</span><span class="sr-only"> Larger text</span></button>
     <button class="theme-btn" id="theme" type="button" title="Switch light or dark mode">☾ Dark</button>
     <span class="acct" id="acct"></span>
   </div><nav class="mnav" id="nav" aria-label="Sections"></nav></div>`;
@@ -99,20 +109,19 @@ function renderShell() {
 renderShell();
 /* Professional menu grouped so the bar stays short; patient menu stays flat */
 const NAV_PRO_GROUPS = [["home", "Home"],
-  { label: "Reference", items: [["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
-  { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"]] },
-  ["updates", "Updates"], ["pt", "Patient Education"], ["sdm", "Shared decisions"], ["workspace", "My Workspace"], ["guide", "Site guide"],
-  { label: "More", items: [["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]] }];
+  { label: "Reference", items: [["guidelines", "Guidelines"], ["recs", "Recommendations"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"], ["updates", "Guideline updates"]] },
+  { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"], ["sdm", "Shared decisions"]] },
+  ["pt", "Patients"], ["guide", "Help"]];
+/* Account menu (top right): personal and admin pages, shown only to the roles that can use them */
+const ACCT_ITEMS = [["workspace", "My Workspace"], ["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial dashboard"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
 function renderNav() {
   renderAcct();
   document.body.classList.toggle("aud-pt", state.aud === "pt");
   const map = { g: "guidelines", recs: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "ptcancers", a: "articles" };
   const cur = map[PAGE] || PAGE;
   const link = ([r, t]) => `<a href="${url(r)}" ${r === cur ? 'aria-current="page"' : ""}>${t}</a>`;
-  const allowed = ([r]) => (r !== "accounts" || isAdmin()) && (r !== "cms" || isEditor()) && (r !== "review" || isReviewer());
-  $("#nav").innerHTML = state.aud === "pro"
-    ? NAV_PRO_GROUPS.map(g => Array.isArray(g) ? link(g) : `<details class="navgrp"><summary class="${g.items.some(([r]) => r === cur) ? "cur" : ""}">${g.label}</summary><div class="navmenu">${g.items.filter(allowed).map(link).join("")}</div></details>`).join("")
-    : NAV_PT.filter(allowed).map(link).join("");
+  $("#nav").innerHTML = (state.aud === "pro" ? NAV_PRO_GROUPS : NAV_PT).map(g => Array.isArray(g) ? link(g)
+    : `<details class="navgrp"><summary class="${g.items.some(([r]) => r === cur) ? "cur" : ""}">${g.label}</summary><div class="navmenu">${g.items.map(link).join("")}</div></details>`).join("");
   $("#nav").querySelectorAll(".navgrp").forEach(d => d.addEventListener("toggle", () => { if (d.open) $("#nav").querySelectorAll(".navgrp").forEach(o => { if (o !== d) o.open = false; }); }));
   state.aud === "pro" ? $("#aud-pro").setAttribute("aria-current", "page") : $("#aud-pro").removeAttribute("aria-current");
   state.aud === "pt" ? $("#aud-pt").setAttribute("aria-current", "page") : $("#aud-pt").removeAttribute("aria-current");
@@ -245,9 +254,12 @@ function applyReviews(rows) {
 }
 function renderAcct() {
   const el = $("#acct"); if (!el) return;
+  const allowed = ([r]) => (r !== "accounts" || isAdmin()) && (r !== "cms" || isEditor()) && (r !== "review" || isReviewer()) && (r !== "admin" || isEditor());
+  const name = state.profile?.full_name || state.user?.email || "";
   el.innerHTML = state.user
-    ? `<span class="acct-name" title="${esc(state.user.email)}">${esc(state.profile?.full_name || state.user.email)}</span><button class="theme-btn" id="signout" type="button">Sign out</button>`
-    : `<a class="theme-btn" href="login.html?next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}">Sign in</a>`;
+    ? `<details class="navgrp acctgrp"><summary class="acct-name" title="${esc(state.user.email)}"><span class="avatar" aria-hidden="true">${esc(name.trim().charAt(0).toUpperCase())}</span><span class="acct-label">${esc(name)}</span></summary>
+      <div class="navmenu"><span class="menu-h">${esc(state.user.email)}</span>${ACCT_ITEMS.filter(allowed).map(([r, t]) => `<a href="${url(r)}" ${r === PAGE ? 'aria-current="page"' : ""}>${t}</a>`).join("")}<button class="menu-btn" id="signout" type="button">Sign out</button></div></details>`
+    : `<a class="theme-btn" href="${url("workspace")}">Saved</a><a class="theme-btn" href="login.html?next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}">Sign in</a>`;
   const so = $("#signout"); if (so) so.onclick = async () => { await sb.auth.signOut(); location.href = "index.html"; };
 }
 const authErr = (msg) => { const e = $("#autherr"); if (e) { e.hidden = false; e.textContent = msg; } };
@@ -340,6 +352,10 @@ const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchM
 function applyTheme(t) { if (t) root.dataset.theme = t; $("#theme").textContent = isDark() ? "☀ Light" : "☾ Dark"; }
 applyTheme(store.get("theme", null));
 $("#theme").onclick = () => { const t = isDark() ? "light" : "dark"; store.set("theme", t); applyTheme(t); };
+/* Larger text: remembered in this browser */
+function applyTextSize(big) { root.classList.toggle("big-text", big); const b = $("#textsize"); b.setAttribute("aria-pressed", big); b.firstChild.textContent = "A"; b.querySelector("[aria-hidden]").textContent = big ? "−" : "+"; b.title = big ? "Make text smaller" : "Make text larger"; }
+applyTextSize(!!store.get("bigtext", false));
+$("#textsize").onclick = () => { const big = !store.get("bigtext", false); store.set("bigtext", big); applyTextSize(big); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => applyTheme());
 $("#lang").value = state.lang;
 $("#lang").onchange = e => { state.lang = e.target.value; store.set("lang", state.lang); render(); };
@@ -353,6 +369,14 @@ function bmBtn(type, id, title) {
 }
 function recent(type, id, title) {
   const r = store.get("recent", []).filter(x => x.id !== id); r.unshift({ type, id, title, at: new Date().toISOString().slice(0, 10) }); store.set("recent", r.slice(0, 12));
+}
+/* "Continue where you left off": the last pages opened in this browser */
+const RECENT_ROUTE = { Article: "a", Disease: "d", Drug: "dr", Guideline: "g", Leaflet: "l", "Patient page": "ptd", Protocol: "p", Staging: "s", Trial: "t" };
+function continueBlock(types) {
+  const r = store.get("recent", []).filter(x => types.includes(x.type)).slice(0, 5);
+  if (!r.length) return "";
+  return `<section class="section continue"><div class="section-h"><h2>Continue where you left off</h2><a href="${url("workspace")}">My Workspace</a></div>
+    <div class="chips">${r.map(x => `<a class="chip" href="${url(`${RECENT_ROUTE[x.type]}.${x.id}`)}"><span class="muted">${esc(x.type)}</span>&nbsp;${esc(x.title.length > 60 ? x.title.slice(0, 58) + "…" : x.title)}</a>`).join("")}</div></section>`;
 }
 function noteBox(id) {
   const n = store.get("notes", {})[id] || "";
@@ -413,12 +437,12 @@ function search(q) {
   }).filter(Boolean).sort((a, b) => b.score - a.score);
 }
 function resultRow(r) {
-  return `<a class="row" href="${url(`${r.route}`)}"><span class="row-t">${esc(r.title)} ${statusPill(r.status)} ${r.warn ? `<span class="pill bad">${esc(r.warn)}</span>` : ""}</span>
+  return `<a class="row" href="${url(`${r.route}`)}"><span class="row-t">${esc(r.title)} ${listPill(r.status)} ${r.warn ? `<span class="pill bad">${esc(r.warn)}</span>` : ""}</span>
     <span class="row-m"><span class="eyebrow">${esc(r.type)}</span><span>${esc(r.meta)}</span></span></a>`;
 }
 
 /* ---------- shared bits ---------- */
-const seedBanner = () => `<p class="banner">Content is awaiting clinical review. Trial results come from published abstracts (<b>PARTIALLY VERIFIED</b>); other records are <b>NOT VERIFIED</b> until a named reviewer checks them. Doses are shown with their source and are <b>PENDING PHARMACIST REVIEW</b>: check the product information and your local protocol before prescribing.</p>`;
+const seedBanner = () => reviewStrip(false);
 /* One-line headline result for a trial, taken from its primary endpoint */
 function headline(t) {
   const o = t.outcome; if (!o) return "";
@@ -468,6 +492,7 @@ V.home = () => `
     <form class="bigsearch" id="hs"><input id="hq" type="search" aria-label="Search" placeholder="Search a cancer, guideline, treatment, biomarker, drug, or clinical question."><button>Search</button></form>
     <div class="chips">${["Ovarian cancer", "FIGO 2023 endometrial staging", "Recurrent cervical cancer", "Carboplatin and paclitaxel", "Sentinel lymph node", "BRCA1 and BRCA2", "Endometrial molecular classification"].map(s => `<button class="chip" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>
   </section>
+  ${continueBlock(["Guideline", "Drug", "Protocol", "Trial", "Staging", "Disease"])}
   ${(() => { const v = verificationSummary(); const pct = x => (100 * x / v.tot).toFixed(1); return `<section class="section progress-panel" aria-label="Review progress">
     <div class="section-h"><h2>Review progress</h2><span class="muted">${v.tot} professional records</span></div>
     <div class="vbar" role="img" aria-label="${v.ver} verified, ${v.part} partially verified, ${v.not} not yet verified"><span class="v-ok" style="width:${pct(v.ver)}%"></span><span class="v-part" style="width:${pct(v.part)}%"></span><span class="v-not" style="width:${pct(v.not)}%"></span></div>
@@ -518,7 +543,7 @@ V.guidelines = () => {
   <div class="section"><p class="muted">${list.length} of ${D.guidelines.length} records. Original grading frameworks are kept as published; ARVEEN does not map them onto a common scale.</p>
   <div class="list">${list.map(g => `<a class="row" href="${url(`g.${g.id}`)}"><span class="row-t">${esc(g.title)}</span>
     <span class="row-m"><span>${esc(orgs(g))}</span><span>${dname(g.disease)}</span><span>${g.pubDate ? esc(g.pubDate) : "Date not recorded"}</span><span class="mono">${esc(g.id)}</span></span>
-    <span class="row-m">${supPill(g)} ${statusPill(g.status)} ${myLabel(g.malaysia)}</span></a>`).join("") || `<div class="row muted">No guidelines match these filters.</div>`}</div></div></div>`;
+    <span class="row-m">${supPill(g)} ${listPill(g.status)} ${myLabel(g.malaysia)}</span></a>`).join("") || `<div class="row muted">No guidelines match these filters.</div>`}</div></div></div>`;
 };
 function bindFilters() {
   app.querySelectorAll("[data-f]").forEach(s => s.onchange = () => { state.filters[s.dataset.f] = s.value; render(); });
@@ -530,7 +555,7 @@ V.recs = () => `<div class="section-h"><div><span class="eyebrow">Recommendation
   ${recTable(D.recommendations)}`;
 function recTable(recs) {
   return `<div class="tablewrap"><table><thead><tr><th>ID</th><th>Recommendation</th><th>Context</th><th>Original grade / strength</th><th>Malaysia</th><th>Links</th></tr></thead><tbody>
-  ${recs.map(r => { const g = byId(D.guidelines, r.guideline); return `<tr><td class="mono">${r.id}</td><td>${esc(r.text)}<div class="muted" style="font-size:.78rem">${esc(r.textType)} · ${statusPill(r.status)}</div></td>
+  ${recs.map(r => { const g = byId(D.guidelines, r.guideline); return `<tr><td class="mono">${r.id}</td><td>${esc(r.text)}<div class="muted" style="font-size:.78rem">${esc(r.textType)} · ${listPill(r.status)}</div></td>
     <td style="font-size:.82rem">${dname(r.disease)}<br>${esc(r.stage)}<br>${esc(r.setting)} · ${esc(r.intent)}<br>Biomarker: ${esc(r.biomarker)}</td>
     <td>${/^Not /.test(r.grade) ? `<span class="na">${esc(r.grade)}</span>` : `<b>${esc(r.grade)}</b>`}<br>${/^Not /.test(r.strength) ? `<span class="na">${esc(r.strength)}</span>` : esc(r.strength)}</td><td>${myLabel(r.malaysia)}</td>
     <td style="font-size:.82rem"><a href="${url(`g.${g.id}`)}">${esc(orgs(g))} ${esc(g.version || "")}</a><br>${r.trials.map(t => `<a href="${url(`t.${t}`)}">${esc(byId(D.trials, t)?.name)}</a>`).join(", ")}${r.protocols.map(p => `<br><a href="${url(`p.${p}`)}">${p}</a>`).join("")}</td></tr>` }).join("")}
@@ -601,7 +626,7 @@ V.d = id => {
 
 V.staging = () => `<span class="eyebrow">Staging module</span><h1>Staging systems</h1>
   <p class="banner info">Definitions are <b>ARVEEN educational paraphrases</b> of the FIGO criteria, not the published text, and are NOT VERIFIED. Formal staging is kept separate from treatment recommendations. Do not mix criteria between versions.</p>
-  <div class="list">${D.staging.map(s => `<a class="row" href="${url(`s.${s.id}`)}"><span class="row-t">${esc(s.name)} <span class="mono">${esc(s.authority)} ${esc(s.version)}</span> ${s.superseded ? '<span class="pill bad">Superseded</span>' : '<span class="pill ok">Current per seed</span>'} ${statusPill(s.status || "NOT VERIFIED")}</span><span class="row-m">${dname(s.cancer)} · ${s.stages.length ? s.stages.length + " main stages" : "criteria not entered"}</span></a>`).join("")}</div>
+  <div class="list">${D.staging.map(s => `<a class="row" href="${url(`s.${s.id}`)}"><span class="row-t">${esc(s.name)} <span class="mono">${esc(s.authority)} ${esc(s.version)}</span> ${s.superseded ? '<span class="pill bad">Superseded</span>' : ""} ${listPill(s.status || "NOT VERIFIED")}</span><span class="row-m">${dname(s.cancer)} · ${s.stages.length ? s.stages.length + " main stages" : "criteria not entered"}</span></a>`).join("")}</div>
   <p><a class="btn" href="${url(`education`)}">Practise with staging exercises →</a></p>`;
 function stageTree(list) {
   return list.map(x => x.sub ? `<details class="stage" open><summary><span class="code">${esc(x.s)}</span><span>${esc(x.d)}</span></summary><div class="kids">${stageTree(x.sub)}</div></details>`
@@ -621,7 +646,7 @@ V.s = id => {
 
 V.protocols = () => `<span class="eyebrow">Treatment protocol library</span><h1>Treatment protocols</h1>
   <p class="banner bad"><b>Doses are pending pharmacist review.</b> Each dose shows its source (guideline, product information or trial). Check it against the Malaysian product information and your institutional protocol before prescribing.</p>
-  <div class="list">${D.protocols.map(p => `<a class="row" href="${url(`p.${p.id}`)}"><span class="row-t">${esc(p.name)} ${statusPill(p.status)} ${p.labels.map(l => `<span class="pill bad">${esc(l)}</span>`).join("")}</span>
+  <div class="list">${D.protocols.map(p => `<a class="row" href="${url(`p.${p.id}`)}"><span class="row-t">${esc(p.name)} ${listPill(p.status)} ${p.labels.map(l => `<span class="pill bad">${esc(l)}</span>`).join("")}</span>
     <span class="row-m"><span>${dname(p.disease)}</span><span>${esc(p.line)}</span><span>${esc(p.modality)}</span><span>Biomarker: ${esc(p.biomarker)}</span></span></a>`).join("")}</div>`;
 V.p = id => {
   const p = byId(D.protocols, id); if (!p) return notFound();
@@ -638,15 +663,23 @@ V.p = id => {
 };
 
 V.drugs = () => `<span class="eyebrow">Oncology drug reference</span><h1>Drug monographs</h1>
-  <p class="banner info">Monographs are <b>ARVEEN educational summaries</b>, not official product information. Malaysian (NPRA) registration is not verified for any drug.</p>
-  <div class="list">${D.drugs.map(d => `<a class="row" href="${url(`dr.${d.id}`)}"><span class="row-t">${esc(d.name)} ${statusPill(d.status || "NOT VERIFIED")}${d.doseStatus ? " " + statusPill(d.doseStatus) : ""}</span><span class="row-m"><span>${esc(d.cls)}</span><span>${d.cancers.map(dname).join(", ")}</span></span></a>`).join("")}</div>`;
+  <p class="banner info">Monographs are <b>ARVEEN educational summaries</b>, not official product information. Malaysian (NPRA) registration is not verified for any drug.</p>${reviewStrip(false)}
+  <div class="list">${D.drugs.map(d => `<a class="row" href="${url(`dr.${d.id}`)}"><span class="row-t">${esc(d.name)} ${listPill(d.status || "NOT VERIFIED")}${d.doseStatus ? " " + listPill(d.doseStatus) : ""}</span><span class="row-m"><span>${esc(d.cls)}</span><span>${d.cancers.map(dname).join(", ")}</span></span></a>`).join("")}</div>`;
+/* Drug page: dose and key safety facts first, the rest of the monograph folded underneath */
+const GLANCE = ["Dose by indication", "Major adverse effects", "Contraindications", "Monitoring", "Renal considerations", "Hepatic considerations"];
+const drugLayout = rows => {
+  const kv = rs => `<div class="kv">${rs.map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>`;
+  const top = GLANCE.map(k => rows.find(r => r[0] === k)).filter(Boolean), rest = rows.filter(r => !GLANCE.includes(r[0]));
+  return `<section class="section glance"><h2>At a glance</h2>${kv(top)}</section>
+    <details class="section more-mono"><summary><b>Full monograph</b> <span class="muted">(class, mechanism, administration, interactions, pregnancy, counselling, regulatory status)</span></summary>${kv(rest)}</details>`;
+};
 V.dr = id => {
   const d = byId(D.drugs, id); if (!d) return notFound();
   recent("Drug", d.id, d.name);
   const W = `<span class="withheld">not entered · verify against product information</span>`;
   const pr = D.protocols.filter(p => p.components.some(c => c.drug === id));
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Drug monograph</span><h1>${esc(d.name)}</h1><div class="row-m"><span class="pill teal">ARVEEN educational summary</span> ${statusPill(d.status || "NOT VERIFIED")} ${myLabel("regulatory")}</div><div class="actions">${bmBtn("Drug", d.id, d.name)}</div></div>
-  <div class="kv">${[["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", d.doses ? `${statusPill(d.doseStatus)}${d.doseReviewer ? ` <span class="muted">by ${esc(d.doseReviewer)}, ${esc(d.doseReviewedOn)}${d.doseNote ? ` — ${esc(d.doseNote)}` : ""}</span>` : ""}<ul class="doses">${d.doses.map(x => `<li><b>${esc(x.indication)}:</b> ${esc(x.dose)} <span class="muted">Source: ${esc(x.source)}</span></li>`).join("")}</ul>` : `<span class="withheld">not entered</span>`], ["Administration", d.admin ? esc(d.admin) : W], ["Contraindications", d.contra ? esc(d.contra) : W], ["Drug interactions", d.interactions ? esc(d.interactions) : W], ["Hepatic considerations", d.hepatic ? esc(d.hepatic) : W], ["Pregnancy and breastfeeding", d.pregnancy ? esc(d.pregnancy) : W], ["Fertility considerations", d.fertility ? esc(d.fertility) : W], ["Monitoring", d.monitoring ? esc(d.monitoring) : W], ["Dose modifications", `<span class="withheld">withheld · per verified protocol only</span>`], ["Patient counselling", d.counselling ? esc(d.counselling) : W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
+  ${drugLayout([["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", d.doses ? `${statusPill(d.doseStatus)}${d.doseReviewer ? ` <span class="muted">by ${esc(d.doseReviewer)}, ${esc(d.doseReviewedOn)}${d.doseNote ? ` — ${esc(d.doseNote)}` : ""}</span>` : ""}<ul class="doses">${d.doses.map(x => `<li><b>${esc(x.indication)}:</b> ${esc(x.dose)} <span class="muted">Source: ${esc(x.source)}</span></li>`).join("")}</ul>` : `<span class="withheld">not entered</span>`], ["Administration", d.admin ? esc(d.admin) : W], ["Contraindications", d.contra ? esc(d.contra) : W], ["Drug interactions", d.interactions ? esc(d.interactions) : W], ["Hepatic considerations", d.hepatic ? esc(d.hepatic) : W], ["Pregnancy and breastfeeding", d.pregnancy ? esc(d.pregnancy) : W], ["Fertility considerations", d.fertility ? esc(d.fertility) : W], ["Monitoring", d.monitoring ? esc(d.monitoring) : W], ["Dose modifications", `<span class="withheld">withheld · per verified protocol only</span>`], ["Patient counselling", d.counselling ? esc(d.counselling) : W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]])}
   ${noteBox(d.id)}</article>`;
 };
 
@@ -657,7 +690,7 @@ V.trials = () => {
   <p class="banner">Outcomes are entered from the published abstracts on PubMed, with the PubMed ID on each trial page. They are <b>PARTIALLY VERIFIED</b> until a clinical reviewer checks them against the full paper. Subgroup and interim results are labelled as such.</p>
   <div class="chips"><button class="chip" data-td="" aria-pressed="${!f}">All</button>${[...new Set(D.trials.map(t => t.disease))].map(d => `<button class="chip" data-td="${d}" aria-pressed="${f === d}">${dname(d)}</button>`).join("")}</div>
   <div class="tablewrap"><table><thead><tr><th>Trial</th><th>Intervention vs comparator</th><th>Primary endpoint</th><th>Headline result</th><th>Source</th></tr></thead><tbody>
-  ${list.map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)} · Phase ${esc(t.phase)}</div><div class="mono muted" style="font-size:.74rem">${esc(t.reg)}</div></td><td>${esc(t.intervention)}<div class="muted">vs ${esc(t.comparator)}</div></td><td>${esc(t.primary)}</td><td style="font-size:.86rem">${t.outcome ? esc(headline(t)) : '<span class="na">Not entered</span>'}</td><td style="font-size:.82rem">${esc(t.pub)}<div>${statusPill(t.outcome?.status || "NOT VERIFIED")}</div></td></tr>`).join("")}
+  ${list.map(t => `<tr><td><a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a><div class="muted" style="font-size:.78rem">${dname(t.disease)} · Phase ${esc(t.phase)}</div><div class="mono muted" style="font-size:.74rem">${esc(t.reg)}</div></td><td>${esc(t.intervention)}<div class="muted">vs ${esc(t.comparator)}</div></td><td>${esc(t.primary)}</td><td style="font-size:.86rem">${t.outcome ? esc(headline(t)) : '<span class="na">Not entered</span>'}</td><td style="font-size:.82rem">${esc(t.pub)}<div>${listPill(t.outcome?.status || "NOT VERIFIED")}</div></td></tr>`).join("")}
   </tbody></table></div>`;
 };
 V.t = id => {
@@ -699,7 +732,8 @@ V.algorithms = () => {
   ${a.sourceNote ? `<p class="muted" style="font-size:.86rem">${esc(a.sourceNote)}</p>` : ""}
   <p class="banner info">Educational pathway. Where information is missing it says so instead of forcing a conclusion. It does not select treatment: the MDT decides.</p>
   <p class="prose"><b>Entry criteria:</b> ${esc(a.entry)}</p>
-  <div class="algo" aria-live="polite">${steps}<div><button class="btn" id="algoreset">Start again</button></div></div>`;
+  <div class="algo" aria-live="polite">${steps}<div class="algo-actions"><button class="btn" id="algoreset">Start again</button>${algoPath.length > 1 ? `<button class="btn" data-print>Print this pathway</button>` : ""}</div></div>
+  <p class="print-only muted">Printed ${new Date().toISOString().slice(0, 10)} from DR ARVEEN. Educational pathway, NOT VERIFIED unless stated above. The MDT decides treatment.</p>`;
 };
 
 V.calculators = () => `<span class="eyebrow">Calculator library</span><h1>Calculators</h1>
@@ -767,7 +801,7 @@ const litSection = (place, title, intro) => {
   const groups = [...new Set(items.map(x => x.disease))];
   return `<section class="section"><h2>${esc(title)}</h2><p class="muted">${esc(intro)}</p>
     ${groups.map(g => `<h3>${esc(dn(g))}</h3><div class="list">${items.filter(x => x.disease === g).map(x => `<details class="row lit">
-      <summary><span class="row-t">${esc(x.title)} ${statusPill(x.status)}</span><span class="row-m"><span>${esc(x.type)}</span><span>${esc(x.topic)}</span><span>${esc(x.authors)} ${esc(x.citation)}</span></span></summary>
+      <summary><span class="row-t">${esc(x.title)} ${listPill(x.status)}</span><span class="row-m"><span>${esc(x.type)}</span><span>${esc(x.topic)}</span><span>${esc(x.authors)} ${esc(x.citation)}</span></span></summary>
       <p class="prose">${esc(x.summary)}</p><ul>${x.findings.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
       <p class="muted"><b>Caveat:</b> ${esc(x.caveat)}</p>
       ${x.related.length || x.drugs.length ? `<p class="muted">Related: ${[...x.related.map(link), ...x.drugs.map(d => `<a href="${url(`dr.${d}`)}">${esc(byId(D.drugs, d)?.name || d)}</a>`)].join(", ")}</p>` : ""}
@@ -908,10 +942,13 @@ function reviewBlock(rec) {
 /* ---------- views: patient ---------- */
 V.pt = () => `<div class="patient detail">${transBanner()}
   <section class="hero hero-pt"><span class="eyebrow">DR ARVEEN Patient Education Centre</span><h1>Understanding Your Cancer. Understanding Your Care.</h1>
-  <p>Clear, reliable information to help you understand your diagnosis, prepare for treatment, manage side effects, and navigate life during and after gynaecological cancer.</p>
-  <form class="bigsearch" id="hs"><input id="hq" type="search" aria-label="Search" placeholder="Search for your cancer, treatment, test, symptom, or question."><button>Search</button></form></section>
-  <p class="banner">This information is being written and has not yet been reviewed by a clinician. It does not replace advice from your own treating team. In an emergency in Malaysia, call <b>999</b>.</p>
-  <section class="section band"><h2>Where are you in your journey?</h2><div class="journey">${(D.journey || []).map((j, i) => `<a class="tile jstep" href="${url(`articles`)}?stage=${j.id}"><span class="jnum" aria-hidden="true">${i + 1}</span><b>${esc(j.title)}</b><span>${esc(j.text)}</span><span class="muted jcount">${journeyItems(j.id).length} guides</span></a>`).join("")}</div></section>
+  <p>Clear, reliable information to help you understand your diagnosis, prepare for treatment, manage side effects, and navigate life during and after gynaecological cancer.</p></section>
+  <section class="section band start-here"><h2>Start here: where are you now?</h2><p class="muted">Choose one. We'll show you only the guides that matter at this stage.</p>
+    <div class="journey">${(D.journey || []).map((j, i) => `<a class="tile jstep" href="${url(`articles`)}?stage=${j.id}"><span class="jnum" aria-hidden="true">${i + 1}</span><b>${esc(j.title)}</b><span>${esc(j.text)}</span><span class="muted jcount">${journeyItems(j.id).length} guides →</span></a>`).join("")}</div>
+    <p class="muted" style="margin-top:12px">Know your cancer type? <a href="${url(`ptcancers`)}">Go straight to your cancer</a>. Text too small? Use the <b>A+</b> button at the top.</p></section>
+  <form class="bigsearch" id="hs"><input id="hq" type="search" aria-label="Search" placeholder="Or search for your cancer, treatment, test, symptom, or question."><button>Search</button></form>
+  <p class="banner slim">This information is still being reviewed by our clinical team and does not replace advice from your own doctors. In an emergency in Malaysia, call <b>999</b>.</p>
+  ${continueBlock(["Article", "Leaflet", "Patient page"])}
   <section class="section"><h2>Browse by cancer type</h2><div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`ptd.${d.id}`)}">${badge(d.id)}<b>${esc(d.name)}</b><span>${esc(d.patient)}</span></a>`).join("")}</div></section>
   <section class="section"><h2>Treatment explained</h2><div class="chips">${TREATMENT_LINKS.map(([t, id]) => id ? `<a class="chip" href="${url(`l.${id}`)}">${t}</a>` : `<button class="chip" data-q="${t}">${t}</button>`).join("")}</div></section>
   <section class="section"><h2>Browse by concern</h2><div class="chips">${(D.concerns || []).map(([t, id]) => `<a class="chip" href="${url(`a.${id}`)}">${esc(t)}</a>`).join("")}</div></section>
@@ -931,9 +968,9 @@ V.articles = () => {
   const st = (D.journey || []).find(j => j.id === stage);
   const list = stage ? journeyItems(stage) : null;
   return `<div class="patient detail"><span class="eyebrow">Patient Education Centre</span><h1>${st ? esc(st.title) : "Articles"}</h1>${transBanner()}
-  <div class="chips" role="navigation" aria-label="Journey stage"><a class="chip" href="${url(`articles`)}" ${!stage ? 'aria-current="page"' : ""}>All articles</a>${(D.journey || []).map(j => `<a class="chip" href="${url(`articles`)}?stage=${j.id}" ${stage === j.id ? 'aria-current="page"' : ""}>${esc(j.title)}</a>`).join("")}</div>
-  ${list ? `<p class="prose muted">${esc(st.text)}</p><div class="list">${list.map(x => `<a class="row" href="${url(x.route)}"><span class="row-t">${esc(x.title)} ${statusPill(x.status)}</span><span class="row-m"><span class="eyebrow">${x.kind}</span><span>${esc(x.summary)}</span></span></a>`).join("")}</div>`
-  : cats.map(c => `<section class="section"><h2>${esc(c)}</h2><div class="list">${D.articles.filter(a => a.category === c).map(a => `<a class="row" href="${url(`a.${a.id}`)}"><span class="row-t">${esc(a.title)} ${statusPill(a.status)}</span><span class="row-m"><span>${esc(a.summary)}</span></span></a>`).join("")}</div></section>`).join("")}</div>`;
+  <div class="chips" role="navigation" aria-label="Journey stage"><a class="chip" href="${url(`articles`)}" ${!stage ? 'aria-current="page"' : ""}>All articles</a>${(D.journey || []).map(j => `<a class="chip" href="${url(`articles`)}?stage=${j.id}" ${stage === j.id ? 'aria-current="page"' : ""}>${esc(j.title)}</a>`).join("")}</div>${reviewStrip(true)}
+  ${list ? `<p class="prose muted">${esc(st.text)}</p><div class="list">${list.map(x => `<a class="row" href="${url(x.route)}"><span class="row-t">${esc(x.title)} ${listPill(x.status)}</span><span class="row-m"><span class="eyebrow">${x.kind}</span><span>${esc(x.summary)}</span></span></a>`).join("")}</div>`
+  : cats.map(c => `<section class="section"><h2>${esc(c)}</h2><div class="list">${D.articles.filter(a => a.category === c).map(a => `<a class="row" href="${url(`a.${a.id}`)}"><span class="row-t">${esc(a.title)} ${listPill(a.status)}</span><span class="row-m"><span>${esc(a.summary)}</span></span></a>`).join("")}</div></section>`).join("")}</div>`;
 };
 V.a = id => {
   const a = byId(D.articles || [], id); if (!a) return notFound();
@@ -961,13 +998,13 @@ V.ptd = id => {
   ${["tubal", "peritoneal"].includes(id) && secs ? `<p class="banner info">This cancer is usually staged and treated in the same way as ovarian cancer, so the information below covers all three.</p>` : ""}
   <div class="cols">${secs ? secs.map(([h, ps]) => `<section class="section"><h2>${esc(h)}</h2><ul class="plist">${ps.map(p => `<li>${esc(p)}</li>`).join("")}</ul></section>`).join("")
     : ["What stage means", "Tests you may have", "Treatment options", "Living with and after cancer"].map(h => `<section class="section"><h2>${h}</h2><p class="na">This section is being written and reviewed. Your treating team is the best source of information about this cancer.</p></section>`).join("")}</div>
-  <section class="section"><h2>Leaflets</h2><div class="list">${ls.map(l => `<a class="row" href="${url(`l.${l.id}`)}"><span class="row-t">${esc(l.title)} ${statusPill(l.approval)}</span></a>`).join("") || `<div class="row muted">No leaflet for this cancer yet.</div>`}</div></section>
+  <section class="section"><h2>Leaflets</h2><div class="list">${ls.map(l => `<a class="row" href="${url(`l.${l.id}`)}"><span class="row-t">${esc(l.title)} ${listPill(l.approval)}</span></a>`).join("") || `<div class="row muted">No leaflet for this cancer yet.</div>`}</div></section>
   ${arts.length ? `<section class="section"><h2>Articles</h2><div class="list">${arts.map(a => `<a class="row" href="${url(`a.${a.id}`)}"><span class="row-t">${esc(a.title)}</span><span class="row-m"><span>${esc(a.summary)}</span></span></a>`).join("")}</div></section>` : ""}
   <p><a class="btn" href="${url(`sdm`)}">Prepare questions for your doctor →</a></p></article>`;
 };
 V.leaflets = () => `<div class="patient detail"><span class="eyebrow">Patient information leaflets</span><h1>Information leaflets</h1>${transBanner()}
-  <p class="prose muted">Every leaflet follows the same structure, so you always know where to find what to expect, risks, and when to get help.</p>
-  <div class="list">${D.leaflets.map(l => `<a class="row" href="${url(`l.${l.id}`)}"><span class="row-t">${esc(l.title)} ${statusPill(l.approval)}</span><span class="row-m"><span>${esc(l.audience)}</span><span class="mono">${esc(l.id)} · ${esc(l.version)}</span></span></a>`).join("")}</div></div>`;
+  <p class="prose muted">Every leaflet follows the same structure, so you always know where to find what to expect, risks, and when to get help.</p>${reviewStrip(true)}
+  <div class="list">${D.leaflets.map(l => `<a class="row" href="${url(`l.${l.id}`)}"><span class="row-t">${esc(l.title)} ${listPill(l.approval)}</span><span class="row-m"><span>${esc(l.audience)}</span><span class="mono">${esc(l.id)} · ${esc(l.version)}</span></span></a>`).join("")}</div></div>`;
 V.l = id => {
   const l = byId(D.leaflets, id); if (!l) return notFound();
   recent("Leaflet", l.id, l.title);
@@ -1137,11 +1174,48 @@ V.governance = () => `<article class="detail"><div class="dhead"><span class="ey
     <p class="banner">This checklist is a starting point, not legal advice. Confirm each item with a Malaysian lawyer and the relevant authority.</p>
     ${govTable(["Approval", "What to do"], GOV_LAUNCH)}</section></article>`;
 
+/* On phones, wide tables become stacked cards: each cell gets its column name as a label. */
+function stackTables() {
+  app.querySelectorAll(".tablewrap table").forEach(t => {
+    const heads = [...t.querySelectorAll("thead th")].map(th => th.textContent.trim());
+    if (heads.length < 3) return;
+    t.classList.add("stack");
+    t.querySelectorAll("tbody tr").forEach(tr => [...tr.children].forEach((td, i) => { if (heads[i]) td.dataset.label = heads[i]; }));
+  });
+}
+
+/* Search as you type (header box): top matches grouped by type */
+let sugTimer;
+function bindSuggest() {
+  const q = $("#mq"), form = $("#msearch"); if (!q || q.dataset.bound) return; q.dataset.bound = "1";
+  const box = document.createElement("div"); box.className = "suggest"; box.id = "msuggest"; box.hidden = true; box.setAttribute("role", "listbox"); form.appendChild(box);
+  q.setAttribute("autocomplete", "off"); q.setAttribute("aria-controls", "msuggest");
+  const close = () => { box.hidden = true; q.setAttribute("aria-expanded", "false"); };
+  q.addEventListener("input", () => { clearTimeout(sugTimer); sugTimer = setTimeout(() => {
+    const term = q.value.trim(); if (term.length < 2 || !IDX.length) return close();
+    const hits = search(term).slice(0, 40), groups = {};
+    for (const h of hits) { (groups[h.type] = groups[h.type] || []).length < 3 && groups[h.type].push(h); }
+    const keys = Object.keys(groups).slice(0, 5);
+    box.innerHTML = keys.length ? keys.map(k => `<div class="sg-h">${esc(k)}</div>${groups[k].map(h => `<a role="option" href="${url(h.route)}">${esc(h.title.length > 90 ? h.title.slice(0, 88) + "…" : h.title)}<span class="muted">${esc(h.meta || "")}</span></a>`).join("")}`).join("") + `<a class="sg-all" href="search.html?q=${encodeURIComponent(term)}">See all ${hits.length >= 40 ? "40+" : hits.length} results →</a>`
+      : `<div class="sg-h">No matches</div><a class="sg-all" href="search.html?q=${encodeURIComponent(term)}">Search anyway →</a>`;
+    box.hidden = false; q.setAttribute("aria-expanded", "true");
+  }, 120); });
+  q.addEventListener("keydown", e => { if (e.key === "ArrowDown" && !box.hidden) { e.preventDefault(); box.querySelector("a")?.focus(); } if (e.key === "Escape") close(); });
+  box.addEventListener("keydown", e => {
+    const links = [...box.querySelectorAll("a")], i = links.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); links[Math.min(i + 1, links.length - 1)]?.focus(); }
+    if (e.key === "ArrowUp") { e.preventDefault(); i <= 0 ? q.focus() : links[i - 1].focus(); }
+    if (e.key === "Escape") { close(); q.focus(); }
+  });
+  document.addEventListener("click", e => { if (!form.contains(e.target)) close(); });
+}
+
 /* ---------- router ---------- */
 function render() {
   const base = PAGE, arg = PARAMS.get("id") || "";
   renderNav();
   const view = V[base]; app.innerHTML = view ? view(arg) : notFound();
+  stackTables();
   const h1 = app.querySelector("h1"); if (h1 && !["home", "pt", "welcome"].includes(base)) document.title = h1.textContent.trim() + " · DR ARVEEN";
   const rec = REVIEW_SRC[base] && (D[REVIEW_SRC[base]] || []).find(x => x.id === arg);
   if (rec) app.insertAdjacentHTML("beforeend", reviewBlock(rec));
@@ -1189,7 +1263,7 @@ V.guide = () => {
   </section>
 
   <section class="section" id="g-pro"><h2>2. For healthcare professionals</h2>
-  <p class="muted">Needs an approved account. The menu has three dropdowns: <b>Reference</b>, <b>Tools</b> and <b>More</b>.</p>
+  <p class="muted">Needs an approved account. The menu has two dropdowns, <b>Reference</b> and <b>Tools</b>. Your personal and admin pages are in the <b>account menu</b> (the circle with your initial, top right).</p>
   <h3>Reference menu</h3>
   ${table([
     ["guidelines", "Guidelines", "Every guideline we hold, with version, status and its extracted recommendations.", "Filter by cancer. Open a guideline to read its summary and the table of recommendations with original levels and grades.", 1],
@@ -1226,7 +1300,7 @@ V.guide = () => {
   <section class="section" id="g-labels"><h2>4. What the labels mean</h2>
   <div class="tablewrap"><table><thead><tr><th>Label</th><th>Meaning</th></tr></thead><tbody>${S.map(([s, m]) => `<tr><td>${statusPill(s)}</td><td>${m}</td></tr>`).join("")}</tbody></table></div></section>
 
-  ${isEditor() ? `<section class="section" id="g-team"><h2>5. For reviewers, editors and admins</h2><p class="muted">These pages are in the <b>More</b> menu and appear only for the right roles.</p>
+  ${isEditor() ? `<section class="section" id="g-team"><h2>5. For reviewers, editors and admins</h2><p class="muted">These pages are in your <b>account menu</b> (top right) and appear only for the right roles.</p>
   ${table([
     ["review", "Review queue", "Sign off professional content: recommendations, doses, guidelines, drugs, protocols, trials, staging, pathways, research summaries.", "Choose a section; open an item; check it against the source; pick a decision, add a note and click <b>Save sign-off</b>. Doses can be verified only by a Pharmacist account. (Reviewer or admin role.)"],
     ["cms", "Edit content", "Edit patient articles, leaflets and cancer pages, and add pictures.", "Choose an item on the left, edit, set the status and save. Approving needs the reviewer or admin role, a reviewer name and a date."],
@@ -1243,7 +1317,7 @@ V.guide = () => {
   <div class="cols">
     ${steps("Adding a new guideline or article", ["Save the PDF in <code>Documents\\dr-arveen-content\\sources</code> (private, never online).", "Ask Claude to process it. Claude extracts recommendations with original grades and rebuilds <code>seed.sql</code>.", "In Supabase → SQL Editor → New query, paste all of <code>seed.sql</code> and click <b>Run</b>.", "Review the new items in the <b>Review queue</b>."])}
     ${steps("When Claude changes how the site looks or works", ["Open PowerShell: <code>cd C:\\Users\\0308\\Documents\\dr-arveen-site</code>", "Run <code>git push</code>.", "Wait about a minute, then press Ctrl+F5 on the site."])}
-    ${steps("Approving content", ["Professional content: More → <b>Review queue</b>.", "Patient content: More → <b>Edit content</b> → set status APPROVED with reviewer name and date.", "Doses: your pharmacist signs in (profession Pharmacist, role reviewer) and uses the Review queue → Doses."])}
+    ${steps("Approving content", ["Professional content: account menu → <b>Review queue</b>. Use the filter box, tick several items and sign them off together, or press <kbd>j</kbd>/<kbd>k</kbd> to move between items.", "Patient content: account menu → <b>Edit content</b> → set status APPROVED with reviewer name and date.", "Doses: your pharmacist signs in (profession Pharmacist, role reviewer) and uses the Review queue → Doses."])}
   </div>
   <p class="banner info">Rule of thumb: <b>content</b> changes (guidelines, doses, trials, pathways, research) need <b>seed.sql</b> run in Supabase. <b>Look and features</b> changes need <b>git push</b>. Patient leaflets and articles written by Claude need git push; edits you make online in Edit content appear immediately.</p></section>` : ""}
 
@@ -1282,36 +1356,77 @@ V.review = () => {
   const items = all.filter(x => x.kind === tab && (showAll || pending(x)));
   const today = new Date().toISOString().slice(0, 10), nextYear = new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10);
   const opts = k => (k === "dose" ? ["PHARMACIST VERIFIED", "CHANGES NEEDED"] : ["VERIFIED AGAINST SOURCE", "CLINICALLY REVIEWED", "APPROVED", "CHANGES NEEDED"]);
+  const optList = (k, sel) => opts(k).map(o => `<option ${sel === o ? "selected" : ""} ${o === "PHARMACIST VERIFIED" && !isPharmacist() ? "disabled" : ""}>${o}</option>`).join("");
+  const me = esc(state.profile?.full_name || "");
   const form = x => `<form class="rq-form" data-rkey="${esc(x.key)}" data-rkind="${x.kind}">
-      <label>Decision<select name="status">${opts(x.kind).map(o => `<option ${x.review?.status === o ? "selected" : ""} ${o === "PHARMACIST VERIFIED" && !isPharmacist() ? "disabled" : ""}>${o}</option>`).join("")}</select></label>
-      <label>Reviewer name<input name="reviewer" required minlength="2" value="${esc(x.review?.reviewer || state.profile?.full_name || "")}"></label>
+      <label>Decision<select name="status">${optList(x.kind, x.review?.status)}</select></label>
+      <label>Reviewer name<input name="reviewer" required minlength="2" value="${x.review?.reviewer ? esc(x.review.reviewer) : me}"></label>
       <label>Review date<input name="reviewed_on" type="date" required value="${esc(x.review?.reviewed_on || today)}"></label>
       <label>Next review<input name="next_review" type="date" value="${esc(x.review?.next_review || nextYear)}"></label>
       <label class="wide">Note (what you checked, or what must change)<textarea name="note" rows="2" maxlength="2000">${esc(x.review?.note || "")}</textarea></label>
-      <div class="wide"><button class="btn primary" type="submit">Save sign-off</button>${x.review ? ` <button class="btn" type="button" data-rwithdraw="${esc(x.key)}">Withdraw sign-off</button>` : ""} <span class="rq-msg" role="status"></span></div>
+      <div class="wide"><button class="btn primary" type="submit" value="next">Save and open next</button> <button class="btn" type="submit" value="stay">Save</button>${x.review ? ` <button class="btn" type="button" data-rwithdraw="${esc(x.key)}">Withdraw sign-off</button>` : ""} <span class="rq-msg" role="status"></span></div>
       ${x.kind === "dose" && !isPharmacist() ? `<p class="muted wide">Only an account registered as a Pharmacist can mark doses verified. You can record CHANGES NEEDED.</p>` : ""}</form>`;
   const groups = [...new Set(items.map(x => x.group))];
+  const prog = g => { const inG = all.filter(x => x.kind === tab && x.group === g), d = inG.filter(x => !pending(x)).length; return `<div class="rq-prog" title="${d} of ${inG.length} signed off"><span style="width:${inG.length ? (100 * d / inG.length).toFixed(1) : 0}%"></span></div><span class="muted rq-count">${d} / ${inG.length} signed off</span>`; };
   return `<span class="eyebrow">Governance</span><h1>Review queue</h1>
-  <p class="prose muted">Check each item against its source, then record your decision. Sign-offs are saved with your account, name and date, logged in the audit history, and shown on the site at once. Doses are verified by pharmacists; other items by reviewers.</p>
+  <p class="prose muted">Check each item against its source, then record your decision. Sign-offs are saved with your name and date, logged, and shown on the site at once. Doses are verified by pharmacists; other items by reviewers.</p>
   <div class="chips" role="group" aria-label="Item type">${RQ_TABS.map(([k, l]) => { const n = all.filter(x => x.kind === k && pending(x)).length; return `<button class="chip" data-rq="${k}" aria-pressed="${k === tab}">${l} <span class="muted">${n}</span></button>`; }).join("")}</div>
-  <label class="check"><input type="checkbox" id="rq-all" ${showAll ? "checked" : ""}> Show items already signed off</label>
-  ${items.length ? groups.map(g => `<section class="section"><h2>${esc(tab === "recommendation" ? `${g} — ${byId(D.guidelines, g)?.title || ""}` : g)}</h2><div class="list">${items.filter(x => x.group === g).map(x => `<details class="row rq">
-    <summary><span class="row-t">${esc(x.title)} ${statusPill(x.status || "NOT VERIFIED")}${x.review ? ` <span class="muted">${esc(x.review.reviewer)}, ${esc(x.review.reviewed_on)}</span>` : ""}</span><span class="row-m"><span>${esc(x.meta || "")}</span></span></summary>
+  <div class="rq-tools"><input type="search" id="rq-search" placeholder="Filter this section (ID, words, drug, guideline…)" aria-label="Filter items" value="${esc(state.filters.rqq || "")}">
+    <label class="check"><input type="checkbox" id="rq-all" ${showAll ? "checked" : ""}> Show items already signed off</label>
+    <span class="muted rq-keys">Keys: <kbd>j</kbd> next · <kbd>k</kbd> previous · <kbd>x</kbd> select</span></div>
+  ${items.length ? groups.map(g => `<section class="section rq-group"><div class="section-h"><h2>${esc(tab === "recommendation" ? `${g} — ${byId(D.guidelines, g)?.title || ""}` : g)}</h2><label class="check"><input type="checkbox" data-rselgroup> Select all</label></div>${prog(g)}
+    <div class="list">${items.filter(x => x.group === g).map(x => `<details class="row rq" data-key="${esc(x.key)}" data-search="${esc((x.title + " " + x.text + " " + x.meta + " " + x.group).toLowerCase())}">
+    <summary><input type="checkbox" class="rq-sel" data-rsel="${esc(x.key)}" aria-label="Select ${esc(x.title)}"><span class="row-t">${esc(x.title)} ${statusPill(x.status || "NOT VERIFIED")}${x.review ? ` <span class="muted">${esc(x.review.reviewer)}, ${esc(x.review.reviewed_on)}</span>` : ""}</span><span class="row-m"><span>${esc(x.meta || "")}</span></span></summary>
     <p class="prose rq-text">${esc(x.text || "").replace(/\n/g, "<br>")}</p><p><a href="${url(x.route)}" target="_blank" rel="noopener">Open on the site ↗</a></p>${form(x)}</details>`).join("")}</div></section>`).join("")
-    : `<p class="banner">Nothing waiting in this section${showAll ? "" : ". Tick 'Show items already signed off' to see completed items"}.</p>`}`;
+    : `<p class="banner">Nothing waiting in this section${showAll ? "" : ". Tick 'Show items already signed off' to see completed items"}.</p>`}
+  <div class="rq-bulk" id="rq-bulk" hidden><b id="rq-n">0 selected</b>
+    <select id="rqb-status" aria-label="Decision">${optList(tab)}</select>
+    <input id="rqb-reviewer" aria-label="Reviewer name" value="${me}" placeholder="Reviewer name">
+    <input id="rqb-date" type="date" aria-label="Review date" value="${today}">
+    <input id="rqb-note" aria-label="Note" placeholder="Note, e.g. 'checked against ESGO 2021 PDF'">
+    <button class="btn primary" id="rqb-go" type="button">Sign off selected</button><button class="btn" id="rqb-clear" type="button">Clear</button><span class="rq-msg" id="rqb-msg" role="status"></span></div>`;
 };
 function bindReview() {
   if (PAGE !== "review") return;
-  app.querySelectorAll("[data-rq]").forEach(b => b.onclick = () => { state.filters.rq = b.dataset.rq; render(); });
+  const visible = () => [...app.querySelectorAll("details.rq")].filter(d => !d.hidden);
+  const filter = () => {
+    const q = (state.filters.rqq || "").toLowerCase().trim();
+    app.querySelectorAll("details.rq").forEach(d => d.hidden = !!q && !d.dataset.search.includes(q));
+    app.querySelectorAll(".rq-group").forEach(s => s.hidden = !s.querySelector("details.rq:not([hidden])"));
+  };
+  const bulk = () => { const n = app.querySelectorAll(".rq-sel:checked").length; $("#rq-bulk").hidden = !n; $("#rq-n").textContent = `${n} selected`; };
+  const openItem = d => { if (!d) return; app.querySelectorAll("details.rq[open]").forEach(o => { if (o !== d) o.open = false; }); d.open = true; d.scrollIntoView({ block: "start", behavior: "smooth" }); d.querySelector("summary").focus({ preventScroll: true }); };
+  app.querySelectorAll("[data-rq]").forEach(b => b.onclick = () => { state.filters.rq = b.dataset.rq; state.filters.rqq = ""; render(); });
   const all = $("#rq-all"); if (all) all.onchange = () => { state.filters.rqAll = all.checked; render(); };
+  const s = $("#rq-search"); if (s) s.oninput = () => { state.filters.rqq = s.value; filter(); };
+  filter();
+  app.querySelectorAll(".rq-sel").forEach(c => { c.onclick = e => e.stopPropagation(); c.onchange = bulk; });
+  app.querySelectorAll("[data-rselgroup]").forEach(c => c.onchange = () => { c.closest(".rq-group").querySelectorAll("details.rq:not([hidden]) .rq-sel").forEach(x => x.checked = c.checked); bulk(); });
+  $("#rqb-clear").onclick = () => { app.querySelectorAll(".rq-sel, [data-rselgroup]").forEach(x => x.checked = false); bulk(); };
+  $("#rqb-go").onclick = async () => {
+    const keys = [...app.querySelectorAll(".rq-sel:checked")].map(c => c.dataset.rsel), msg = $("#rqb-msg");
+    const reviewer = $("#rqb-reviewer").value.trim(), date = $("#rqb-date").value, status = $("#rqb-status").value;
+    if (reviewer.length < 2 || !date) { msg.textContent = "Enter the reviewer name and date."; msg.className = "rq-msg err"; return; }
+    if (!confirm(`Record "${status}" for ${keys.length} item(s), signed by ${reviewer}? Only do this for items you have actually checked.`)) return;
+    msg.textContent = "Saving…"; msg.className = "rq-msg";
+    const kind = state.filters.rq || "recommendation", next = new Date(Date.parse(date) + 365 * 864e5).toISOString().slice(0, 10);
+    const rows = keys.map(k => ({ item_id: k, kind, status, reviewer, reviewed_on: date, next_review: next, note: $("#rqb-note").value.trim() || null }));
+    const { data, error } = await sb.from("pro_reviews").upsert(rows).select();
+    if (error) { msg.textContent = /does not exist|schema cache/.test(error.message) ? "The review table isn't set up yet: run supabase/upgrade-4-reviews.sql." : error.message; msg.className = "rq-msg err"; return; }
+    applyReviews([].concat(data || [])); render();
+  };
   app.querySelectorAll(".rq-form").forEach(f => f.onsubmit = async e => {
     e.preventDefault();
+    const goNext = e.submitter?.value !== "stay";
     const msg = f.querySelector(".rq-msg"), v = n => f.elements[n].value.trim() || null;
-    msg.textContent = "Saving…";
+    msg.textContent = "Saving…"; msg.className = "rq-msg";
+    const vis = visible(), me = f.closest("details.rq"), nextKey = vis[vis.indexOf(me) + 1]?.dataset.key;
     const row = { item_id: f.dataset.rkey, kind: f.dataset.rkind, status: v("status"), reviewer: v("reviewer"), reviewed_on: v("reviewed_on"), next_review: v("next_review"), note: v("note") };
     const { data, error } = await sb.from("pro_reviews").upsert(row).select().single();
     if (error) { msg.textContent = /does not exist|schema cache/.test(error.message) ? "The review table isn't set up yet: run supabase/upgrade-4-reviews.sql." : error.message; msg.className = "rq-msg err"; return; }
     applyReviews([data]); render();
+    const target = goNext ? nextKey : row.item_id;
+    if (target) openItem(app.querySelector(`details.rq[data-key="${CSS.escape(target)}"]`));
   });
   app.querySelectorAll("[data-rwithdraw]").forEach(b => b.onclick = async () => {
     if (!confirm("Withdraw this sign-off? The item goes back to its built-in status.")) return;
@@ -1319,6 +1434,16 @@ function bindReview() {
     if (error) return alert(error.message);
     location.reload();
   });
+  if (!document.body.dataset.rqKeys) {
+    document.body.dataset.rqKeys = "1";
+    document.addEventListener("keydown", e => {
+      if (e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) return;
+      const vis = visible(), cur = app.querySelector("details.rq[open]"), i = vis.indexOf(cur);
+      if (e.key === "j") { e.preventDefault(); openItem(vis[i + 1] || vis[0]); }
+      if (e.key === "k") { e.preventDefault(); openItem(vis[Math.max(i - 1, 0)]); }
+      if (e.key === "x" && cur) { const c = cur.querySelector(".rq-sel"); c.checked = !c.checked; bulk(); }
+    });
+  }
 }
 
 /* ---------- content editor (editors, reviewers, admins) ---------- */
@@ -1474,9 +1599,9 @@ function bindCms() {
 
 async function boot() {
   renderNav();
-  app.innerHTML = `<p class="muted">Loading…</p>`;
+  app.innerHTML = `<div class="skeleton" role="status" aria-label="Loading"><span class="sk sk-eyebrow"></span><span class="sk sk-h1"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span><div class="sk-grid"><span class="sk sk-card"></span><span class="sk sk-card"></span><span class="sk sk-card"></span></div></div>`;
   try { await loadSession(); await loadPatientItems(); if (approved() && (GATED || PAGE === "search" || PAGE === "workspace")) await loadPro(); } catch (e) { console.error(e); }
-  IDX = index();
+  IDX = index(); bindSuggest();
   if ((GATED && !state.proLoaded) || (PAGE === "accounts" && !isAdmin()) || (PAGE === "cms" && !isEditor()) || (PAGE === "review" && !isReviewer())) {
     renderNav();
     app.innerHTML = PAGE === "accounts" && state.proLoaded ? `<h1>Administrators only</h1><p class="prose">Account approvals are limited to administrators.</p>`

@@ -81,7 +81,7 @@ Run `supabase/upgrade-3-editor.sql` once in **SQL Editor → New query**. It cre
 - a `content_audit` log of every save.
 - a public `site-images` storage bucket for pictures (JPEG, PNG or WebP up to 3 MB). Only editors can upload.
 
-To use the editor, sign in and open **More → Edit content**. Admins can use it straight away. To let someone else edit, set their role on the **Accounts** page:
+To use the editor, sign in and open the **account menu (top right) → Edit content**. Admins can use it straight away. To let someone else edit, set their role on the **Accounts** page:
 - **editor:** can write and change status up to clinical review.
 - **reviewer:** can also approve.
 
@@ -95,7 +95,7 @@ Run `supabase/upgrade-4-reviews.sql` once in **SQL Editor → New query**. New p
 - A database safeguard: only an account whose profession is **Pharmacist** can mark a dose **PHARMACIST VERIFIED**.
 - `pro_review_audit`: the history of every sign-off and withdrawal.
 
-**To use it:** sign in and open **More → Review queue**. Choose a section, open an item, check it against the source, then choose a decision and click **Save sign-off**. The new status shows on the site straight away.
+**To use it:** sign in and open the **account menu (top right) → Review queue**. Choose a section, open an item, check it against the source, then choose a decision and click **Save sign-off**. The new status shows on the site straight away.
 
 **To let a pharmacist verify doses:**
 1. They register with profession **Pharmacist**.

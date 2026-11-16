@@ -415,3 +415,109 @@ details.rq summary::-webkit-details-marker { display: none; }
 @media (max-width: 640px) { .guide-t td:first-child { white-space: normal; } }
 #g-patients, #g-pro, #g-tasks, #g-labels, #g-team, #g-owner, #g-faq { scroll-margin-top: 90px; }
 
+
+/* ===== UX update: menus, quieter labels, mobile, search, review queue, patient start, loading ===== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+.print-only { display: none }
+.banner.slim { background: var(--info-bg); color: var(--fg); padding: 9px 14px; font-size: .84rem }
+
+/* Larger text */
+html.big-text body { font-size: 18.5px }
+html.big-text body.aud-pt { font-size: 20px }
+html.big-text .mnav > a, html.big-text .navgrp > summary { font-size: 1rem }
+
+/* Account menu (top right) */
+.acctgrp > summary.acct-name { max-width: none; display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: var(--r); background: var(--navy-2); color: var(--mast-fg) }
+.acctgrp .navmenu { left: auto; right: 0; min-width: 240px }
+.avatar { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--teal); color: var(--on-accent); font-weight: 700; font-size: .78rem }
+.acct-label { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem }
+.menu-h { color: var(--muted); font-size: .78rem; padding: 4px 12px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis }
+.menu-btn { text-align: left; background: none; border: 0; border-top: 1px solid var(--line); margin-top: 4px; padding: 10px 12px; font: inherit; font-size: .94rem; color: var(--bad); cursor: pointer; border-radius: 0 0 6px 6px }
+.menu-btn:hover { background: var(--bad-bg) }
+.acct { gap: 6px }
+@media (max-width: 760px) { .acct-label { display: none } }
+
+/* Search as you type */
+.msearch { position: relative }
+.suggest { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 40; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-2); padding: 6px; max-height: 70vh; overflow-y: auto }
+.suggest .sg-h { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px 10px 2px }
+.suggest a { display: grid; gap: 1px; padding: 7px 10px; border-radius: 6px; color: var(--fg); text-decoration: none; font-size: .9rem }
+.suggest a .muted { font-size: .76rem }
+.suggest a:hover, .suggest a:focus { background: var(--teal-soft); outline: none }
+.suggest .sg-all { border-top: 1px solid var(--line); margin-top: 4px; font-weight: 600; color: var(--teal) }
+
+/* Phones: tables become stacked cards */
+@media (max-width: 640px) {
+  table.stack, table.stack tbody, table.stack tr, table.stack td { display: block; width: 100% }
+  table.stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0) }
+  table.stack tr { border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; margin-bottom: 10px; background: var(--surface) }
+  table.stack td { border: 0; padding: 4px 0 }
+  table.stack td[data-label]::before { content: attr(data-label); display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 1px }
+  table.stack td:empty { display: none }
+  .tablewrap { overflow: visible }
+}
+
+/* Drug page */
+.glance { border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: var(--r); padding: 14px 16px; background: var(--surface) }
+.glance h2 { margin-top: 0 }
+details.more-mono > summary { cursor: pointer; padding: 10px 0 }
+
+/* Review queue */
+.rq-tools { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin: 12px 0 }
+.rq-tools input[type=search] { flex: 1 1 280px; padding: 9px 12px; border: 1px solid var(--field); border-radius: var(--r); font: inherit; background: var(--surface); color: var(--fg) }
+.rq-keys { font-size: .8rem }
+kbd { font: .78rem var(--f-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface) }
+.rq-prog { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 2px 0 2px }
+.rq-prog span { display: block; height: 100%; background: var(--ok) }
+.rq-count { font-size: .78rem }
+details.rq summary { display: grid; grid-template-columns: auto 1fr; column-gap: 10px }
+details.rq summary .row-m { grid-column: 2 }
+.rq-sel { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--teal) }
+details.rq[open] { box-shadow: inset 3px 0 0 var(--teal) }
+.rq-bulk { position: sticky; bottom: 10px; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; margin-top: 16px; background: var(--surface); border: 1px solid var(--teal); border-radius: var(--r-lg); box-shadow: var(--shadow-2) }
+.rq-bulk input, .rq-bulk select { padding: 7px 10px; border: 1px solid var(--field); border-radius: var(--r); font: inherit; font-size: .88rem; background: var(--surface); color: var(--fg) }
+.rq-bulk #rqb-note { flex: 1 1 220px }
+
+/* Patient start screen */
+.start-here { border: 2px solid var(--teal-soft) }
+.start-here h2 { margin-top: 0 }
+.jcount { font-weight: 600 }
+
+/* Continue where you left off */
+.continue .chips a { max-width: 100% }
+
+/* Loading skeleton */
+.skeleton { display: grid; gap: 12px; padding: 24px 0 }
+.sk { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--line) 25%, var(--teal-soft) 37%, var(--line) 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite }
+.sk-eyebrow { width: 140px; height: 12px }
+.sk-h1 { width: min(520px, 90%); height: 34px }
+.sk-line { width: min(720px, 100%); height: 14px }
+.sk-line.short { width: min(420px, 70%) }
+.sk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 10px }
+.sk-card { height: 120px; border-radius: var(--r-lg) }
+@keyframes sk { 0% { background-position: 100% 50% } 100% { background-position: 0 50% } }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none } }
+
+/* Print a pathway */
+@media print {
+  .print-only { display: block }
+  .algo-actions, .chips[aria-label="Choose a pathway"], .rq-bulk, .suggest { display: none !important }
+  .algo .step.past, .algo .step { break-inside: avoid }
+  .algo .opts .btn:not([aria-pressed="true"]) { display: none }
+}
+
+
+/* Phone header: controls on one row, menu on one row */
+@media (max-width: 760px) {
+  .mast-top { gap: 8px 8px; padding-block: 10px }
+  .msearch { flex-basis: 100% }
+  .aud { flex-basis: 100% }
+  .lang { max-width: 112px; padding: 6px 8px; font-size: .8rem }
+  .theme-btn { padding: 6px 9px }
+  .mast .acct { margin-left: auto }
+  .mnav { gap: 2px; padding-bottom: 4px }
+  .mnav > a, .navgrp > summary { padding: 8px 7px; font-size: .86rem }
+  .navgrp > summary { gap: 4px }
+  .brand small { display: none }
+}
+
