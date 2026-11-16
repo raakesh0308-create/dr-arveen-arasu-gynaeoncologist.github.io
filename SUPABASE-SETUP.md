@@ -87,6 +87,22 @@ To use the editor, sign in and open **More → Edit content**. Admins can use it
 
 Online edits take priority over the built-in content. **Discard online edits** returns an item to the built-in version.
 
+## 10. Review queue and sign-off (upgrade 4)
+
+Run `supabase/upgrade-4-reviews.sql` once in **SQL Editor → New query**. New projects get it automatically from `setup.sql`. It creates:
+
+- `pro_reviews`: one sign-off per item, with decision, reviewer name, review date, next review date and note. Approved professionals can read sign-offs; only **reviewer** and **admin** accounts can write them.
+- A database safeguard: only an account whose profession is **Pharmacist** can mark a dose **PHARMACIST VERIFIED**.
+- `pro_review_audit`: the history of every sign-off and withdrawal.
+
+**To use it:** sign in and open **More → Review queue**. Choose a section, open an item, check it against the source, then choose a decision and click **Save sign-off**. The new status shows on the site straight away.
+
+**To let a pharmacist verify doses:**
+1. They register with profession **Pharmacist**.
+2. You approve them on the Accounts page and set their role to **reviewer**.
+
+Sign-offs are stored online and don't change the content files. If you change an item's text in the files later, review it again.
+
 ## Test the protection
 
 After setup, check all of these:

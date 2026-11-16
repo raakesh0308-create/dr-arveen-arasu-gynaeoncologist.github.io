@@ -27,7 +27,7 @@ const MY = {
 };
 const myLabel = k => { const [t, c] = MY[k] || MY["not-verified"]; return `<span class="pill ${c}">${esc(t)}</span>` };
 const statusPill = s => {
-  const c = { "VERIFIED AGAINST SOURCE": "ok", "CLINICALLY REVIEWED": "ok", "APPROVED": "ok", "PARTIALLY VERIFIED": "warn", "NOT VERIFIED": "warn", "DRAFT": "warn", "SUPERSEDED": "bad", "NOT STARTED": "", "DETECTED": "warn", "SEARCH TASK": "teal", "EXTRACTED": "teal", "PENDING PHARMACIST REVIEW": "warn" }[s] ?? "";
+  const c = { "VERIFIED AGAINST SOURCE": "ok", "CLINICALLY REVIEWED": "ok", "APPROVED": "ok", "PARTIALLY VERIFIED": "warn", "NOT VERIFIED": "warn", "DRAFT": "warn", "SUPERSEDED": "bad", "NOT STARTED": "", "DETECTED": "warn", "SEARCH TASK": "teal", "EXTRACTED": "teal", "PENDING PHARMACIST REVIEW": "warn", "PHARMACIST VERIFIED": "ok", "CHANGES NEEDED": "bad" }[s] ?? "";
   return `<span class="pill ${c}">${esc(s)}</span>`;
 };
 const supPill = g => g.superseded === "superseded" ? `<span class="pill bad">Superseded</span>` : g.superseded === "uncertain" ? `<span class="pill warn">Currency uncertain</span>` : `<span class="pill ok">Active</span>`;
@@ -37,7 +37,7 @@ const orgs = g => g.org.join(" / ");
 const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
 const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"], ["leaflets", "Information leaflets"], ["articles", "Articles"], ["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["glossary", "Medical glossary"], ["workspace", "Saved"], ["governance", "How we check information"], ["about", "About"]];
 /* Each route name maps to its own HTML file; records use ?id= */
-const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
+const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
@@ -102,14 +102,14 @@ const NAV_PRO_GROUPS = [["home", "Home"],
   { label: "Reference", items: [["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
   { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"]] },
   ["updates", "Updates"], ["pt", "Patient Education"], ["sdm", "Shared decisions"], ["workspace", "My Workspace"],
-  { label: "More", items: [["cms", "Edit content"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]] }];
+  { label: "More", items: [["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]] }];
 function renderNav() {
   renderAcct();
   document.body.classList.toggle("aud-pt", state.aud === "pt");
   const map = { g: "guidelines", recs: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", l: "leaflets", ptd: "ptcancers", a: "articles" };
   const cur = map[PAGE] || PAGE;
   const link = ([r, t]) => `<a href="${url(r)}" ${r === cur ? 'aria-current="page"' : ""}>${t}</a>`;
-  const allowed = ([r]) => (r !== "accounts" || isAdmin()) && (r !== "cms" || isEditor());
+  const allowed = ([r]) => (r !== "accounts" || isAdmin()) && (r !== "cms" || isEditor()) && (r !== "review" || isReviewer());
   $("#nav").innerHTML = state.aud === "pro"
     ? NAV_PRO_GROUPS.map(g => Array.isArray(g) ? link(g) : `<details class="navgrp"><summary class="${g.items.some(([r]) => r === cur) ? "cur" : ""}">${g.label}</summary><div class="navmenu">${g.items.filter(allowed).map(link).join("")}</div></details>`).join("")
     : NAV_PT.filter(allowed).map(link).join("");
@@ -174,6 +174,8 @@ state.user = null; state.profile = null; state.proLoaded = false;
 const approved = () => state.profile?.status === "approved";
 const isAdmin = () => approved() && state.profile.role === "admin";
 const isEditor = () => approved() && ["editor", "reviewer", "admin"].includes(state.profile.role);
+const isReviewer = () => approved() && ["reviewer", "admin"].includes(state.profile.role);
+const isPharmacist = () => approved() && state.profile.profession === "Pharmacist";
 const canApprove = () => approved() && ["reviewer", "admin"].includes(state.profile.role);
 /* Online edits to patient content (Supabase patient_items) are applied on top of the built-in content */
 state.items = [];
@@ -219,7 +221,27 @@ async function loadPro() {
   for (const k of ["leaflets", "articles", "glossary", "journey", "concerns", "sdmQuestions"]) delete pro[k]; // patient content always comes from the public file
   if (pro.diseases) pro.diseases = pro.diseases.map(d => { const p = pub.diseases.find(x => x.id === d.id) || {}; return { ...d, patient: p.patient || d.patient, patientSections: p.patientSections || null, image: p.image || null, pageStatus: p.pageStatus, online: p.online, reviewer: p.reviewer, lastReview: p.lastReview, nextReview: p.nextReview }; });
   D = { ...pub, ...pro };
-  state.proLoaded = true; return true;
+  state.proLoaded = true;
+  const rv = await sb.from("pro_reviews").select("*"); // table exists after upgrade-4-reviews.sql
+  state.reviews = {}; if (!rv.error) applyReviews(rv.data || []);
+  return true;
+}
+/* Online sign-offs (pro_reviews) are laid over the built-in records. Item ids look like "recommendation:R-EN-A01". */
+const REVIEW_KINDS = { guideline: "guidelines", recommendation: "recommendations", staging: "staging", protocol: "protocols", drug: "drugs", trial: "trials", literature: "literature", algorithm: "algorithms", disease: "diseases" };
+function applyReviews(rows) {
+  for (const r of rows) {
+    state.reviews[r.item_id] = r;
+    const id = r.item_id.slice(r.item_id.indexOf(":") + 1);
+    const info = { status: r.status, reviewer: r.reviewer, verifiedOn: r.reviewed_on, nextReview: r.next_review, reviewNote: r.note };
+    if (r.kind === "dose") {
+      const x = byId(D.drugs, id) || byId(D.protocols, id); if (x) Object.assign(x, { doseStatus: r.status, doseReviewer: r.reviewer, doseReviewedOn: r.reviewed_on, doseNote: r.note });
+      continue;
+    }
+    const x = byId(D[REVIEW_KINDS[r.kind]] || [], id); if (!x) continue;
+    if (r.kind === "disease") { x.refReview = info; continue; }
+    Object.assign(x, info);
+    if (r.kind === "trial" && x.outcome) x.outcome.status = r.status;
+  }
 }
 function renderAcct() {
   const el = $("#acct"); if (!el) return;
@@ -407,12 +429,12 @@ function headline(t) {
 /* Review progress across professional records */
 function verificationSummary() {
   const recs = [
-    ...D.guidelines.map(g => g.status), ...D.recommendations.map(r => r.status), ...D.staging.map(() => "NOT VERIFIED"),
-    ...D.protocols.map(p => p.status), ...D.drugs.map(() => "NOT VERIFIED"), ...D.trials.map(t => t.outcome?.status || "NOT VERIFIED"),
-    ...D.diseases.filter(d => d.reference).map(() => "NOT VERIFIED")
+    ...D.guidelines.map(g => g.status), ...D.recommendations.map(r => r.status), ...D.staging.map(s => s.status || "NOT VERIFIED"),
+    ...D.protocols.map(p => p.status), ...D.drugs.map(d => d.status || "NOT VERIFIED"), ...D.trials.map(t => t.outcome?.status || t.status || "NOT VERIFIED"),
+    ...D.diseases.filter(d => d.reference).map(d => d.refReview?.status || "NOT VERIFIED")
   ];
   const n = s => recs.filter(x => x === s).length;
-  const ver = n("VERIFIED AGAINST SOURCE") + n("CLINICALLY REVIEWED") + n("APPROVED"), part = n("PARTIALLY VERIFIED"), tot = recs.length;
+  const ver = n("VERIFIED AGAINST SOURCE") + n("CLINICALLY REVIEWED") + n("APPROVED"), part = n("PARTIALLY VERIFIED") + n("EXTRACTED"), tot = recs.length;
   return { tot, ver, part, not: tot - ver - part };
 }
 const LANG_NAMES = { en: "English", ms: "Bahasa Malaysia", zh: "中文", ta: "தமிழ்" };
@@ -449,7 +471,7 @@ V.home = () => `
   ${(() => { const v = verificationSummary(); const pct = x => (100 * x / v.tot).toFixed(1); return `<section class="section progress-panel" aria-label="Review progress">
     <div class="section-h"><h2>Review progress</h2><span class="muted">${v.tot} professional records</span></div>
     <div class="vbar" role="img" aria-label="${v.ver} verified, ${v.part} partially verified, ${v.not} not yet verified"><span class="v-ok" style="width:${pct(v.ver)}%"></span><span class="v-part" style="width:${pct(v.part)}%"></span><span class="v-not" style="width:${pct(v.not)}%"></span></div>
-    <div class="vlegend"><span><i class="v-ok"></i>Verified ${v.ver}</span><span><i class="v-part"></i>Partially verified ${v.part}</span><span><i class="v-not"></i>Not yet verified ${v.not}</span>${isAdmin() ? `<a href="${url(`admin`)}">Open the review tracker</a>` : ""}</div>
+    <div class="vlegend"><span><i class="v-ok"></i>Verified ${v.ver}</span><span><i class="v-part"></i>Extracted or partially verified ${v.part}</span><span><i class="v-not"></i>Not yet verified ${v.not}</span>${isReviewer() ? `<a href="${url(`review`)}">Open the review queue</a>` : ""}</div>
     <p class="muted" style="font-size:.84rem">Doses are pending pharmacist review and recommendation grades are transcribed from the source but await clinical review. Check every record's status label before relying on it.</p></section>`; })()}
   <section class="section"><div class="section-h"><h2>Disease hubs</h2><a href="${url(`diseases`)}">All diseases</a></div>
     <div class="grid">${D.diseases.map(d => { const nt = D.trials.filter(t => t.disease === d.id).length, ng = D.guidelines.filter(g => g.disease === d.id).length, ns = D.staging.filter(s => s.cancer === d.id && !s.superseded).length;
@@ -570,7 +592,7 @@ V.d = id => {
     <div><span class="eyebrow">Guidelines</span>${gl.map(g => `<a href="${url(`g.${g.id}`)}">${esc(orgs(g))} ${esc(g.version || "")}</a>`).join("") || `<span class="na">None entered</span>`}</div>
     <div><span class="eyebrow">For patients</span><a href="${url(`ptd.${d.id}`)}">Patient page</a>${D.leaflets.filter(l => l.disease === id && (l.sections || []).length).map(l => `<a href="${url(`l.${l.id}`)}">${esc(l.title)}</a>`).join("")}</div>
   </section>
-  ${d.reference ? `<p class="banner"><span class="pill teal">ARVEEN educational summary</span> ${statusPill("NOT VERIFIED")} Written for education and awaiting clinical review against the cited guidelines. For doses see the drug and protocol pages. Do not use for prescribing.</p>` : ""}
+  ${d.reference ? `<p class="banner"><span class="pill teal">ARVEEN educational summary</span> ${statusPill(d.refReview?.status || "NOT VERIFIED")} ${d.refReview ? `Reviewed by ${esc(d.refReview.reviewer)} on ${esc(d.refReview.verifiedOn)}.` : "Written for education and awaiting clinical review against the cited guidelines."} For doses see the drug and protocol pages. Do not use for prescribing.</p>` : ""}
   ${mode !== "quick" ? `<p class="banner info">Comprehensive reference uses the standard 24-section template.</p>` : ""}
   <div class="list">${secs.map((s, i) => `<div class="row"><span class="row-t">${mode !== "quick" ? `<span class="mono muted">${String(DTEMPLATE.indexOf(s) + 1).padStart(2, "0")}</span>` : ""} ${s}</span>
     ${body(s)}</div>`).join("")}</div>
@@ -579,7 +601,7 @@ V.d = id => {
 
 V.staging = () => `<span class="eyebrow">Staging module</span><h1>Staging systems</h1>
   <p class="banner info">Definitions are <b>ARVEEN educational paraphrases</b> of the FIGO criteria, not the published text, and are NOT VERIFIED. Formal staging is kept separate from treatment recommendations. Do not mix criteria between versions.</p>
-  <div class="list">${D.staging.map(s => `<a class="row" href="${url(`s.${s.id}`)}"><span class="row-t">${esc(s.name)} <span class="mono">${esc(s.authority)} ${esc(s.version)}</span> ${s.superseded ? '<span class="pill bad">Superseded</span>' : '<span class="pill ok">Current per seed</span>'} ${statusPill("NOT VERIFIED")}</span><span class="row-m">${dname(s.cancer)} · ${s.stages.length ? s.stages.length + " main stages" : "criteria not entered"}</span></a>`).join("")}</div>
+  <div class="list">${D.staging.map(s => `<a class="row" href="${url(`s.${s.id}`)}"><span class="row-t">${esc(s.name)} <span class="mono">${esc(s.authority)} ${esc(s.version)}</span> ${s.superseded ? '<span class="pill bad">Superseded</span>' : '<span class="pill ok">Current per seed</span>'} ${statusPill(s.status || "NOT VERIFIED")}</span><span class="row-m">${dname(s.cancer)} · ${s.stages.length ? s.stages.length + " main stages" : "criteria not entered"}</span></a>`).join("")}</div>
   <p><a class="btn" href="${url(`education`)}">Practise with staging exercises →</a></p>`;
 function stageTree(list) {
   return list.map(x => x.sub ? `<details class="stage" open><summary><span class="code">${esc(x.s)}</span><span>${esc(x.d)}</span></summary><div class="kids">${stageTree(x.sub)}</div></details>`
@@ -589,7 +611,7 @@ V.s = id => {
   const s = byId(D.staging, id); if (!s) return notFound();
   recent("Staging", s.id, `${s.authority} ${s.version} ${dname(s.cancer)}`);
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Staging · ${dname(s.cancer)}</span><h1>${esc(s.name)}</h1>
-    <div class="row-m"><span class="mono">${esc(s.authority)} · version ${esc(s.version)}</span> ${statusPill("NOT VERIFIED")} <span class="pill teal">ARVEEN educational paraphrase</span></div>
+    <div class="row-m"><span class="mono">${esc(s.authority)} · version ${esc(s.version)}</span> ${statusPill(s.status || "NOT VERIFIED")} <span class="pill teal">ARVEEN educational paraphrase</span></div>
     <div class="actions">${bmBtn("Staging", s.id, s.name + " " + s.version)}<input type="text" id="sfilter" placeholder="Filter stages, e.g. IIIC or node" aria-label="Filter stages" style="max-width:280px"></div></div>
   ${s.superseded ? `<p class="banner bad">Superseded by <a href="${url(`s.${s.supersededBy}`)}">${esc(byId(D.staging, s.supersededBy).name)} ${esc(byId(D.staging, s.supersededBy).version)}</a>. Use only to interpret older reports.</p>` : ""}
   <p class="prose">${esc(s.notes)}</p>
@@ -607,7 +629,8 @@ V.p = id => {
   const W = `<span class="withheld">withheld · not verified</span>`;
   const fields = [["Regimen", esc(p.name)], ["Clinical indication", esc(p.indication)], ["Disease and histology", `${dname(p.disease)} · ${esc(p.histology)}`], ["Stage", na(p.stage)], ["Treatment intent", na(p.intent)], ["Treatment line", na(p.line)], ["Eligibility", W], ["Biomarker requirements", na(p.biomarker)], ["Cycle length", na(p.cycle)], ["Treatment duration", na(p.duration)], ["Premedication", W], ["Supportive medications", W], ["Baseline investigations", W], ["Monitoring", W], ["Renal adjustments", W], ["Hepatic adjustments", W], ["Haematological criteria", W], ["Dose modifications", W], ["Contraindications", W], ["Important interactions", W], ["Toxicity management", W], ["Interruption / restart criteria", W], ["Source protocol", esc(p.sourceType)], ["Version", '<span class="na">Not recorded</span>'], ["Verification status", statusPill(p.status)], ["Malaysian applicability", myLabel(p.malaysia)]];
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Treatment protocol · ${esc(p.modality)}</span><h1>${esc(p.name)}</h1><div class="row-m">${statusPill(p.status)} ${myLabel(p.malaysia)} ${p.labels.map(l => `<span class="pill bad">${esc(l)}</span>`).join("")}</div><div class="actions">${bmBtn("Protocol", p.id, p.name)}</div></div>
-  ${p.doseStatus ? `<p class="banner bad">${statusPill(p.doseStatus)} Not for prescribing until a pharmacist has checked these doses. Dose source: ${esc(p.doseSource)}.</p>` : `<p class="banner bad">Not for prescribing. This record has no verified source protocol. Dose fields stay empty until a reviewer enters them from an authoritative source and clinical approval is recorded.</p>`}
+  ${p.doseStatus === "PHARMACIST VERIFIED" ? `<p class="banner">${statusPill(p.doseStatus)} Doses checked by ${esc(p.doseReviewer)} on ${esc(p.doseReviewedOn)}. Dose source: ${esc(p.doseSource)}. Confirm against your institutional protocol before prescribing.</p>`
+    : p.doseStatus ? `<p class="banner bad">${statusPill(p.doseStatus)} Not for prescribing until a pharmacist has checked these doses. Dose source: ${esc(p.doseSource)}.${p.doseNote ? ` Reviewer note: ${esc(p.doseNote)}` : ""}</p>` : `<p class="banner bad">Not for prescribing. This record has no verified source protocol. Dose fields stay empty until a reviewer enters them from an authoritative source and clinical approval is recorded.</p>`}
   <section class="section"><h2>Regimen components</h2><div class="tablewrap"><table><thead><tr><th>Drug</th><th>Calculation basis</th><th>Dose</th><th>Route</th><th>Schedule</th></tr></thead><tbody>
     ${p.components.map(c => `<tr><td><a href="${url(`dr.${c.drug}`)}">${esc(byId(D.drugs, c.drug)?.name || c.drug)}</a></td><td>${esc(c.basis)}</td><td>${c.dose ? `<b>${esc(c.dose)}</b>` : W}</td><td>${esc(c.route)}</td><td>${c.schedule ? esc(c.schedule) : W}</td></tr>`).join("")}</tbody></table></div></section>
   <section class="section"><h2>Protocol fields</h2><div class="kv">${fields.map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div></section>
@@ -616,14 +639,14 @@ V.p = id => {
 
 V.drugs = () => `<span class="eyebrow">Oncology drug reference</span><h1>Drug monographs</h1>
   <p class="banner info">Monographs are <b>ARVEEN educational summaries</b>, not official product information. Malaysian (NPRA) registration is not verified for any drug.</p>
-  <div class="list">${D.drugs.map(d => `<a class="row" href="${url(`dr.${d.id}`)}"><span class="row-t">${esc(d.name)} ${statusPill("NOT VERIFIED")}</span><span class="row-m"><span>${esc(d.cls)}</span><span>${d.cancers.map(dname).join(", ")}</span></span></a>`).join("")}</div>`;
+  <div class="list">${D.drugs.map(d => `<a class="row" href="${url(`dr.${d.id}`)}"><span class="row-t">${esc(d.name)} ${statusPill(d.status || "NOT VERIFIED")}${d.doseStatus ? " " + statusPill(d.doseStatus) : ""}</span><span class="row-m"><span>${esc(d.cls)}</span><span>${d.cancers.map(dname).join(", ")}</span></span></a>`).join("")}</div>`;
 V.dr = id => {
   const d = byId(D.drugs, id); if (!d) return notFound();
   recent("Drug", d.id, d.name);
   const W = `<span class="withheld">not entered · verify against product information</span>`;
   const pr = D.protocols.filter(p => p.components.some(c => c.drug === id));
-  return `<article class="detail"><div class="dhead"><span class="eyebrow">Drug monograph</span><h1>${esc(d.name)}</h1><div class="row-m"><span class="pill teal">ARVEEN educational summary</span> ${statusPill("NOT VERIFIED")} ${myLabel("regulatory")}</div><div class="actions">${bmBtn("Drug", d.id, d.name)}</div></div>
-  <div class="kv">${[["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", d.doses ? `${statusPill(d.doseStatus)}<ul class="doses">${d.doses.map(x => `<li><b>${esc(x.indication)}:</b> ${esc(x.dose)} <span class="muted">Source: ${esc(x.source)}</span></li>`).join("")}</ul>` : `<span class="withheld">not entered</span>`], ["Administration", d.admin ? esc(d.admin) : W], ["Contraindications", d.contra ? esc(d.contra) : W], ["Drug interactions", d.interactions ? esc(d.interactions) : W], ["Hepatic considerations", d.hepatic ? esc(d.hepatic) : W], ["Pregnancy and breastfeeding", d.pregnancy ? esc(d.pregnancy) : W], ["Fertility considerations", d.fertility ? esc(d.fertility) : W], ["Monitoring", d.monitoring ? esc(d.monitoring) : W], ["Dose modifications", `<span class="withheld">withheld · per verified protocol only</span>`], ["Patient counselling", d.counselling ? esc(d.counselling) : W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
+  return `<article class="detail"><div class="dhead"><span class="eyebrow">Drug monograph</span><h1>${esc(d.name)}</h1><div class="row-m"><span class="pill teal">ARVEEN educational summary</span> ${statusPill(d.status || "NOT VERIFIED")} ${myLabel("regulatory")}</div><div class="actions">${bmBtn("Drug", d.id, d.name)}</div></div>
+  <div class="kv">${[["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", d.doses ? `${statusPill(d.doseStatus)}${d.doseReviewer ? ` <span class="muted">by ${esc(d.doseReviewer)}, ${esc(d.doseReviewedOn)}${d.doseNote ? ` — ${esc(d.doseNote)}` : ""}</span>` : ""}<ul class="doses">${d.doses.map(x => `<li><b>${esc(x.indication)}:</b> ${esc(x.dose)} <span class="muted">Source: ${esc(x.source)}</span></li>`).join("")}</ul>` : `<span class="withheld">not entered</span>`], ["Administration", d.admin ? esc(d.admin) : W], ["Contraindications", d.contra ? esc(d.contra) : W], ["Drug interactions", d.interactions ? esc(d.interactions) : W], ["Hepatic considerations", d.hepatic ? esc(d.hepatic) : W], ["Pregnancy and breastfeeding", d.pregnancy ? esc(d.pregnancy) : W], ["Fertility considerations", d.fertility ? esc(d.fertility) : W], ["Monitoring", d.monitoring ? esc(d.monitoring) : W], ["Dose modifications", `<span class="withheld">withheld · per verified protocol only</span>`], ["Patient counselling", d.counselling ? esc(d.counselling) : W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
   ${noteBox(d.id)}</article>`;
 };
 
@@ -672,7 +695,7 @@ V.algorithms = () => {
   }).join("");
   const g = byId(D.guidelines, a.source);
   return `<span class="eyebrow">Clinical algorithms</span>${picker}<h1>${esc(a.title)}</h1>
-  <div class="row-m">${statusPill(a.status)} <span>Main source: <a href="${url(`g.${a.source}`)}">${esc(a.source)}</a>${g ? ` (${esc(g.version || "")}, ${esc(g.status || "not verified")})` : ""}</span><span>Verification date: <span class="na">Not yet verified</span></span></div>
+  <div class="row-m">${statusPill(a.status)} <span>Main source: <a href="${url(`g.${a.source}`)}">${esc(a.source)}</a>${g ? ` (${esc(g.version || "")}, ${esc(g.status || "not verified")})` : ""}</span><span>Verification date: ${a.verifiedOn ? `${esc(a.verifiedOn)} (${esc(a.reviewer)})` : '<span class="na">Not yet verified</span>'}</span></div>
   ${a.sourceNote ? `<p class="muted" style="font-size:.86rem">${esc(a.sourceNote)}</p>` : ""}
   <p class="banner info">Educational pathway. Where information is missing it says so instead of forcing a conclusion. It does not select treatment: the MDT decides.</p>
   <p class="prose"><b>Entry criteria:</b> ${esc(a.entry)}</p>
@@ -879,7 +902,7 @@ function reviewBlock(rec) {
   return `<aside class="reviewed" aria-label="Review information"><div><span class="eyebrow">Reviewed by</span><span>${by ? esc(by) : '<span class="na">Not yet reviewed</span>'}</span></div>
     <div><span class="eyebrow">Last reviewed</span><span>${last ? esc(last) : '<span class="na">—</span>'}</span></div>
     <div><span class="eyebrow">Next review due</span><span>${next ? esc(next) : '<span class="na">Set at first review</span>'}</span></div>
-    <div><span class="eyebrow">Status</span><span>${statusPill(rec.status || rec.approval || "NOT VERIFIED")}</span></div></aside>`;
+    <div><span class="eyebrow">Status</span><span>${statusPill(rec.status || rec.approval || "NOT VERIFIED")}</span></div>${rec.reviewNote ? `<div><span class="eyebrow">Reviewer note</span><span>${esc(rec.reviewNote)}</span></div>` : ""}</aside>`;
 }
 
 /* ---------- views: patient ---------- */
@@ -1136,8 +1159,73 @@ function render() {
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
-  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms();
+  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview();
 }
+/* ---------- review queue (reviewers and admins; doses by pharmacists) ---------- */
+const DONE = ["VERIFIED AGAINST SOURCE", "CLINICALLY REVIEWED", "APPROVED", "PHARMACIST VERIFIED"];
+const RQ_TABS = [["recommendation", "Recommendations"], ["dose", "Doses"], ["guideline", "Guidelines"], ["drug", "Drug monographs"], ["protocol", "Protocols"], ["trial", "Trials"], ["staging", "Staging"], ["algorithm", "Pathways"], ["literature", "Research library"], ["disease", "Disease references"]];
+function queueItems() {
+  const doseText = d => (d.doses || []).map(x => `${x.indication}: ${x.dose} [${x.source}]`).join("\n");
+  const protoDose = p => p.components.map(c => `${byId(D.drugs, c.drug)?.name || c.drug}: ${c.dose || "—"} (${c.schedule || "—"})`).join("\n") + (p.doseSource ? `\nSource: ${p.doseSource}` : "");
+  return [
+    ...D.recommendations.map(r => ({ kind: "recommendation", id: r.id, group: r.guideline, title: r.id, text: r.text, meta: `${r.location} · ${r.grade}, ${r.strength}`, route: `g.${r.guideline}`, status: r.status })),
+    ...D.drugs.filter(d => d.doses).map(d => ({ kind: "dose", id: d.id, group: "Drug doses", title: d.name, text: doseText(d), meta: "Check against NPRA product information and the institutional protocol", route: `dr.${d.id}`, status: d.doseStatus })),
+    ...D.protocols.filter(p => p.doseStatus).map(p => ({ kind: "dose", id: p.id, group: "Protocol doses", title: p.name, text: protoDose(p), meta: p.indication, route: `p.${p.id}`, status: p.doseStatus })),
+    ...D.guidelines.map(g => ({ kind: "guideline", id: g.id, group: dname(g.disease), title: g.title, text: g.summary, meta: `${g.id} · ${g.version || ""}`, route: `g.${g.id}`, status: g.status })),
+    ...D.drugs.map(d => ({ kind: "drug", id: d.id, group: d.cls, title: d.name, text: `${d.moa} Adverse effects: ${d.ae}`, meta: "Monograph text (doses are reviewed separately)", route: `dr.${d.id}`, status: d.status || "NOT VERIFIED" })),
+    ...D.protocols.map(p => ({ kind: "protocol", id: p.id, group: dname(p.disease), title: p.name, text: p.indication, meta: p.sourceType, route: `p.${p.id}`, status: p.status })),
+    ...D.trials.map(t => ({ kind: "trial", id: t.id, group: dname(t.disease), title: t.name, text: t.outcome ? headline(t) : `${t.intervention} vs ${t.comparator}`, meta: t.pub, route: `t.${t.id}`, status: t.outcome?.status || t.status || "NOT VERIFIED" })),
+    ...D.staging.map(s => ({ kind: "staging", id: s.id, group: dname(s.cancer), title: s.name, text: s.notes || "", meta: `${s.authority} ${s.version}`, route: `s.${s.id}`, status: s.status || "NOT VERIFIED" })),
+    ...D.algorithms.map(a => ({ kind: "algorithm", id: a.id, group: a.disease === "all" ? "All cancers" : dname(a.disease), title: a.title, text: a.sourceNote || a.entry, meta: `Main source ${a.source}`, route: `algorithms.${a.id}`, status: a.status })),
+    ...(D.literature || []).map(x => ({ kind: "literature", id: x.id, group: x.place === "evidence" ? "Evidence page" : "Education page", title: x.title, text: x.summary + "\n" + x.findings.join("\n"), meta: `${x.citation} · doi ${x.doi}`, route: x.place === "evidence" ? "compare" : "education", status: x.status })),
+    ...D.diseases.filter(d => d.reference).map(d => ({ kind: "disease", id: d.id, group: "Disease references", title: `${d.name}: 24-section reference`, text: d.short, meta: "Educational summary", route: `d.${d.id}`, status: d.refReview?.status || "NOT VERIFIED" }))
+  ].map(x => ({ ...x, key: `${x.kind}:${x.id}`, review: state.reviews?.[`${x.kind}:${x.id}`] }));
+}
+V.review = () => {
+  const all = queueItems(), tab = state.filters.rq || "recommendation", showAll = !!state.filters.rqAll;
+  const pending = x => !DONE.includes(x.status);
+  const items = all.filter(x => x.kind === tab && (showAll || pending(x)));
+  const today = new Date().toISOString().slice(0, 10), nextYear = new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10);
+  const opts = k => (k === "dose" ? ["PHARMACIST VERIFIED", "CHANGES NEEDED"] : ["VERIFIED AGAINST SOURCE", "CLINICALLY REVIEWED", "APPROVED", "CHANGES NEEDED"]);
+  const form = x => `<form class="rq-form" data-rkey="${esc(x.key)}" data-rkind="${x.kind}">
+      <label>Decision<select name="status">${opts(x.kind).map(o => `<option ${x.review?.status === o ? "selected" : ""} ${o === "PHARMACIST VERIFIED" && !isPharmacist() ? "disabled" : ""}>${o}</option>`).join("")}</select></label>
+      <label>Reviewer name<input name="reviewer" required minlength="2" value="${esc(x.review?.reviewer || state.profile?.full_name || "")}"></label>
+      <label>Review date<input name="reviewed_on" type="date" required value="${esc(x.review?.reviewed_on || today)}"></label>
+      <label>Next review<input name="next_review" type="date" value="${esc(x.review?.next_review || nextYear)}"></label>
+      <label class="wide">Note (what you checked, or what must change)<textarea name="note" rows="2" maxlength="2000">${esc(x.review?.note || "")}</textarea></label>
+      <div class="wide"><button class="btn primary" type="submit">Save sign-off</button>${x.review ? ` <button class="btn" type="button" data-rwithdraw="${esc(x.key)}">Withdraw sign-off</button>` : ""} <span class="rq-msg" role="status"></span></div>
+      ${x.kind === "dose" && !isPharmacist() ? `<p class="muted wide">Only an account registered as a Pharmacist can mark doses verified. You can record CHANGES NEEDED.</p>` : ""}</form>`;
+  const groups = [...new Set(items.map(x => x.group))];
+  return `<span class="eyebrow">Governance</span><h1>Review queue</h1>
+  <p class="prose muted">Check each item against its source, then record your decision. Sign-offs are saved with your account, name and date, logged in the audit history, and shown on the site at once. Doses are verified by pharmacists; other items by reviewers.</p>
+  <div class="chips" role="group" aria-label="Item type">${RQ_TABS.map(([k, l]) => { const n = all.filter(x => x.kind === k && pending(x)).length; return `<button class="chip" data-rq="${k}" aria-pressed="${k === tab}">${l} <span class="muted">${n}</span></button>`; }).join("")}</div>
+  <label class="check"><input type="checkbox" id="rq-all" ${showAll ? "checked" : ""}> Show items already signed off</label>
+  ${items.length ? groups.map(g => `<section class="section"><h2>${esc(tab === "recommendation" ? `${g} — ${byId(D.guidelines, g)?.title || ""}` : g)}</h2><div class="list">${items.filter(x => x.group === g).map(x => `<details class="row rq">
+    <summary><span class="row-t">${esc(x.title)} ${statusPill(x.status || "NOT VERIFIED")}${x.review ? ` <span class="muted">${esc(x.review.reviewer)}, ${esc(x.review.reviewed_on)}</span>` : ""}</span><span class="row-m"><span>${esc(x.meta || "")}</span></span></summary>
+    <p class="prose rq-text">${esc(x.text || "").replace(/\n/g, "<br>")}</p><p><a href="${url(x.route)}" target="_blank" rel="noopener">Open on the site ↗</a></p>${form(x)}</details>`).join("")}</div></section>`).join("")
+    : `<p class="banner">Nothing waiting in this section${showAll ? "" : ". Tick 'Show items already signed off' to see completed items"}.</p>`}`;
+};
+function bindReview() {
+  if (PAGE !== "review") return;
+  app.querySelectorAll("[data-rq]").forEach(b => b.onclick = () => { state.filters.rq = b.dataset.rq; render(); });
+  const all = $("#rq-all"); if (all) all.onchange = () => { state.filters.rqAll = all.checked; render(); };
+  app.querySelectorAll(".rq-form").forEach(f => f.onsubmit = async e => {
+    e.preventDefault();
+    const msg = f.querySelector(".rq-msg"), v = n => f.elements[n].value.trim() || null;
+    msg.textContent = "Saving…";
+    const row = { item_id: f.dataset.rkey, kind: f.dataset.rkind, status: v("status"), reviewer: v("reviewer"), reviewed_on: v("reviewed_on"), next_review: v("next_review"), note: v("note") };
+    const { data, error } = await sb.from("pro_reviews").upsert(row).select().single();
+    if (error) { msg.textContent = /does not exist|schema cache/.test(error.message) ? "The review table isn't set up yet: run supabase/upgrade-4-reviews.sql." : error.message; msg.className = "rq-msg err"; return; }
+    applyReviews([data]); render();
+  });
+  app.querySelectorAll("[data-rwithdraw]").forEach(b => b.onclick = async () => {
+    if (!confirm("Withdraw this sign-off? The item goes back to its built-in status.")) return;
+    const { error } = await sb.from("pro_reviews").delete().eq("item_id", b.dataset.rwithdraw);
+    if (error) return alert(error.message);
+    location.reload();
+  });
+}
+
 /* ---------- content editor (editors, reviewers, admins) ---------- */
 const CMS_KINDS = [["article", "Articles"], ["leaflet", "Leaflets"], ["cancer", "Cancer pages"]];
 const CMS_STATUSES = ["DRAFT", "EDITORIAL REVIEW", "CLINICAL REVIEW", "APPROVED", "WITHDRAWN"];
@@ -1294,9 +1382,10 @@ async function boot() {
   app.innerHTML = `<p class="muted">Loading…</p>`;
   try { await loadSession(); await loadPatientItems(); if (approved() && (GATED || PAGE === "search" || PAGE === "workspace")) await loadPro(); } catch (e) { console.error(e); }
   IDX = index();
-  if ((GATED && !state.proLoaded) || (PAGE === "accounts" && !isAdmin()) || (PAGE === "cms" && !isEditor())) {
+  if ((GATED && !state.proLoaded) || (PAGE === "accounts" && !isAdmin()) || (PAGE === "cms" && !isEditor()) || (PAGE === "review" && !isReviewer())) {
     renderNav();
     app.innerHTML = PAGE === "accounts" && state.proLoaded ? `<h1>Administrators only</h1><p class="prose">Account approvals are limited to administrators.</p>`
+      : PAGE === "review" && state.proLoaded ? `<h1>Reviewers only</h1><p class="prose">The review queue is for accounts with the reviewer or admin role. An administrator can change your role on the Accounts page. Pharmacists who verify doses need the reviewer role and the profession Pharmacist.</p>`
       : PAGE === "cms" && state.proLoaded ? `<h1>Editors only</h1><p class="prose">The content editor is for accounts with the editor, reviewer or admin role. An administrator can change your role on the Accounts page.</p>` : gateView();
     document.title = "Sign in · DR ARVEEN";
     bindAuth(); return;
