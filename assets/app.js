@@ -252,6 +252,10 @@ function applyReviews(rows) {
     state.reviews[r.item_id] = r;
     const id = r.item_id.slice(r.item_id.indexOf(":") + 1);
     const info = { status: r.status, reviewer: r.reviewer, verifiedOn: r.reviewed_on, nextReview: r.next_review, reviewNote: r.note };
+    if (r.kind === "notes") {
+      const c = (D.notes?.chapters || []).find(x => x.id === id); if (c) Object.assign(c, info);
+      continue;
+    }
     if (r.kind === "dose") {
       const x = byId(D.drugs, id) || byId(D.protocols, id); if (x) Object.assign(x, { doseStatus: r.status, doseReviewer: r.reviewer, doseReviewedOn: r.reviewed_on, doseNote: r.note });
       continue;
@@ -1258,7 +1262,7 @@ V.notes = () => {
   <div class="nsearch"><label for="nq">Search the notes</label><input id="nq" type="search" placeholder="Try LACC, BRCA, Sedlis, p57, EMA-CO" autocomplete="off"><output id="ncount" for="nq"></output></div>
   <div class="nlayout"><nav class="nrail" aria-label="Chapters">${rail}</nav>
   <div class="nmain"><p class="banner" id="nempty" hidden>No section matches that search. Try a shorter term, such as a trial name or a gene.</p>
-  ${N.chapters.map(c => `<article class="nchap" id="nb-${c.id}"><div class="nchap-h">${badge(c.disease === "all" ? "all" : c.disease, true)}<div><span class="eyebrow">Chapter ${c.n}</span><h2>${esc(c.title)}</h2><p class="muted">${esc(c.byline)}</p></div></div>
+  ${N.chapters.map(c => `<article class="nchap" id="nb-${c.id}"><div class="nchap-h">${badge(c.disease === "all" ? "all" : c.disease, true)}<div><span class="eyebrow">Chapter ${c.n}</span><h2>${esc(c.title)}</h2><p class="muted">${esc(c.byline)}</p><div class="row-m">${statusPill(c.status || "NOT VERIFIED")}${c.reviewer ? ` <span class="muted">Reviewed by ${esc(c.reviewer)}, ${esc(c.verifiedOn)}${c.reviewNote ? ` — ${esc(c.reviewNote)}` : ""}</span>` : ""}</div></div></div>
     ${flagBox(c)}${c.html}</article>`).join("")}</div></div>`;
 };
 function bindNotes() {
@@ -1378,7 +1382,7 @@ V.guide = () => {
 
 /* ---------- review queue (reviewers and admins; doses by pharmacists) ---------- */
 const DONE = ["VERIFIED AGAINST SOURCE", "CLINICALLY REVIEWED", "APPROVED", "PHARMACIST VERIFIED"];
-const RQ_TABS = [["recommendation", "Recommendations"], ["dose", "Doses"], ["guideline", "Guidelines"], ["drug", "Drug monographs"], ["protocol", "Protocols"], ["trial", "Trials"], ["staging", "Staging"], ["algorithm", "Pathways"], ["literature", "Research library"], ["disease", "Disease references"]];
+const RQ_TABS = [["recommendation", "Recommendations"], ["dose", "Doses"], ["guideline", "Guidelines"], ["drug", "Drug monographs"], ["protocol", "Protocols"], ["trial", "Trials"], ["staging", "Staging"], ["algorithm", "Pathways"], ["literature", "Research library"], ["disease", "Disease references"], ["notes", "Textbook notes"]];
 function queueItems() {
   const doseText = d => (d.doses || []).map(x => `${x.indication}: ${x.dose} [${x.source}]`).join("\n");
   const protoDose = p => p.components.map(c => `${byId(D.drugs, c.drug)?.name || c.drug}: ${c.dose || "—"} (${c.schedule || "—"})`).join("\n") + (p.doseSource ? `\nSource: ${p.doseSource}` : "");
@@ -1393,6 +1397,7 @@ function queueItems() {
     ...D.staging.map(s => ({ kind: "staging", id: s.id, group: dname(s.cancer), title: s.name, text: s.notes || "", meta: `${s.authority} ${s.version}`, route: `s.${s.id}`, status: s.status || "NOT VERIFIED" })),
     ...D.algorithms.map(a => ({ kind: "algorithm", id: a.id, group: a.disease === "all" ? "All cancers" : dname(a.disease), title: a.title, text: a.sourceNote || a.entry, meta: `Main source ${a.source}`, route: `algorithms.${a.id}`, status: a.status })),
     ...(D.literature || []).map(x => ({ kind: "literature", id: x.id, group: x.place === "evidence" ? "Evidence page" : "Education page", title: x.title, text: x.summary + "\n" + x.findings.join("\n"), meta: `${x.citation} · doi ${x.doi}`, route: x.place === "evidence" ? "compare" : "education", status: x.status })),
+    ...(D.notes?.chapters || []).map(c => ({ kind: "notes", id: c.id, group: "Textbook notes (Berek & Novak's, Ch 37–42)", title: `Ch ${c.n} — ${c.title}`, text: `Check the chapter against the textbook and current guidance. Flags already noted:\n${(c.flags || []).map(([t, d]) => `• ${t}: ${d}`).join("\n")}`, meta: c.byline, route: "notes", status: c.status || "NOT VERIFIED", dis: c.disease })),
     ...D.diseases.filter(d => d.reference).map(d => ({ kind: "disease", id: d.id, group: "Disease references", title: `${d.name}: 24-section reference`, text: d.short, meta: "Educational summary", route: `d.${d.id}`, status: d.refReview?.status || "NOT VERIFIED" }))
   ].map(x => ({ ...x, key: `${x.kind}:${x.id}`, review: state.reviews?.[`${x.kind}:${x.id}`] }));
 }
@@ -1413,7 +1418,7 @@ V.review = () => {
       <div class="wide"><button class="btn primary" type="submit" value="next">Save and open next</button> <button class="btn" type="submit" value="stay">Save</button>${x.review ? ` <button class="btn" type="button" data-rwithdraw="${esc(x.key)}">Withdraw sign-off</button>` : ""} <span class="rq-msg" role="status"></span></div>
       ${x.kind === "dose" && !isPharmacist() ? `<p class="muted wide">Only an account registered as a Pharmacist can mark doses verified. You can record CHANGES NEEDED.</p>` : ""}</form>`;
   const itemDis = x => { const f = id => [D.recommendations, D.guidelines, D.protocols, D.trials, D.algorithms, D.literature || []].map(c => byId(c, id)).find(Boolean); const r = f(x.id), dr = byId(D.drugs, x.id), st = byId(D.staging, x.id);
-    return x.kind === "disease" ? x.id : dr ? dr.cancers[0] : st ? st.cancer : r?.disease || "all"; };
+    return x.kind === "disease" ? x.id : x.kind === "notes" ? x.dis : dr ? dr.cancers[0] : st ? st.cancer : r?.disease || "all"; };
   const gOrder = g => Math.min(...items.filter(x => x.group === g).map(x => DIS_ORDER(itemDis(x))));
   const groups = [...new Set(items.map(x => x.group))].sort((a, b) => gOrder(a) - gOrder(b));
   const gBadge = g => badge(itemDis(items.find(x => x.group === g)));

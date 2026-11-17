@@ -227,7 +227,7 @@ $$;
 
 create table if not exists public.pro_reviews (
   item_id text primary key,                 -- e.g. "recommendation:R-EN-A01", "dose:carboplatin", "guideline:G-ESGO-EN-2021"
-  kind text not null check (kind in ('guideline', 'recommendation', 'staging', 'protocol', 'drug', 'dose', 'trial', 'literature', 'algorithm', 'disease')),
+  kind text not null check (kind in ('guideline', 'recommendation', 'staging', 'protocol', 'drug', 'dose', 'trial', 'literature', 'algorithm', 'disease', 'notes')),
   status text not null check (status in ('VERIFIED AGAINST SOURCE', 'CLINICALLY REVIEWED', 'APPROVED', 'CHANGES NEEDED', 'PHARMACIST VERIFIED')),
   reviewer text not null check (char_length(reviewer) between 2 and 120),
   reviewed_on date not null,

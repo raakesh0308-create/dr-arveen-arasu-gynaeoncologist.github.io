@@ -103,6 +103,10 @@ Run `supabase/upgrade-4-reviews.sql` once in **SQL Editor → New query**. New p
 
 Sign-offs are stored online and don't change the content files. If you change an item's text in the files later, review it again.
 
+## 11. Signing off textbook notes (upgrade 5)
+
+Run `supabase/upgrade-5-notes-review.sql` once in **SQL Editor → New query**, after upgrade 4. New projects get it automatically from `setup.sql`. It lets the **Textbook notes** chapters be signed off in the Review queue (section "Textbook notes").
+
 ## Test the protection
 
 After setup, check all of these:
