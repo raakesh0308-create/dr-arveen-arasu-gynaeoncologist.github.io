@@ -107,6 +107,14 @@ Sign-offs are stored online and don't change the content files. If you change an
 
 Run `supabase/upgrade-5-notes-review.sql` once in **SQL Editor → New query**, after upgrade 4. New projects get it automatically from `setup.sql`. It lets the **Textbook notes** chapters be signed off in the Review queue (section "Textbook notes").
 
+## 12. Private workspaces for each account (upgrade 6)
+
+Run `supabase/upgrade-6-workspace.sql` once in **SQL Editor → New query**. New projects get it automatically from `setup.sql`.
+
+It creates `user_workspace`: one row per person holding their bookmarks, recently viewed pages and private notes. **Only the owner can read or change their row; there is no administrator access.** The site removes the copy from the computer when the person signs out, which matters on shared ward computers.
+
+Until you run it, workspaces still stay separate per account, but only on that one device, and they are not wiped at sign-out (so nothing is lost).
+
 ## Test the protection
 
 After setup, check all of these:

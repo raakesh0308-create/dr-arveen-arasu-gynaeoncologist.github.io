@@ -16,6 +16,36 @@ const store = {
 };
 let state = { aud: store.get("aud", "pro"), q: "", lang: store.get("lang", "en"), filters: {} };
 
+/* ---------- personal workspace (bookmarks, recently viewed, private notes), sandboxed per account ----------
+   Signed in: kept under the account (Supabase table user_workspace, readable only by its owner), with a
+   per-account cache in this browser that is wiped on sign-out. Signed out (patients): kept in this browser only. */
+const WS_KEYS = ["bm", "recent", "notes"];
+let wsTimer = null;
+const wsKey = k => state.user ? `u.${state.user.id}.${k}` : k;
+const pstore = {
+  get(k, d) { return store.get(wsKey(k), d); },
+  set(k, v) { store.set(wsKey(k), v); if (state.user) { clearTimeout(wsTimer); wsTimer = setTimeout(wsPush, 1200); } }
+};
+async function wsPush() {
+  if (!sb || !state.user || state.wsCloud === false) return;
+  const data = Object.fromEntries(WS_KEYS.map(k => [k, store.get(wsKey(k), k === "notes" ? {} : [])]));
+  const { error } = await sb.from("user_workspace").upsert({ user_id: state.user.id, data, updated_at: new Date().toISOString() });
+  if (error) state.wsCloud = false;
+}
+async function wsPull() {
+  if (!sb || !state.user) return;
+  const { data, error } = await sb.from("user_workspace").select("data").eq("user_id", state.user.id).maybeSingle();
+  if (error) { state.wsCloud = false; return; }
+  state.wsCloud = true;
+  if (data?.data) for (const k of WS_KEYS) if (data.data[k] !== undefined) store.set(wsKey(k), data.data[k]);
+}
+function wsWipeLocal(uid) {
+  try { Object.keys(localStorage).filter(k => k.startsWith(`arveen.u.${uid}.`)).forEach(k => localStorage.removeItem(k)); } catch {}
+}
+/* Items saved in this browser before workspaces were tied to accounts (shared, unscoped keys) */
+const legacyWs = () => ({ bm: store.get("bm", []), recent: store.get("recent", []), notes: store.get("notes", {}) });
+const legacyCount = () => { const l = legacyWs(); return l.bm.length + Object.values(l.notes).filter(Boolean).length; };
+
 /* ---------- labels ---------- */
 const MY = {
   "established": ["Established in Malaysian guidance", "ok"],
@@ -46,7 +76,7 @@ const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"],
   { label: "Tools", items: [["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["workspace", "Saved pages"]] },
   ["guide", "Help"]];
 /* Each route name maps to its own HTML file; records use ?id= */
-const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", guide: "guide.html", notes: "textbook-notes.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
+const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", adminws: "admin-workspace.html", guide: "guide.html", notes: "textbook-notes.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
@@ -93,7 +123,7 @@ function renderShell() {
     <p><b>DR ARVEEN</b> — Advanced Reference and Verified Evidence Network for Gynaecological Oncology.</p>
     <p>Educational reference only. It does not replace clinical assessment, an authorised prescription or your institution's protocols. Professional content is for registered healthcare professionals.</p>
     <p class="footlinks"><a href="guide.html">Site guide and help</a><a href="about.html">About and disclosures</a><a href="governance.html">How content is checked and approved</a><a href="privacy.html">Privacy notice</a><a href="patients.html">Patient Education Centre</a></p></div>
-    <div class="storage-note" id="storenote" hidden><p>DR ARVEEN keeps your settings, bookmarks, notes and tracker entries in this browser only. <a href="privacy.html">Privacy notice</a></p><button class="btn" type="button" id="storeok">OK</button></div>`;
+    <div class="storage-note" id="storenote" hidden><p>DR ARVEEN keeps your settings and side-effect tracker entries in this browser only. If you sign in, your bookmarks and private notes are saved to your own account. <a href="privacy.html">Privacy notice</a></p><button class="btn" type="button" id="storeok">OK</button></div>`;
   if (!store.get("storeok", false)) { $("#storenote").hidden = false; $("#storeok").onclick = () => { store.set("storeok", true); $("#storenote").hidden = true; }; }
   $("#reportf").onsubmit = async e => {
     e.preventDefault();
@@ -113,7 +143,9 @@ const NAV_PRO_GROUPS = [["home", "Home"],
   { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"], ["notes", "Textbook notes"], ["sdm", "Shared decisions"]] },
   ["pt", "Patients"], ["guide", "Help"]];
 /* Account menu (top right): personal and admin pages, shown only to the roles that can use them */
-const ACCT_ITEMS = [["workspace", "My Workspace"], ["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial dashboard"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
+const ACCT_PERSONAL = [["workspace", "My Workspace"]];
+const ACCT_ADMIN = [["adminws", "Admin workspace"], ["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial dashboard"], ["accounts", "Accounts"]];
+const ACCT_INFO = [["governance", "Governance"], ["about", "About"]];
 function renderNav() {
   renderAcct();
   document.body.classList.toggle("aud-pt", state.aud === "pt");
@@ -231,7 +263,7 @@ async function loadSession() {
   if (!sb) return;
   const { data: { session } } = await sb.auth.getSession();
   state.user = session?.user || null;
-  if (state.user) { const { data } = await sb.from("profiles").select("*").eq("id", state.user.id).maybeSingle(); state.profile = data; }
+  if (state.user) { const { data } = await sb.from("profiles").select("*").eq("id", state.user.id).maybeSingle(); state.profile = data; await wsPull(); }
 }
 async function loadPro() {
   const { data, error } = await sb.from("pro_content").select("key,data");
@@ -242,7 +274,7 @@ async function loadPro() {
   D = { ...pub, ...pro };
   state.proLoaded = true;
   const rv = await sb.from("pro_reviews").select("*"); // table exists after upgrade-4-reviews.sql
-  state.reviews = {}; if (!rv.error) applyReviews(rv.data || []);
+  state.reviews = {}; state.reviewsTable = !rv.error; if (!rv.error) applyReviews(rv.data || []);
   return true;
 }
 /* Online sign-offs (pro_reviews) are laid over the built-in records. Item ids look like "recommendation:R-EN-A01". */
@@ -268,13 +300,18 @@ function applyReviews(rows) {
 }
 function renderAcct() {
   const el = $("#acct"); if (!el) return;
-  const allowed = ([r]) => (r !== "accounts" || isAdmin()) && (r !== "cms" || isEditor()) && (r !== "review" || isReviewer()) && (r !== "admin" || isEditor());
+  const allowed = ([r]) => (r !== "accounts" || isAdmin()) && (r !== "cms" || isEditor()) && (r !== "review" || isReviewer()) && (r !== "admin" || isEditor()) && (r !== "adminws" || isEditor());
   const name = state.profile?.full_name || state.user?.email || "";
   el.innerHTML = state.user
     ? `<details class="navgrp acctgrp"><summary class="acct-name" title="${esc(state.user.email)}"><span class="avatar" aria-hidden="true">${esc(name.trim().charAt(0).toUpperCase())}</span><span class="acct-label">${esc(name)}</span></summary>
-      <div class="navmenu"><span class="menu-h">${esc(state.user.email)}</span>${ACCT_ITEMS.filter(allowed).map(([r, t]) => `<a href="${url(r)}" ${r === PAGE ? 'aria-current="page"' : ""}>${t}</a>`).join("")}<button class="menu-btn" id="signout" type="button">Sign out</button></div></details>`
+      <div class="navmenu"><span class="menu-h">${esc(state.user.email)}${state.profile?.role && state.profile.role !== "reader" ? ` · ${esc(state.profile.role)}` : ""}</span>
+      ${[["Personal", ACCT_PERSONAL], ["Administration", ACCT_ADMIN], ["", ACCT_INFO]].map(([h, items]) => { const its = items.filter(allowed); return its.length ? `${h ? `<span class="menu-sec">${h}</span>` : `<span class="menu-sep"></span>`}${its.map(([r, t]) => `<a href="${url(r)}" ${r === PAGE ? 'aria-current="page"' : ""}>${t}</a>`).join("")}` : ""; }).join("")}
+      <button class="menu-btn" id="signout" type="button">Sign out</button></div></details>`
     : `<a class="theme-btn" href="${url("workspace")}">Saved</a><a class="theme-btn" href="login.html?next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}">Sign in</a>`;
-  const so = $("#signout"); if (so) so.onclick = async () => { await sb.auth.signOut(); location.href = "index.html"; };
+  const so = $("#signout"); if (so) so.onclick = async () => {
+    clearTimeout(wsTimer); await wsPush(); // save any last change to the account, then remove it from this computer
+    const uid = state.user?.id; await sb.auth.signOut(); if (uid && state.wsCloud !== false) wsWipeLocal(uid); location.href = "index.html";
+  };
 }
 const authErr = (msg) => { const e = $("#autherr"); if (e) { e.hidden = false; e.textContent = msg; } };
 const authOk = (msg) => { const e = $("#authok"); if (e) { e.hidden = false; e.innerHTML = msg; } };
@@ -376,36 +413,36 @@ $("#lang").onchange = e => { state.lang = e.target.value; store.set("lang", stat
 function go(r) { if (r === "search") { location.href = "search.html?q=" + encodeURIComponent(state.q); return; } if (url(r) === url(PAGE)) render(); else location.href = url(r); }
 
 /* ---------- bookmarks / recent / notes ---------- */
-const bm = () => store.get("bm", []);
+const bm = () => pstore.get("bm", []);
 function bmBtn(type, id, title) {
   const on = bm().some(b => b.id === id);
   return `<button class="btn" data-bm='${esc(JSON.stringify({ type, id, title }))}' aria-pressed="${on}">${on ? "★ Saved" : "☆ Save"}</button>`;
 }
 function recent(type, id, title) {
-  const r = store.get("recent", []).filter(x => x.id !== id); r.unshift({ type, id, title, at: new Date().toISOString().slice(0, 10) }); store.set("recent", r.slice(0, 12));
+  const r = pstore.get("recent", []).filter(x => x.id !== id); r.unshift({ type, id, title, at: new Date().toISOString().slice(0, 10) }); pstore.set("recent", r.slice(0, 12));
 }
 /* "Continue where you left off": the last pages opened in this browser */
 const RECENT_ROUTE = { Article: "a", Disease: "d", Drug: "dr", Guideline: "g", Leaflet: "l", "Patient page": "ptd", Protocol: "p", Staging: "s", Trial: "t" };
 function continueBlock(types) {
-  const r = store.get("recent", []).filter(x => types.includes(x.type)).slice(0, 5);
+  const r = pstore.get("recent", []).filter(x => types.includes(x.type)).slice(0, 5);
   if (!r.length) return "";
   return `<section class="section continue"><div class="section-h"><h2>Continue where you left off</h2><a href="${url("workspace")}">My Workspace</a></div>
     <div class="chips">${r.map(x => `<a class="chip" href="${url(`${RECENT_ROUTE[x.type]}.${x.id}`)}"><span class="muted">${esc(x.type)}</span>&nbsp;${esc(x.title.length > 60 ? x.title.slice(0, 58) + "…" : x.title)}</a>`).join("")}</div></section>`;
 }
 function noteBox(id) {
-  const n = store.get("notes", {})[id] || "";
-  return `<details class="calc"><summary><b>My private note</b> <span class="muted">(kept only in this browser)</span></summary><textarea id="note-${esc(id)}" data-note="${esc(id)}" aria-label="Private note">${esc(n)}</textarea></details>`;
+  const n = pstore.get("notes", {})[id] || "";
+  return `<details class="calc"><summary><b>My private note</b> <span class="muted">(${state.user ? "visible only to you" : "kept only in this browser"})</span></summary><textarea id="note-${esc(id)}" data-note="${esc(id)}" aria-label="Private note">${esc(n)}</textarea></details>`;
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-bm]"); if (!b) return;
   const it = JSON.parse(b.dataset.bm); let l = bm();
   l = l.some(x => x.id === it.id) ? l.filter(x => x.id !== it.id) : [...l, it];
-  store.set("bm", l); const on = l.some(x => x.id === it.id);
+  pstore.set("bm", l); const on = l.some(x => x.id === it.id);
   b.setAttribute("aria-pressed", on); b.textContent = on ? "★ Saved" : "☆ Save";
 });
 document.addEventListener("input", e => {
   const t = e.target.closest("[data-note]"); if (!t) return;
-  const n = store.get("notes", {}); n[t.dataset.note] = t.value; store.set("notes", n);
+  const n = pstore.get("notes", {}); n[t.dataset.note] = t.value; pstore.set("notes", n);
 });
 
 /* ---------- search ---------- */
@@ -845,14 +882,84 @@ function bindQuiz() {
 }
 
 V.workspace = () => {
-  const b = bm(), r = store.get("recent", []), n = store.get("notes", {});
+  const b = bm(), r = pstore.get("recent", []), n = pstore.get("notes", {});
   const link = x => { const p = { Guideline: "g.", Disease: "d.", Staging: "s.", Protocol: "p.", Drug: "dr.", Trial: "t.", Leaflet: "l.", "Patient page": "ptd.", Article: "a." }[x.type] || ""; const sup = x.type === "Guideline" && byId(D.guidelines, x.id)?.superseded === "superseded"; return `<a class="row" href="${url(`${p}${x.id}`)}"><span class="row-t">${esc(x.title)} ${sup ? '<span class="pill bad">Now superseded</span>' : ""}</span><span class="row-m"><span class="eyebrow">${esc(x.type)}</span>${x.at ? `<span>${x.at}</span>` : ""}</span></a>` };
   return `<span class="eyebrow">${state.aud === "pro" ? "My Workspace" : "Saved"}</span><h1>${state.aud === "pro" ? "My Workspace" : "Things you have saved"}</h1>
-  <p class="banner info">Saved items, notes and history are kept only in this browser on this device. Accounts with secure sign-in are planned for the production build.</p>
+  <p class="banner info">${state.user
+    ? (state.wsCloud === false ? `Your personal space: bookmarks, recently viewed pages and private notes, kept for your account on this device only (online saving isn't set up yet). No other account can see them.`
+      : `Your personal space: bookmarks, recently viewed pages and private notes are saved to <b>your account only</b>. You see them on any device you sign in to; no other user, and no administrator, can read them. Signing out removes them from this computer.`)
+    : `Saved pages and notes are kept in this browser on this device only.`}</p>
+  ${state.user && legacyCount() ? `<div class="banner slim" id="legacyws"><b>${legacyCount()} item(s) were saved on this computer before workspaces were linked to accounts.</b> They may belong to someone else who used this computer. <button class="btn" type="button" id="ws-import">They're mine: add to my account</button> <button class="btn" type="button" id="ws-discard">Delete them from this computer</button></div>` : ""}
+  ${isEditor() ? `<p class="banner slim">Looking for review work, approvals or account requests? They are in your <a href="${url("adminws")}"><b>Admin workspace</b></a>.</p>` : ""}
   <div class="cols"><section class="section"><h2>Bookmarks</h2><div class="list">${b.map(link).join("") || `<div class="row muted">Nothing saved yet. Use ☆ Save on any record.</div>`}</div></section>
   <section class="section"><h2>Recently viewed</h2><div class="list">${r.map(link).join("") || `<div class="row muted">No history yet.</div>`}</div></section></div>
   ${state.aud === "pro" ? `<section class="section"><h2>Private notes</h2><div class="list">${Object.entries(n).filter(([, v]) => v).map(([k, v]) => `<div class="row"><span class="row-t mono">${esc(k)}</span><span>${esc(v)}</span></div>`).join("") || `<div class="row muted">No notes yet.</div>`}</div></section>` : ""}`;
 };
+
+/* ---------- admin workspace (editors, reviewers, admins): everything needed to run the site ---------- */
+V.adminws = () => {
+  const role = state.profile?.role || "reader", today = new Date().toISOString().slice(0, 10);
+  const all = queueItems(), pend = all.filter(x => !DONE.includes(x.status));
+  const doses = pend.filter(x => x.kind === "dose").length, changes = all.filter(x => x.status === "CHANGES NEEDED").length;
+  const overdue = Object.values(state.reviews || {}).filter(r => r.next_review && r.next_review < today).length;
+  const ptItems = [...(D.leaflets || []).filter(l => (l.sections || []).length).map(l => l.approval), ...(D.articles || []).map(a => a.status)];
+  const ptPending = ptItems.filter(s => s !== "APPROVED").length;
+  const tile = (n, label, href, tone, sub) => `<a class="tile aw-tile ${tone || ""}" href="${href}"><span class="aw-n" ${n === null ? 'data-live="1"' : ""}>${n === null ? "…" : n}</span><b>${label}</b><span>${sub}</span></a>`;
+  const tabs = RQ_TABS.map(([k, l]) => { const its = all.filter(x => x.kind === k), d = its.filter(x => DONE.includes(x.status)).length; return its.length ? `<div class="aw-prog"><span>${l}</span><div class="rq-prog"><span style="width:${(100 * d / its.length).toFixed(1)}%"></span></div><span class="muted">${d} / ${its.length}</span></div>` : ""; }).join("");
+  const recentRev = Object.values(state.reviews || {}).sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at))).slice(0, 8);
+  const tool = (r, t, d) => `<a class="tile" href="${url(r)}"><b>${t}</b><span>${d}</span></a>`;
+  const check = (ok, label, fix) => `<li class="${ok ? "ok" : "todo"}">${ok ? "✓" : "!"} ${label}${ok ? "" : ` <span class="muted">— ${fix}</span>`}</li>`;
+  return `<span class="eyebrow">Administration</span><h1>Admin workspace</h1>
+  <p class="prose muted">Signed in as <b>${esc(state.profile?.full_name || state.user?.email || "")}</b> · role <span class="pill teal">${esc(role)}</span>${isPharmacist() ? ` <span class="pill ok">Pharmacist: can verify doses</span>` : ""}. This page is only for editors, reviewers and administrators. Your personal bookmarks and notes stay in <a href="${url("workspace")}">My Workspace</a>.</p>
+  <section class="section"><h2>Needs your attention</h2><div class="grid aw-grid">
+    ${isAdmin() ? tile(null, "Account requests", url("accounts"), "warn", "Professionals waiting for approval").replace('data-live="1"', 'data-live="accounts"') : ""}
+    ${isAdmin() ? tile(null, "Reported problems", url("accounts") + "#fblist", "", "Open reports from users").replace('data-live="1"', 'data-live="feedback"') : ""}
+    ${isReviewer() ? tile(pend.length, "Items awaiting review", url("review"), "", "Across all sections of the Review queue") : ""}
+    ${isReviewer() ? tile(doses, "Doses awaiting a pharmacist", url("review"), doses ? "warn" : "", isPharmacist() ? "You can verify these" : "Only a Pharmacist account can verify") : ""}
+    ${tile(changes, "Marked 'Changes needed'", url("review"), changes ? "bad" : "", "Reviewers found a problem to fix")}
+    ${tile(overdue, "Reviews overdue", url("review"), overdue ? "bad" : "", "Past their next review date")}
+    ${tile(ptPending, "Patient pages not approved", url("cms"), "", "Leaflets and articles still in draft or review")}
+  </div></section>
+  ${isReviewer() ? `<section class="section"><h2>Review progress by section</h2><div class="aw-progs">${tabs}</div><p><a class="btn primary" href="${url("review")}">Open the Review queue</a></p></section>` : ""}
+  <section class="section"><h2>Admin tools</h2><div class="grid">
+    ${isReviewer() ? tool("review", "Review queue", "Sign off recommendations, doses, guidelines, pathways, research and textbook notes.") : ""}
+    ${tool("cms", "Edit content", "Edit patient articles, leaflets and cancer pages; upload pictures.")}
+    ${tool("admin", "Editorial dashboard", "Pipeline view, review tracker and the patient leaflet generator.")}
+    ${isAdmin() ? tool("accounts", "Accounts", "Approve professionals, set roles, read reported problems.") : ""}
+    ${tool("governance", "Governance", "The written review and approval process to share with reviewers.")}
+    ${tool("guide", "Site owner guide", "How content gets onto the site: PDFs, seed.sql, git push.").replace(`href="${url("guide")}"`, `href="${url("guide")}#g-owner"`)}
+  </div></section>
+  <section class="section"><h2>Recent sign-offs</h2><div class="list">${recentRev.map(r => `<div class="row"><span class="row-t">${esc(r.item_id)} ${statusPill(r.status)}</span><span class="row-m"><span>${esc(r.reviewer)}</span><span>${esc(r.reviewed_on)}</span>${r.note ? `<span>${esc(r.note)}</span>` : ""}</span></div>`).join("") || `<div class="row muted">No sign-offs yet.</div>`}</div></section>
+  ${isAdmin() ? `<section class="section"><h2>Setup check</h2><ul class="aw-check">
+    ${check(state.proLoaded, "Professional content loaded from Supabase", "run seed.sql")}
+    ${check(!!D.notes?.chapters?.length && !!(D.literature || []).length, "Latest content (research library and textbook notes) loaded", "run the latest seed.sql")}
+    ${check(!!state.reviewsTable, "Review table set up (upgrade 4)", "run supabase/upgrade-4-reviews.sql")}
+    ${check(!!(D.algorithms || []).find(a => a.id === "A-OV-SUSPECT"), "Clinical pathways loaded", "run the latest seed.sql")}
+  </ul><p class="muted" style="font-size:.84rem">Upgrade 5 (signing off textbook notes) can't be detected from here: if saving a notes sign-off fails, run supabase/upgrade-5-notes-review.sql.</p></section>` : ""}`;
+};
+function bindWorkspace() {
+  if (PAGE !== "workspace" || !state.user) return;
+  const dropLegacy = () => { try { WS_KEYS.forEach(k => localStorage.removeItem("arveen." + k)); } catch {} };
+  const imp = $("#ws-import"), dis = $("#ws-discard");
+  if (imp) imp.onclick = () => {
+    const l = legacyWs(), bmNow = pstore.get("bm", []), notesNow = pstore.get("notes", {}), recNow = pstore.get("recent", []);
+    pstore.set("bm", [...bmNow, ...l.bm.filter(x => !bmNow.some(y => y.id === x.id))]);
+    pstore.set("notes", { ...l.notes, ...notesNow });
+    pstore.set("recent", [...recNow, ...l.recent.filter(x => !recNow.some(y => y.id === x.id))].slice(0, 12));
+    dropLegacy(); render();
+  };
+  if (dis) dis.onclick = () => { if (confirm("Delete the items saved on this computer before accounts were linked? This can't be undone.")) { dropLegacy(); render(); } };
+}
+async function bindAdminWs() {
+  if (PAGE !== "adminws" || !sb) return;
+  const set = (k, v) => { const el = app.querySelector(`[data-live="${k}"]`); if (el) el.textContent = v; };
+  if (isAdmin()) {
+    const a = await sb.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending");
+    set("accounts", a.error ? "–" : a.count ?? 0);
+    const f = await sb.from("feedback").select("id", { count: "exact", head: true }).eq("status", "open");
+    set("feedback", f.error ? "–" : f.count ?? 0);
+  }
+}
 
 /* ---------- editorial ---------- */
 const PRO_FLOW = ["DISCOVERED", "SOURCE RETRIEVED", "EXTRACTED", "STRUCTURED", "CLINICALLY REVIEWED", "APPROVED", "PUBLISHED", "MONITORED"];
@@ -936,6 +1043,7 @@ V.privacy = () => `<article class="detail prose" style="max-width:820px"><span c
   <h2>Patients and caregivers</h2><p>You don't need an account, and DR ARVEEN doesn't ask for your name or medical details. Bookmarks, notes, checklists and side-effect tracker entries stay in your own browser. They are not sent to DR ARVEEN or anyone else, and they are lost if you clear your browser data.</p>
   <h2>Healthcare professional accounts</h2><p>When you request an account, DR ARVEEN collects your name, work email, profession, registering body, registration number, institution and password. The password is stored only in encrypted (hashed) form by our sign-in provider.</p>
   <p>We use these details to verify your professional registration, decide whether to approve access, keep you signed in, and contact you about your account. We record who approved or changed each account, and when.</p>
+  <h2>Your personal workspace</h2><p>When you are signed in, your bookmarks, recently viewed pages and private notes are stored with your account so you can use them on any device. Database rules allow only your own account to read or change them; administrators cannot see them. A copy is kept in your browser while you are signed in and removed when you sign out. Do not put patient-identifiable information in private notes. If you sign off or edit content as a reviewer or editor, your name and the date are recorded with that sign-off.</p>
   <h2>Problem reports</h2><p>If you report a problem, we store the page address, your description and, if you give it, your email address. Please don't include any patient's personal or medical details.</p>
   <h2>Where your data is stored</h2><p>Account details and problem reports are stored by Supabase, our database and sign-in provider, in its Singapore data centre. The website files are hosted by GitHub Pages. Fonts are loaded from Google Fonts and the sign-in code from the jsDelivr network, which can see your IP address when they deliver these files.</p>
   <h2>How long we keep it</h2><p class="todo">[To be completed: for example, account details for as long as the account is active plus 12 months; problem reports for 24 months.]</p>
@@ -1183,7 +1291,7 @@ V.governance = () => `<article class="detail"><div class="dhead"><span class="ey
     <li>An administrator checks the registration number on the public register of the Malaysian Medical Council, Pharmacy Board Malaysia or Malaysia Nursing Board, and that the name matches.</li>
     <li>The administrator approves or rejects the request. The decision, reviewer and date are recorded in the audit log.</li>
     <li>Approved accounts are re-checked every year; accounts are suspended if registration lapses or access is misused.</li></ol></section>
-  <section class="section" id="privacy"><h2>6. Privacy for account holders</h2><p class="prose">DR ARVEEN stores your name, email, profession, registering body, registration number and institution only to verify your registration and manage access. It does not store patient information. You can ask to see, correct or delete your details. Bookmarks, notes and side-effect tracker entries stay in your own browser and are not sent to DR ARVEEN.</p></section>
+  <section class="section" id="privacy"><h2>6. Privacy for account holders</h2><p class="prose">DR ARVEEN stores your name, email, profession, registering body, registration number and institution only to verify your registration and manage access. It does not store patient information. You can ask to see, correct or delete your details. Your bookmarks and private notes are stored with your account and can be read only by you (administrators cannot see them); they are removed from the computer when you sign out. Side-effect tracker entries for patients stay in the browser only.</p></section>
   <section class="section"><h2>7. Approvals needed before public launch</h2>
     <p class="banner">This checklist is a starting point, not legal advice. Confirm each item with a Malaysian lawyer and the relevant authority.</p>
     ${govTable(["Approval", "What to do"], GOV_LAUNCH)}</section></article>`;
@@ -1248,7 +1356,7 @@ function render() {
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
-  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes();
+  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes(); bindAdminWs(); bindWorkspace();
 }
 /* ---------- textbook study notes (Berek & Novak's, Ch 37–42), professional only ---------- */
 V.notes = () => {
@@ -1375,7 +1483,7 @@ V.guide = () => {
   <details class="row"><summary><b>Why can't I see the professional pages?</b></summary><p class="prose">You need an account that an administrator has approved. Request one on <a href="register.html">Request an account</a>, confirm your email, then wait for approval. If you're approved, <a href="login.html">sign in</a>.</p></details>
   <details class="row"><summary><b>Why does so much say NOT VERIFIED?</b></summary><p class="prose">DR ARVEEN never presents unchecked information as approved. Each item keeps its label until a named reviewer signs it off. See <a href="#g-labels">What the labels mean</a> and <a href="governance.html">Governance</a>.</p></details>
   <details class="row"><summary><b>Something changed but I can't see it.</b></summary><p class="prose">Press <b>Ctrl+F5</b> to reload without the old copy. If it still looks old, the site owner may not have run the latest update yet.</p></details>
-  <details class="row"><summary><b>Where are my bookmarks, notes and tracker entries kept?</b></summary><p class="prose">Only in this browser on this device. They are not sent to DR ARVEEN. Clearing your browser data deletes them.</p></details>
+  <details class="row"><summary><b>Where are my bookmarks, notes and tracker entries kept?</b></summary><p class="prose">If you are signed in, bookmarks, recently viewed pages and private notes are saved to your own account: only you can read them, on any device, and they are removed from the computer when you sign out (important on shared ward computers). If you are not signed in, they stay in this browser only. Patients' side-effect tracker entries always stay in the browser only.</p></details>
   <details class="row"><summary><b>Is this medical advice?</b></summary><p class="prose">No. DR ARVEEN is an educational reference. Patients should talk to their own treatment team; professionals must follow their institution's protocols.</p></details>
   </section>`;
 };
@@ -1657,9 +1765,10 @@ async function boot() {
   app.innerHTML = `<div class="skeleton" role="status" aria-label="Loading"><span class="sk sk-eyebrow"></span><span class="sk sk-h1"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span><div class="sk-grid"><span class="sk sk-card"></span><span class="sk sk-card"></span><span class="sk sk-card"></span></div></div>`;
   try { await loadSession(); await loadPatientItems(); if (approved() && (GATED || PAGE === "search" || PAGE === "workspace")) await loadPro(); } catch (e) { console.error(e); }
   IDX = index(); bindSuggest();
-  if ((GATED && !state.proLoaded) || (PAGE === "accounts" && !isAdmin()) || (PAGE === "cms" && !isEditor()) || (PAGE === "review" && !isReviewer())) {
+  if ((GATED && !state.proLoaded) || (PAGE === "accounts" && !isAdmin()) || (PAGE === "cms" && !isEditor()) || (PAGE === "review" && !isReviewer()) || (PAGE === "adminws" && !isEditor())) {
     renderNav();
     app.innerHTML = PAGE === "accounts" && state.proLoaded ? `<h1>Administrators only</h1><p class="prose">Account approvals are limited to administrators.</p>`
+      : PAGE === "adminws" && state.proLoaded ? `<h1>For editors, reviewers and administrators</h1><p class="prose">The Admin workspace is for accounts with the editor, reviewer or admin role. Your own bookmarks and notes are in <a href="workspace.html">My Workspace</a>.</p>`
       : PAGE === "review" && state.proLoaded ? `<h1>Reviewers only</h1><p class="prose">The review queue is for accounts with the reviewer or admin role. An administrator can change your role on the Accounts page. Pharmacists who verify doses need the reviewer role and the profession Pharmacist.</p>`
       : PAGE === "cms" && state.proLoaded ? `<h1>Editors only</h1><p class="prose">The content editor is for accounts with the editor, reviewer or admin role. An administrator can change your role on the Accounts page.</p>` : gateView();
     document.title = "Sign in · DR ARVEEN";

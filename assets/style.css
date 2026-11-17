@@ -568,3 +568,21 @@ section.nblock h3 { margin: 0 0 8px; color: var(--teal) }
   .nrail { position: static; display: flex; overflow-x: auto; gap: 6px; padding-bottom: 6px }
   .nrail-a { white-space: nowrap; border: 1px solid var(--line); background: var(--surface) }
 }
+
+/* Account menu sections */
+.menu-sec { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); padding: 10px 12px 2px }
+.menu-sep { display: block; border-top: 1px solid var(--line); margin: 6px 0 }
+
+/* Admin workspace */
+.aw-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) }
+.aw-tile { gap: 2px }
+.aw-n { font: 700 2rem/1.1 var(--f-display); color: var(--teal) }
+.aw-tile.warn .aw-n { color: var(--warn) }
+.aw-tile.bad .aw-n { color: var(--bad) }
+.aw-progs { display: grid; gap: 8px; max-width: 720px }
+.aw-prog { display: grid; grid-template-columns: 170px 1fr 80px; gap: 12px; align-items: center; font-size: .9rem }
+.aw-prog .rq-prog { margin: 0; height: 8px }
+.aw-check { list-style: none; padding: 0; display: grid; gap: 6px }
+.aw-check li.ok { color: var(--ok) }
+.aw-check li.todo { color: var(--bad); font-weight: 600 }
+@media (max-width: 560px) { .aw-prog { grid-template-columns: 1fr 70px } .aw-prog .rq-prog { grid-column: 1 / -1; grid-row: 2 } }
