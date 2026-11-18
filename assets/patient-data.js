@@ -3063,13 +3063,18 @@ window.ARVEEN_PUBLIC = {
   "Who do I contact about side effects, and at what times?"
  ],
  "portfolio": {
-  "name": "",
-  "title": "Consultant Gynaecological Oncologist",
+  "name": "Dr Arveen Arasu A/L Thamilarasu",
+  "title": "Obstetrician and Gynaecologist",
   "photo": "",
   "photoAlt": "",
   "summary": "",
-  "registration": [],
-  "qualifications": [],
+  "registration": [
+   "National Specialist Register (Malaysia): Obstetrics and Gynaecology — SR No. 144509"
+  ],
+  "qualifications": [
+   "Doctor of Medicine in General Medicine (MD) — Kursk State Medical University, Russia, 2011",
+   "Member of the Royal College of Obstetricians and Gynaecologists (MRCOG) — Royal College of Obstetricians and Gynaecologists, UK, 2022"
+  ],
   "interests": [],
   "services": [],
   "locations": [],
