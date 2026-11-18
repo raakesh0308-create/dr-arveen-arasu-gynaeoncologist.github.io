@@ -619,3 +619,9 @@ details.recgrp.phase > summary b { color: var(--teal) }
   .mast-ctrl .acct { order: 2; justify-self: end }
   .mast-prefs { order: 1; justify-content: flex-start }
 }
+
+/* Menu tabs on the left, level with the account button on the right */
+.mast-row2 { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding-bottom: 6px }
+.mast-row2 .mnav { flex: 1 1 auto; padding-bottom: 0 }
+.mast-row2 .mast-ctrl { margin-left: 0 }
+@media (max-width: 760px) { .mast-row2 { flex-direction: column-reverse; align-items: stretch } .mast-row2 .mast-ctrl { width: 100% } }

@@ -104,6 +104,8 @@ function renderShell() {
       <span><b>DR ARVEEN</b><small id="tagline"></small></span></a>
     <form class="msearch" id="msearch" role="search" action="search.html"><input id="mq" name="q" type="search" aria-label="Search DR ARVEEN"><button type="submit">Search</button></form>
     <div class="aud" role="group" aria-label="Audience"><a id="aud-pro" href="professional.html">For healthcare professionals</a><a id="aud-pt" href="patients.html">For patients and caregivers</a></div>
+  </div>
+  <div class="mast-row2"><nav class="mnav" id="nav" aria-label="Sections"></nav>
     <div class="mast-ctrl">
       <span class="acct" id="acct"></span>
       <div class="mast-prefs">
@@ -112,7 +114,7 @@ function renderShell() {
         <button class="theme-btn" id="theme" type="button" title="Switch light or dark mode">☾ Dark</button>
       </div>
     </div>
-  </div><nav class="mnav" id="nav" aria-label="Sections"></nav></div>`;
+  </div></div>`;
   $("#foot").innerHTML = `<div class="in">
     <section class="report" aria-labelledby="rp-h"><h2 id="rp-h" class="report-h">Report a problem with this page</h2>
       <p class="muted">Found an error, an out-of-date statement or a broken link? Tell us. Don't include any patient's personal or medical details.</p>
