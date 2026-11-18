@@ -72,7 +72,7 @@ const orgs = g => g.org.join(" / ");
 /* ---------- navigation ---------- */
 const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
 const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"],
-  { label: "Leaflets & articles", items: [["leaflets", "Information leaflets"], ["articles", "Articles"], ["glossary", "Medical glossary"]] },
+  { label: "Articles & leaflets", items: [["articles", "Articles"], ["leaflets", "Information leaflets"], ["glossary", "Medical glossary"]] },
   { label: "Tools", items: [["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["workspace", "Saved pages"]] },
   ["guide", "Help"]];
 /* Each route name maps to its own HTML file; records use ?id= */
@@ -1474,8 +1474,8 @@ V.guide = () => {
   ${table([
     ["pt", "Patient home", "Where to start: your cancer, your treatment journey, common worries.", "Pick your cancer or a stage of your journey (just diagnosed, in treatment, after treatment)."],
     ["ptcancers", "Your cancer", "A plain guide to each gynaecological cancer.", "Choose your cancer. Each page explains the tests, treatments and support, with a body diagram."],
-    ["leaflets", "Information leaflets", "Printable leaflets about cancers, tests and treatments.", "Open a leaflet and press <b>Print or save as PDF</b>. Some are in Bahasa Malaysia: use the language buttons."],
     ["articles", "Articles", "Short articles on side effects, fertility, menopause, feelings and life after cancer.", "Browse by topic, or use the search box at the top."],
+    ["leaflets", "Information leaflets", "Printable leaflets about cancers, tests and treatments.", "Open a leaflet and press <b>Print or save as PDF</b>. Some are in Bahasa Malaysia: use the language buttons."],
     ["sdm", "Prepare for appointments", "Questions to ask your doctor and a worksheet for treatment decisions.", "Tick the questions you want to ask, then print the list and take it with you."],
     ["tracker", "Side-effect tracker", "A private diary of side effects to show your team.", "Add an entry each day you have symptoms. It stays only on this device; print it for appointments."],
     ["glossary", "Medical glossary", "Medical words explained simply.", "Type a word in the filter box."],
