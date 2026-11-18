@@ -73,10 +73,10 @@ const orgs = g => g.org.join(" / ");
 const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment Protocols"], ["drugs", "Drug Reference"], ["trials", "Clinical Trials"], ["algorithms", "Clinical Algorithms"], ["calculators", "Calculators"], ["compare", "Evidence and Research"], ["updates", "Guideline Updates"], ["education", "Education"], ["pt", "Patient Education"], ["sdm", "Shared Decision-Making"], ["workspace", "My Workspace"], ["admin", "Editorial"], ["accounts", "Accounts"], ["governance", "Governance"], ["about", "About"]];
 const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"],
   { label: "Articles & leaflets", items: [["articles", "Articles"], ["leaflets", "Information leaflets"], ["glossary", "Medical glossary"]] },
-  { label: "Tools", items: [["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["workspace", "Saved pages"]] },
-  ["guide", "Help"]];
+  { label: "Tools", items: [["sdm", "Prepare for appointments"], ["tool", "Planning guides"], ["tracker", "Side-effect tracker"], ["workspace", "Saved pages"]] },
+  ["portfolio", "Dr Arveen"], ["guide", "Help"]];
 /* Each route name maps to its own HTML file; records use ?id= */
-const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", adminws: "admin-workspace.html", security: "two-step.html", guide: "guide.html", notes: "textbook-notes.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
+const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", adminws: "admin-workspace.html", security: "two-step.html", tool: "patient-tool.html", portfolio: "dr-arveen.html", guide: "guide.html", notes: "textbook-notes.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
@@ -89,8 +89,8 @@ function url(route) {
 }
 const PARAMS = new URLSearchParams(location.search);
 const PAGE = document.body.dataset.page || PAGE_BY_FILE[location.pathname.split("/").pop()] || "welcome";
-const PT_PAGES = ["pt", "ptcancers", "ptd", "leaflets", "l", "articles", "a", "tracker", "glossary"];
-const SHARED_PAGES = ["welcome", "login", "register", "reset", "governance", "privacy", "workspace", "about", "sdm", "search", "guide"];
+const PT_PAGES = ["pt", "ptcancers", "ptd", "leaflets", "l", "articles", "a", "tracker", "glossary", "tool"];
+const SHARED_PAGES = ["welcome", "login", "register", "reset", "governance", "privacy", "workspace", "about", "sdm", "search", "guide", "portfolio"];
 const PUBLIC_PAGES = [...PT_PAGES, ...SHARED_PAGES];
 const GATED = !PUBLIC_PAGES.includes(PAGE);
 if (PT_PAGES.includes(PAGE)) state.aud = "pt"; else if (!SHARED_PAGES.includes(PAGE)) state.aud = "pro";
@@ -104,10 +104,14 @@ function renderShell() {
       <span><b>DR ARVEEN</b><small id="tagline"></small></span></a>
     <form class="msearch" id="msearch" role="search" action="search.html"><input id="mq" name="q" type="search" aria-label="Search DR ARVEEN"><button type="submit">Search</button></form>
     <div class="aud" role="group" aria-label="Audience"><a id="aud-pro" href="professional.html">For healthcare professionals</a><a id="aud-pt" href="patients.html">For patients and caregivers</a></div>
-    <select class="lang" id="lang" aria-label="Language"><option value="en">English</option><option value="ms">Bahasa Malaysia</option><option value="zh">中文</option><option value="ta">தமிழ்</option></select>
-    <button class="theme-btn" id="textsize" type="button" title="Make text larger or smaller" aria-pressed="false">A<span aria-hidden="true">+</span><span class="sr-only"> Larger text</span></button>
-    <button class="theme-btn" id="theme" type="button" title="Switch light or dark mode">☾ Dark</button>
-    <span class="acct" id="acct"></span>
+    <div class="mast-ctrl">
+      <span class="acct" id="acct"></span>
+      <div class="mast-prefs">
+        <button class="theme-btn" id="textsize" type="button" title="Make text larger or smaller" aria-pressed="false">A<span aria-hidden="true">+</span><span class="sr-only"> Larger text</span></button>
+        <select class="lang" id="lang" aria-label="Language"><option value="en">English</option><option value="ms">Bahasa Malaysia</option><option value="zh">中文</option><option value="ta">தமிழ்</option></select>
+        <button class="theme-btn" id="theme" type="button" title="Switch light or dark mode">☾ Dark</button>
+      </div>
+    </div>
   </div><nav class="mnav" id="nav" aria-label="Sections"></nav></div>`;
   $("#foot").innerHTML = `<div class="in">
     <section class="report" aria-labelledby="rp-h"><h2 id="rp-h" class="report-h">Report a problem with this page</h2>
@@ -141,7 +145,7 @@ renderShell();
 const NAV_PRO_GROUPS = [["home", "Home"],
   { label: "Reference", items: [["notes", "Textbook notes"], ["guidelines", "Guidelines"], ["updates", "↳ Guideline updates"], ["recs", "↳ Recommendations"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
   { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"], ["sdm", "Shared decisions"]] },
-  ["pt", "Patients"], ["guide", "Help"]];
+  ["portfolio", "Dr Arveen"], ["pt", "Patients"], ["guide", "Help"]];
 /* Account menu (top right): personal and admin pages, shown only to the roles that can use them */
 const ACCT_PERSONAL = [["workspace", "My Workspace"], ["security", "Two-step sign-in"]];
 const ACCT_ADMIN = [["adminws", "Admin workspace"], ["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial dashboard"], ["accounts", "Accounts"]];
@@ -431,7 +435,7 @@ function recent(type, id, title) {
   const r = pstore.get("recent", []).filter(x => x.id !== id); r.unshift({ type, id, title, at: new Date().toISOString().slice(0, 10) }); pstore.set("recent", r.slice(0, 12));
 }
 /* "Continue where you left off": the last pages opened in this browser */
-const RECENT_ROUTE = { Article: "a", Disease: "d", Drug: "dr", Guideline: "g", Leaflet: "l", "Patient page": "ptd", Protocol: "p", Staging: "s", Trial: "t" };
+const RECENT_ROUTE = { Guide: "tool", Article: "a", Disease: "d", Drug: "dr", Guideline: "g", Leaflet: "l", "Patient page": "ptd", Protocol: "p", Staging: "s", Trial: "t" };
 function continueBlock(types) {
   const r = pstore.get("recent", []).filter(x => types.includes(x.type)).slice(0, 5);
   if (!r.length) return "";
@@ -1267,11 +1271,131 @@ V.sdm = () => {
   <p class="banner info">These tools help you talk with your treating team. They do not recommend a treatment. Anything you type stays only on this device.</p>
   <div class="cols"><section class="section"><h2>Questions for my oncologist</h2><div class="checklist">${D.sdmQuestions.map((q, i) => `<label for="sq${i}"><input type="checkbox" id="sq${i}" data-sq="${i}" ${done.includes(i) ? "checked" : ""}> ${esc(q)}</label>`).join("")}</div></section>
   <section class="section"><h2>Treatment discussion worksheet</h2><form class="calc" id="ws">${[["goals", "What matters most to me"], ["benefits", "Benefits my team described"], ["risks", "Risks and side effects I want to understand"], ["alts", "Other options we discussed"], ["unsure", "Things I am still unsure about"]].map(([k, t]) => `<label for="ws-${k}">${t}<textarea id="ws-${k}" data-ws="${k}">${esc(ws[k] || "")}</textarea></label>`).join("")}</form></section></div>
-  <section class="section"><h2>More discussion guides</h2><div class="grid">${["Understanding my diagnosis", "Surgery preparation checklist", "Chemotherapy diary", "Fertility discussion guide", "Menopause and sexual health guide", "Follow-up planner", "Caregiver guide"].map(t => `<div class="tile"><b>${t}</b><span>Being written.</span></div>`).join("")}<a class="tile" href="${url(`tracker`)}">${ic("tracker")}<b>Side-effect tracker</b><span>Available now.</span></a></div></section></div>`;
+  <section class="section no-print"><h2>More planning guides</h2><div class="grid">${TOOLS.map(t => `<a class="tile" href="${url(`tool.${t.id}`)}"><b>${esc(t.title)}</b><span>${esc(t.intro.split(". ")[0])}.</span></a>`).join("")}<a class="tile" href="${url(`tracker`)}">${ic("tracker")}<b>Side-effect tracker</b><span>Record how you feel between appointments.</span></a></div></section></div>`;
 };
 function bindSdm() {
   app.querySelectorAll("[data-sq]").forEach(c => c.onchange = () => { let d = store.get("sdmq", []); const i = +c.dataset.sq; d = c.checked ? [...d, i] : d.filter(x => x !== i); store.set("sdmq", d); });
   app.querySelectorAll("[data-ws]").forEach(t => t.oninput = () => { const w = store.get("ws", {}); w[t.dataset.ws] = t.value; store.set("ws", w); });
+}
+/* ---------- Dr Arveen portfolio (public; same page on both sides, emphasis by audience) ---------- */
+V.portfolio = () => {
+  const P = window.ARVEEN_PUBLIC?.portfolio || D.portfolio || {}, ed = isEditor(), pro = state.aud === "pro";
+  const has = v => Array.isArray(v) ? v.length > 0 : !!(v && String(v).trim());
+  const todo = (label, hint) => ed ? `<section class="section pf-todo"><h2>${esc(label)}</h2><p class="todo">[To be completed by the site owner: ${esc(hint)}]</p></section>` : "";
+  const sec = (label, v, hint, render) => has(v) ? `<section class="section"><h2>${esc(label)}</h2>${render(v)}</section>` : todo(label, hint);
+  const list = v => `<ul>${v.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  const filled = ["summary", "qualifications", "interests", "locations"].filter(k => has(P[k])).length;
+  const name = P.name || "Dr Arveen";
+  return `<div class="${pro ? "" : "patient "}detail portfolio">
+  <section class="hero pf-hero">${P.photo && /^https:\/\//.test(P.photo) ? `<img class="pf-photo" src="${esc(P.photo)}" alt="${esc(P.photoAlt || name)}">` : `<div class="pf-photo pf-ph" aria-hidden="true">${esc(name.replace(/^Dr\.?\s*/i, "").charAt(0) || "A")}</div>`}
+    <div><span class="eyebrow">${pro ? "For healthcare professionals" : "For patients and families"} · About the doctor</span><h1>${esc(name)}</h1><p class="pf-title">${esc(P.title || "")}</p>${has(P.summary) ? `<p>${esc(P.summary)}</p>` : ""}</div></section>
+  ${!filled && !ed ? `<p class="banner info">This profile is being prepared. Please check back soon.</p>` : ""}
+  ${ed && filled < 4 ? `<p class="banner">Editor view: empty sections below are hidden from the public. Send the details to be added to <code>dr-arveen-content/portfolio.js</code>. Information must be factual and follow Malaysian Medical Council guidance on information about doctors (no testimonials or claims of superiority).</p>` : ""}
+  ${pro ? sec("Referrals", P.referrals, "how clinicians refer: letter or email, MDT, urgent route", v => `<p class="prose">${esc(v)}</p>`) : ""}
+  ${sec(pro ? "Clinical interests" : "Areas of care", P.interests, "clinical interests", list)}
+  ${sec(pro ? "Services" : "What you can be seen for", P.services, "services offered", list)}
+  ${sec(pro ? "Clinics" : "Where to see Dr Arveen and how to make an appointment", P.locations, "clinic name, address, clinic days and appointment phone number", v => `<div class="grid">${v.map(l => `<div class="tile"><b>${esc(l.name || "")}</b>${l.address ? `<span>${esc(l.address)}</span>` : ""}${l.days ? `<span>${esc(l.days)}</span>` : ""}${l.phone ? `<span><a href="tel:${esc(l.phone.replace(/[^\d+]/g, ""))}">${esc(l.phone)}</a></span>` : ""}</div>`).join("")}</div>`)}
+  ${sec("Qualifications", P.qualifications, "degrees and specialist training, with institution and year", list)}
+  ${sec("Registration", P.registration, "Malaysian Medical Council and National Specialist Register numbers", list)}
+  ${pro ? sec("Research and publications", P.research, "publications and trials, with DOI or PubMed ID", list) : ""}
+  ${pro ? sec("Teaching", P.teaching, "teaching and training roles", list) : ""}
+  ${sec("Professional memberships", P.memberships, "current professional bodies", list)}
+  ${sec("Languages", P.languages, "languages spoken with patients", v => `<p>${v.map(esc).join(" · ")}</p>`)}
+  ${sec("Enquiries", P.enquiries, "non-clinical contact; state that medical advice is not given by email", v => `<p class="prose">${esc(v)}</p>`)}
+  ${!pro ? `<p class="banner slim">If you are unwell or worried about a symptom, contact your treating team. In an emergency in Malaysia, call 999.</p>` : ""}
+  <p class="muted" style="font-size:.84rem">${pro ? `Looking for patient information? <a href="patients.html">Patient Education Centre</a>.` : `Healthcare professional? <a href="professional.html">Clinical reference</a>.`} · <a href="${url("about")}">About DR ARVEEN</a></p></div>`;
+};
+
+/* ---------- patient planning guides (worksheets saved on this device only) ---------- */
+const URGENT_GENERAL = { emergency: ["Chest pain, sudden breathlessness, coughing blood, collapse or fits", "Heavy bleeding that soaks a pad an hour", "Signs of a stroke: face drooping, arm weakness, slurred speech"], urgent: ["Temperature of 38°C or above, or shivering and feeling unwell, during or soon after treatment", "Pain, redness, swelling or discharge from a wound", "Calf pain or swelling in one leg", "Vomiting that stops you keeping fluids down, or not passing urine for 12 hours", "New severe or worsening pain"], routine: ["New symptoms that last more than two weeks", "Tiredness, low mood or worry that is not getting better", "Questions about your medicines"] };
+const TOOLS = [
+  { id: "diagnosis", title: "Understanding my diagnosis", intro: "A place to write down the details of your diagnosis in your own words, so you can explain it to family and refer back to it. Ask your team to help you fill it in.",
+    blocks: [
+      { type: "fields", title: "My diagnosis", fields: [["type", "Type of cancer (where it started)"], ["histology", "Cell type, if I was told (e.g. squamous, serous, endometrioid)"], ["stage", "Stage, and what it means for me"], ["grade", "Grade, if I was told"], ["spread", "Has it spread? Where?"]] },
+      { type: "checklist", title: "Tests I have had or will have", items: ["Biopsy or tissue sample", "Ultrasound scan", "CT scan", "MRI scan", "PET-CT scan", "Blood tests (for example CA-125 or hCG)", "Genetic tests on my blood (for example BRCA1/BRCA2)", "Tests on the tumour (for example MMR, which can point to Lynch syndrome)", "HPV test or cervical screening result"] },
+      { type: "fields", title: "My treatment plan", fields: [["aim", "The aim of treatment (cure, control, comfort), as my team explained it"], ["plan", "Treatments planned, in order"], ["start", "When treatment starts"]] },
+      { type: "fields", title: "My team", fields: [["doctor", "My consultant / specialist"], ["nurse", "My specialist nurse or key contact"], ["phone", "Phone number to call with worries (and hours)"], ["hospital", "Hospital and clinic"]] },
+      { type: "checklist", title: "Questions I want to ask", items: ["What type of cancer do I have, and where did it start?", "What stage is it, and what does that mean?", "Has it spread to the lymph nodes or elsewhere?", "Do I need genetic testing? Does this affect my family?", "What are my treatment options, and what do you recommend?", "What is the aim of treatment?", "How will treatment affect my daily life, work and family?", "Who do I contact if I have questions between appointments?"] }],
+    links: [["ptcancers", "Read about your type of cancer"], ["glossary", "Medical words explained"]] },
+  { id: "surgery", title: "Surgery preparation checklist", intro: "Use this before and after your operation. Your hospital's own instructions always come first, especially about fasting and medicines.",
+    blocks: [
+      { type: "checklist", title: "Questions about my operation", items: ["What operation am I having, and why?", "Will it be open (a cut) or keyhole surgery?", "Will my ovaries be removed? Will I go into menopause?", "How will this affect my fertility?", "Will lymph nodes be removed? What is my risk of lymphoedema (swelling)?", "Is there any chance of a stoma (bag)?", "How long will I be in hospital, and how long is recovery?", "When will I get the results of the tissue tests?"] },
+      { type: "checklist", title: "Getting ready (weeks before)", items: ["Stop smoking (ask for help to quit)", "Make a list of all my medicines, including herbal and traditional remedies, and show my team", "Ask whether I should stop any blood thinners or other medicines (don't stop them without advice)", "Keep active and eat well if I can", "Arrange transport home and help at home for the first weeks", "Arrange time off work and any childcare"] },
+      { type: "checklist", title: "My hospital bag", items: ["Identity card and hospital documents", "List of medicines (and the medicines themselves)", "Loose, comfortable clothing and high-waisted underwear", "Toiletries, phone and charger", "Something to read or listen to", "Sanitary pads (some bleeding is common after surgery)"] },
+      { type: "fields", title: "Instructions from my team", fields: [["date", "Date and time of admission"], ["fasting", "When to stop eating and drinking"], ["meds", "Medicines to take or stop before surgery"]] },
+      { type: "checklist", title: "After the operation", items: ["Get up and walk as soon as the team says it is safe", "Do deep-breathing and leg exercises", "Take pain relief regularly as prescribed", "Keep the wound clean and dry; watch for redness or discharge", "Avoid heavy lifting for as long as advised", "Ask when I can drive, return to work and have sex", "Know the date of my results appointment"] }],
+    safety: true },
+  { id: "chemo", title: "Chemotherapy diary", intro: "Record each treatment and how you feel day by day. Bring this to every appointment: it helps your team adjust treatment and manage side effects.",
+    blocks: [
+      { type: "fields", title: "My treatment", fields: [["regimen", "Name of my treatment (as written by my team)"], ["cycle", "How often (e.g. every 3 weeks) and how many cycles"], ["hotline", "24-hour chemotherapy helpline number"]] },
+      { type: "banner", text: "If your temperature is 38°C or above, or you feel shivery or suddenly unwell, call your chemotherapy helpline straight away, even at night. Infection during chemotherapy can be serious." },
+      { type: "log", id: "days", title: "Daily diary", cols: [["date", "Date"], ["cycle", "Cycle / day"], ["temp", "Temperature (°C)"], ["feel", "How I feel (0 = very bad, 10 = very good)"], ["symptoms", "Symptoms"], ["meds", "Medicines taken (e.g. anti-sickness)"]] },
+      { type: "checklist", title: "Every day during treatment", items: ["Drink plenty of fluids", "Clean my mouth gently after meals; tell my team about mouth sores", "Wash my hands often; avoid people with infections", "Check my temperature if I feel unwell", "Rest, but try some gentle activity", "Write down questions for my next appointment"] }],
+    safety: true, links: [["tracker", "Side-effect tracker"], ["l.PIL-TX-CHEMO", "Leaflet: Understanding chemotherapy"]] },
+  { id: "fertility", title: "Fertility discussion guide", intro: "Some treatments affect the ability to have children. Options to protect fertility usually need to be discussed before treatment starts, so ask early.",
+    blocks: [
+      { type: "checklist", title: "Questions to ask my cancer team", items: ["Will my treatment affect my fertility or bring on menopause?", "Is a fertility-sparing treatment possible for my type and stage of cancer?", "What are the risks of fertility-sparing treatment compared with standard treatment?", "Can I be referred to a fertility specialist before treatment starts?", "Is there time to freeze eggs or embryos before treatment?", "If I need pelvic radiotherapy, can my ovaries be moved out of the way (ovarian transposition)?", "Which contraception should I use during treatment?", "How long should I wait after treatment before trying to get pregnant?"] },
+      { type: "checklist", title: "Questions for a fertility specialist", items: ["Which options suit my age and situation?", "How long does each option take, and would it delay my cancer treatment?", "What are the chances of success?", "What does it cost, and is any of it covered?"] },
+      { type: "fields", title: "My thoughts", fields: [["wishes", "How important having children (or more children) is to me"], ["partner", "What my partner or family think"], ["decided", "What we decided, and next steps"]] }],
+    links: [["ptcancers", "Read about your type of cancer"]] },
+  { id: "menopause", title: "Menopause and sexual health guide", intro: "Treatment can bring on menopause and change your sex life and body image. These changes are common, and help is available: you can raise them with your team.",
+    blocks: [
+      { type: "info", title: "Why this can happen", items: ["Removing both ovaries causes immediate menopause.", "Pelvic radiotherapy and some chemotherapy can stop the ovaries working.", "Surgery and radiotherapy can make the vagina shorter, narrower or drier."] },
+      { type: "checklist", title: "Changes I have noticed", items: ["Hot flushes or night sweats", "Poor sleep", "Mood changes or low mood", "Vaginal dryness or itching", "Pain during sex", "Less interest in sex", "Changes in how I feel about my body", "Bladder changes (urgency, leaks)"] },
+      { type: "checklist", title: "Questions to ask", items: ["Is hormone replacement therapy (HRT) safe for my type of cancer? (For some cancers it is, for others it is not.)", "What non-hormonal treatments can help hot flushes?", "Which vaginal moisturisers or lubricants can I use?", "Should I use vaginal dilators after radiotherapy? How and for how long?", "Do I need a bone density check?", "When is it safe to have sex again?", "Can I be referred to a psychosexual counsellor or women's health physiotherapist?"] },
+      { type: "fields", title: "Notes for my next appointment", fields: [["notes", "What I want to discuss"]] }],
+    links: [["articles", "Articles on menopause and relationships"]] },
+  { id: "followup", title: "Follow-up planner", intro: "After treatment you will have regular check-ups. The schedule depends on your cancer and treatment: often every 3–6 months for the first years, then less often. Keep track here.",
+    blocks: [
+      { type: "log", id: "visits", title: "My appointments", cols: [["date", "Date"], ["where", "Clinic / doctor"], ["tests", "Tests planned"], ["result", "What I was told"], ["next", "Next appointment"]] },
+      { type: "checklist", title: "Symptoms to report between appointments (don't wait for the next visit)", items: ["Bleeding from the vagina or after sex, or blood in urine or stool", "A new lump or swelling (including in the groin or neck)", "Pain that does not go away", "Bloating, feeling full quickly or a change in bowel habit lasting more than two weeks", "A persistent cough or breathlessness", "Swelling of a leg", "Losing weight without trying"] },
+      { type: "fields", title: "Questions for my next check-up", fields: [["q", "Questions"]] }],
+    safety: true },
+  { id: "caregiver", title: "Caregiver guide", intro: "For family members and friends supporting someone with gynaecological cancer. Caring is valuable, and it can be tiring: look after yourself too.",
+    blocks: [
+      { type: "checklist", title: "Practical ways to help", items: ["Go to appointments and take notes", "Keep a list of medicines and treatment dates", "Help with transport, meals, housework or childcare", "Keep the treating team's contact numbers handy", "Help track side effects (the side-effect tracker or chemotherapy diary)", "Share updates with family so the patient doesn't have to repeat everything"] },
+      { type: "checklist", title: "Looking after myself", items: ["Accept offers of help and share tasks", "Take regular breaks", "Talk to someone I trust about how I feel", "Ask the hospital's medical social worker about financial, work or practical support", "Ask about local cancer support groups for carers"] },
+      { type: "checklist", title: "Talking together", items: ["Ask what kind of support they want, rather than assuming", "It is fine to say you don't know what to say", "Ask the team for help talking with children about cancer", "If your relative agrees, ask the team whether you can be told about their care"] },
+      { type: "fields", title: "Useful contacts", fields: [["team", "Treating team and specialist nurse"], ["hotline", "Chemotherapy or ward helpline"], ["social", "Medical social worker"], ["support", "Support groups and others who can help"]] }],
+    safety: true }];
+V.tool = id => {
+  const t = TOOLS.find(x => x.id === id);
+  if (!t) return `<div class="patient detail"><span class="eyebrow">Planning guides</span><h1>Planning guides</h1><div class="grid">${TOOLS.map(x => `<a class="tile" href="${url(`tool.${x.id}`)}"><b>${esc(x.title)}</b><span>${esc(x.intro.split(". ")[0])}.</span></a>`).join("")}</div></div>`;
+  recent("Guide", t.id, t.title);
+  const s = store.get("tool." + t.id, { c: {}, f: {}, l: {} });
+  const block = (b, bi) => {
+    if (b.type === "banner") return `<p class="banner bad">${esc(b.text)}</p>`;
+    if (b.type === "info") return `<section class="section"><h2>${esc(b.title)}</h2><ul>${b.items.map(x => `<li>${esc(x)}</li>`).join("")}</ul></section>`;
+    if (b.type === "checklist") return `<section class="section"><h2>${esc(b.title)}</h2><div class="checklist">${b.items.map((x, i) => { const k = `${bi}.${i}`; return `<label><input type="checkbox" data-tc="${k}" ${s.c[k] ? "checked" : ""}> ${esc(x)}</label>`; }).join("")}</div></section>`;
+    if (b.type === "fields") return `<section class="section"><h2>${esc(b.title)}</h2><div class="calc tool-fields">${b.fields.map(([k, l]) => `<label>${esc(l)}<textarea rows="2" data-tf="${bi}.${k}">${esc(s.f[`${bi}.${k}`] || "")}</textarea></label>`).join("")}</div></section>`;
+    if (b.type === "log") { const rows = s.l[b.id] || [];
+      return `<section class="section"><h2>${esc(b.title)}</h2>
+        <form class="calc tool-log no-print" data-tl="${b.id}"><div class="fields">${b.cols.map(([k, l]) => `<label>${esc(l)}<input name="${k}" ${k === "date" ? `value="${new Date().toISOString().slice(0, 10)}"` : ""}></label>`).join("")}</div><div><button class="btn primary">Add entry</button></div></form>
+        <div class="tablewrap"><table><thead><tr>${b.cols.map(([, l]) => `<th>${esc(l)}</th>`).join("")}<th class="no-print"></th></tr></thead><tbody>${rows.map((r, i) => `<tr>${b.cols.map(([k]) => `<td>${esc(r[k] || "")}</td>`).join("")}<td class="no-print"><button class="btn" type="button" data-tldel="${b.id}.${i}">Delete</button></td></tr>`).join("") || `<tr><td colspan="${b.cols.length + 1}" class="muted">No entries yet.</td></tr>`}</tbody></table></div></section>`; }
+    return "";
+  };
+  const S = URGENT_GENERAL;
+  return `<div class="patient detail"><span class="eyebrow">Planning guide</span><h1>${esc(t.title)}</h1>${transBanner()}
+    <div class="actions no-print">${bmBtn("Guide", t.id, t.title)}<button class="btn" type="button" data-print>Print or save as PDF</button><button class="btn" type="button" id="tool-clear">Clear my entries</button></div>
+    <p class="prose">${esc(t.intro)}</p>
+    <p class="banner slim">What you tick and type stays only on this device and is not sent to DR ARVEEN. This guide is still being reviewed by our clinical team and does not replace advice from your own doctors. ${statusPill("DRAFT")}</p>
+    ${t.blocks.map(block).join("")}
+    ${t.safety ? `<section class="section"><h2>When should I get help?</h2><div class="safety">
+      <div class="em"><b>Emergency: call 999 now</b><ul>${S.emergency.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="ur"><b>Urgent: contact your treating team or helpline promptly</b><ul>${S.urgent.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="ro"><b>Routine: mention at your next appointment</b><ul>${S.routine.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div></section>` : ""}
+    ${t.links?.length ? `<section class="section no-print"><h2>Related</h2><div class="chips">${t.links.map(([r, l]) => `<a class="chip" href="${url(r)}">${esc(l)}</a>`).join("")}</div></section>` : ""}
+    <p class="print-only print-foot">DR ARVEEN Patient Education Centre · ${esc(t.title)} · printed ${new Date().toISOString().slice(0, 10)}. General information that does not replace advice from your own treating team. In an emergency in Malaysia, call 999.</p></div>`;
+};
+function bindTool() {
+  if (PAGE !== "tool") return; const id = PARAMS.get("id"); if (!TOOLS.find(x => x.id === id)) return;
+  const key = "tool." + id, get = () => store.get(key, { c: {}, f: {}, l: {} }), put = s => store.set(key, s);
+  app.querySelectorAll("[data-tc]").forEach(c => c.onchange = () => { const s = get(); s.c[c.dataset.tc] = c.checked; put(s); });
+  app.querySelectorAll("[data-tf]").forEach(t => t.oninput = () => { const s = get(); s.f[t.dataset.tf] = t.value; put(s); });
+  app.querySelectorAll("[data-tl]").forEach(f => f.onsubmit = e => { e.preventDefault(); const row = Object.fromEntries([...f.querySelectorAll("input")].map(i => [i.name, i.value.trim()]));
+    if (!Object.entries(row).some(([k, v]) => k !== "date" && v)) return; const s = get(); (s.l[f.dataset.tl] = s.l[f.dataset.tl] || []).push(row); put(s); render(); });
+  app.querySelectorAll("[data-tldel]").forEach(b => b.onclick = () => { const [lid, i] = b.dataset.tldel.split("."); const s = get(); s.l[lid].splice(+i, 1); put(s); render(); });
+  const clr = $("#tool-clear"); if (clr) clr.onclick = () => { if (confirm("Clear everything you have ticked and typed in this guide on this device?")) { try { localStorage.removeItem("arveen." + key); } catch {} render(); } };
 }
 V.tracker = () => {
   const rows = store.get("fx", []);
@@ -1461,7 +1585,7 @@ function render() {
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
-  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes(); bindAdminWs(); bindWorkspace(); bindSecurity();
+  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes(); bindAdminWs(); bindWorkspace(); bindSecurity(); bindTool();
 }
 /* ---------- textbook study notes (Berek & Novak's, Ch 37–42), professional only ---------- */
 V.notes = () => {

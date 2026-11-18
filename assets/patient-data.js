@@ -3061,5 +3061,23 @@ window.ARVEEN_PUBLIC = {
   "Is there a clinical trial I could join?",
   "How often will I have check-ups, and what tests will they include?",
   "Who do I contact about side effects, and at what times?"
- ]
+ ],
+ "portfolio": {
+  "name": "",
+  "title": "Consultant Gynaecological Oncologist",
+  "photo": "",
+  "photoAlt": "",
+  "summary": "",
+  "registration": [],
+  "qualifications": [],
+  "interests": [],
+  "services": [],
+  "locations": [],
+  "referrals": "",
+  "research": [],
+  "teaching": [],
+  "memberships": [],
+  "languages": [],
+  "enquiries": ""
+ }
 };
