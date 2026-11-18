@@ -610,9 +610,50 @@ function bindFilters() {
   const c = $("#clearf"); if (c) c.onclick = () => { state.filters = {}; render(); };
 }
 
-V.recs = () => `<div class="section-h"><div><span class="eyebrow">Recommendation-level database</span><h1>Recommendations</h1></div><div class="toc"><a class="btn" href="${url(`guidelines`)}">Guidelines</a><a class="btn" aria-pressed="true" href="${url(`recs`)}">Recommendations</a><a class="btn" href="${url(`updates`)}">Updates</a></div></div>
-  ${seedBanner()}<p class="banner info">Recommendation text below is an <b>ARVEEN paraphrase</b>, not a quotation. Grades and strengths are blank until transcribed from the source in its original framework.</p>
-  ${byDisease(D.recommendations, r => r.disease, its => [...new Set(its.map(r => r.guideline))].map(gid => { const g = byId(D.guidelines, gid); return `<details class="recgrp"><summary><b>${esc(g ? `${orgs(g)} ${g.version || ""}` : gid)}</b> <span class="muted">${esc(g?.title || "")} · ${its.filter(r => r.guideline === gid).length} recommendations</span></summary>${recTable(its.filter(r => r.guideline === gid))}</details>`; }).join(""))}`;
+/* Recommendations in clinical order, like the textbook notes:
+   introduction → etiology/risk → clinical features & diagnosis → treatment → recurrence → follow-up & survivorship. */
+const REC_PHASES = [
+  ["intro", "1. Introduction: general care and organisation", "Multidisciplinary planning, centralisation, counselling, clinical trials."],
+  ["etiology", "2. Etiology: risk, genetics, screening and prevention", "Hereditary risk (Lynch, BRCA), HPV, screening programmes, risk-reducing surgery."],
+  ["clinical", "3. Clinical features and diagnosis", "Presentation and referral, examination, biopsy, imaging, pathology, molecular testing, staging."],
+  ["treatment", "4. Treatment", "Primary treatment by stage, with adjuvant therapy."],
+  ["recurrence", "5. Recurrent and advanced disease", "Work-up and treatment of recurrence, metastatic and oligometastatic disease."],
+  ["followup", "6. Follow-up, survivorship and palliative care", "Surveillance schedules, late effects, HRT, psychosexual support, palliation."]];
+const TX_SUB = [["fertility", "Fertility-sparing treatment"], ["surgery", "Surgery"], ["radio", "Radiotherapy and chemoradiotherapy"], ["systemic", "Systemic therapy (chemotherapy, endocrine, immunotherapy, targeted)"], ["other", "Other treatment decisions"]];
+function recPhase(r) {
+  const loc = `${r.location || ""} ${r.stage || ""}`, set = `${r.setting || ""}`, all = `${loc} ${set}`, intent = r.intent || "";
+  if (/follow-?up|survivorship|palliati|\bHRT\b|lymphoedema|psychosexual|supportive/i.test(all) || intent === "Palliative") return "followup";
+  if (/recurr|relapse|metasta|oligometa|re-irradiation|previously irradiated|progression after|second line|second-line/i.test(all)) return "recurrence";
+  if (intent === "Preventive" || /lynch|brca|hereditary|screening|risk-reducing|carriers/i.test(loc) || /^(genetics|surveillance|risk-reducing surgery)$/i.test(set)) return "etiology";
+  if (/^General Recommendations$/i.test((r.location || "").trim())) return "intro";
+  if (intent === "Diagnostic" || intent === "Prognostic" || /work-?up|imaging|biopsy|patholog|staging|diagnos|tumour markers|molecular testing|referral|examination|investigation|risk assessment/i.test(set)) return "clinical";
+  return "treatment";
+}
+function txSub(r) {
+  const all = `${r.location || ""} ${r.setting || ""} ${r.stage || ""}`;
+  if (r.intent === "Fertility-sparing" || /fertility/i.test(all)) return "fertility";
+  if (/radiotherapy|brachy|chemoradio|radiation/i.test(r.setting || "")) return "radio";
+  if (/systemic|chemotherapy|endocrine|immuno|targeted|hormon|maintenance|neoadjuvant/i.test(r.setting || "")) return "systemic";
+  if (/surg|lymphadenectomy|sentinel|nodal|excision|hysterectomy|ovarian preservation|reconstruction|groin|morcellation|cytoreduct|re-staging|uterine preservation/i.test(all)) return "surgery";
+  if (/radiotherapy|brachy|chemoradio/i.test(all)) return "radio";
+  if (/chemotherapy|systemic|endocrine/i.test(all)) return "systemic";
+  return "other";
+}
+V.recs = () => {
+  const mode = state.filters.recMode || store.get("recMode", "topic");
+  const byGuideline = its => [...new Set(its.map(r => r.guideline))].map(gid => { const g = byId(D.guidelines, gid); return `<details class="recgrp"><summary><b>${esc(g ? `${orgs(g)} ${g.version || ""}` : gid)}</b> <span class="muted">${esc(g?.title || "")} · ${its.filter(r => r.guideline === gid).length} recommendations</span></summary>${recTable(its.filter(r => r.guideline === gid))}</details>`; }).join("");
+  const byTopic = its => REC_PHASES.map(([k, title, hint]) => {
+    const ph = its.filter(r => recPhase(r) === k); if (!ph.length) return "";
+    const body = k === "treatment"
+      ? TX_SUB.map(([s, st]) => { const sub = ph.filter(r => txSub(r) === s); return sub.length ? `<h4 class="recsub">${esc(st)} <span class="muted">${sub.length}</span></h4>${recTable(sub)}` : ""; }).join("")
+      : recTable(ph);
+    return `<details class="recgrp phase"><summary><b>${esc(title)}</b> <span class="muted">${ph.length} recommendation${ph.length > 1 ? "s" : ""} · ${esc(hint)}</span></summary>${body}</details>`;
+  }).join("");
+  return `<div class="section-h"><div><span class="eyebrow">Recommendation-level database</span><h1>Recommendations</h1></div><div class="toc"><a class="btn" href="${url(`guidelines`)}">Guidelines</a><a class="btn" aria-pressed="true" href="${url(`recs`)}">Recommendations</a><a class="btn" href="${url(`updates`)}">Updates</a></div></div>
+  ${seedBanner()}<p class="banner info">Recommendation text below is an <b>ARVEEN paraphrase</b>, not a quotation. Grades and strengths are kept in each guideline's original framework.</p>
+  <div class="chips" role="group" aria-label="Arrange recommendations"><span class="muted">Arrange:</span><button class="chip" data-recmode="topic" aria-pressed="${mode === "topic"}">By clinical topic (introduction → treatment → follow-up)</button><button class="chip" data-recmode="guideline" aria-pressed="${mode === "guideline"}">By guideline</button></div>
+  ${byDisease(D.recommendations, r => r.disease, mode === "topic" ? byTopic : byGuideline)}`;
+};
 function recTable(recs) {
   return `<div class="tablewrap"><table><thead><tr><th>ID</th><th>Recommendation</th><th>Context</th><th>Original grade / strength</th><th>Malaysia</th><th>Links</th></tr></thead><tbody>
   ${recs.map(r => { const g = byId(D.guidelines, r.guideline); return `<tr><td class="mono">${r.id}</td><td>${esc(r.text)}<div class="muted" style="font-size:.78rem">${esc(r.textType)} · ${listPill(r.status)}</div></td>
@@ -1410,6 +1451,7 @@ function render() {
   app.querySelectorAll("[data-print]").forEach(b => b.onclick = () => window.print());
   app.querySelectorAll("[data-showlang]").forEach(b => b.onclick = () => { state.lang = b.dataset.showlang; store.set("lang", state.lang); $("#lang").value = state.lang; render(); });
   app.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { store.set("dmode", b.dataset.mode); render(); });
+  app.querySelectorAll("[data-recmode]").forEach(b => b.onclick = () => { state.filters.recMode = b.dataset.recmode; store.set("recMode", b.dataset.recmode); render(); });
   app.querySelectorAll("[data-td]").forEach(b => b.onclick = () => { state.filters.trialDisease = b.dataset.td; render(); });
   app.querySelectorAll("[data-saud]").forEach(b => b.onclick = () => { state.filters.saud = b.dataset.saud; render(); });
   app.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => { let s = store.get("subs", []); s = s.includes(b.dataset.sub) ? s.filter(x => x !== b.dataset.sub) : [...s, b.dataset.sub]; store.set("subs", s); b.setAttribute("aria-pressed", s.includes(b.dataset.sub)); });

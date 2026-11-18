@@ -590,3 +590,8 @@ section.nblock h3 { margin: 0 0 8px; color: var(--teal) }
 /* Two-step sign-in */
 .mfa-qr { background: #fff; padding: 8px; border-radius: 8px; border: 1px solid var(--line) }
 #mfabox code { font: .9rem var(--f-mono); word-break: break-all }
+
+/* Recommendations by clinical topic */
+details.recgrp.phase > summary b { color: var(--teal) }
+.recsub { margin: 14px 0 6px; padding-left: 10px; border-left: 3px solid var(--teal) }
+
