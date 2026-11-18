@@ -115,7 +115,7 @@ It creates `user_workspace`: one row per person holding their bookmarks, recentl
 
 Until you run it, workspaces still stay separate per account, but only on that one device, and they are not wiped at sign-out (so nothing is lost).
 
-## 13. Two-step sign-in for staff, and automatic sign-out (upgrade 7)
+## 13. Two-step sign-in for staff (upgrade 7)
 
 **Order matters. Do these steps in this order:**
 
@@ -128,7 +128,6 @@ After that, editor, reviewer and admin powers only work in a session verified wi
 
 **If a staff member loses their phone:** go to Supabase **Authentication → Users**, open their account and delete their MFA factor. They can then set it up again.
 
-**Everyone is signed out automatically after 30 minutes without activity** in any DR ARVEEN tab, with a warning 2 minutes before. Their bookmarks and notes stay saved to their account.
 
 ## Test the protection
 

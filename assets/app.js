@@ -139,8 +139,8 @@ function renderShell() {
 renderShell();
 /* Professional menu grouped so the bar stays short; patient menu stays flat */
 const NAV_PRO_GROUPS = [["home", "Home"],
-  { label: "Reference", items: [["guidelines", "Guidelines"], ["recs", "Recommendations"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"], ["updates", "Guideline updates"]] },
-  { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"], ["notes", "Textbook notes"], ["sdm", "Shared decisions"]] },
+  { label: "Reference", items: [["notes", "Textbook notes"], ["guidelines", "Guidelines"], ["updates", "↳ Guideline updates"], ["recs", "↳ Recommendations"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
+  { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"], ["sdm", "Shared decisions"]] },
   ["pt", "Patients"], ["guide", "Help"]];
 /* Account menu (top right): personal and admin pages, shown only to the roles that can use them */
 const ACCT_PERSONAL = [["workspace", "My Workspace"], ["security", "Two-step sign-in"]];
@@ -316,29 +316,11 @@ function renderAcct() {
   const so = $("#signout"); if (so) so.onclick = () => signOutNow();
 }
 /* Sign out: save the workspace to the account, then remove the local copy (shared computers). */
-async function signOutNow(reason) {
+async function signOutNow() {
   clearTimeout(wsTimer); try { await wsPush(); } catch {}
   const uid = state.user?.id; try { await sb.auth.signOut(); } catch {}
   if (uid && state.wsCloud !== false) wsWipeLocal(uid);
-  try { localStorage.removeItem("arveen.lastActive"); } catch {}
-  location.href = reason === "idle" ? "login.html?timeout=1" : "index.html";
-}
-/* Automatic sign-out after 30 minutes without activity in any DR ARVEEN tab; warning 2 minutes before. */
-const IDLE_MIN = 30, WARN_MIN = 2;
-function startIdleWatch() {
-  if (!state.user || document.body.dataset.idle) return; document.body.dataset.idle = "1";
-  let lastWrite = 0;
-  const touch = () => { const now = Date.now(); if (now - lastWrite > 15000) { lastWrite = now; store.set("lastActive", now); } const w = $("#idlewarn"); if (w) w.hidden = true; };
-  ["pointerdown", "keydown", "scroll", "touchstart"].forEach(ev => document.addEventListener(ev, touch, { passive: true }));
-  store.set("lastActive", Date.now());
-  const warn = document.createElement("div"); warn.id = "idlewarn"; warn.className = "idlewarn"; warn.hidden = true; warn.setAttribute("role", "alertdialog");
-  warn.innerHTML = `<p><b>Still there?</b> For safety on shared computers you'll be signed out in about ${WARN_MIN} minutes.</p><button class="btn primary" type="button">Stay signed in</button>`;
-  warn.querySelector("button").onclick = () => { lastWrite = 0; touch(); };
-  document.body.appendChild(warn);
-  setInterval(() => {
-    const idle = (Date.now() - (store.get("lastActive", Date.now()) || Date.now())) / 60000;
-    if (idle >= IDLE_MIN) signOutNow("idle"); else if (idle >= IDLE_MIN - WARN_MIN) warn.hidden = false;
-  }, 20000);
+  location.href = "index.html";
 }
 const authErr = (msg) => { const e = $("#autherr"); if (e) { e.hidden = false; e.textContent = msg; } };
 const authOk = (msg) => { const e = $("#authok"); if (e) { e.hidden = false; e.innerHTML = msg; } };
@@ -606,7 +588,7 @@ V.guidelines = () => {
   const years = [...new Set(D.guidelines.map(g => g.pubDate).filter(Boolean))].sort().reverse();
   const domains = [...new Set(D.guidelines.flatMap(g => g.domain))].sort();
   const list = D.guidelines.filter(g => (!f.disease || dname(g.disease) === f.disease) && (!f.org || g.org.includes(f.org)) && (!f.year || g.pubDate === f.year) && (!f.domain || g.domain.includes(f.domain)) && (!f.cur || (f.cur === "Active" ? g.superseded === "active" : f.cur === "Superseded" ? g.superseded === "superseded" : g.superseded === "uncertain")));
-  return `<div class="section-h"><div><span class="eyebrow">Repository</span><h1>Clinical guidelines</h1></div><div class="toc"><a class="btn" aria-pressed="true" href="${url(`guidelines`)}">Guidelines</a><a class="btn" href="${url(`recs`)}">Recommendations (${D.recommendations.length})</a></div></div>
+  return `<div class="section-h"><div><span class="eyebrow">Repository</span><h1>Clinical guidelines</h1></div><div class="toc"><a class="btn" aria-pressed="true" href="${url(`guidelines`)}">Guidelines</a><a class="btn" href="${url(`recs`)}">Recommendations (${D.recommendations.length})</a><a class="btn" href="${url(`updates`)}">Updates (${(D.updates || []).length})</a></div></div>
   ${seedBanner()}
   ${(D.organisations || []).length ? `<details class="section"><summary><b>Guideline organisations and official websites (${D.organisations.length})</b></summary><div class="tablewrap"><table><thead><tr><th>Abbreviation</th><th>Full name</th><th>Official website</th></tr></thead><tbody>${D.organisations.map(o => `<tr><td><b>${esc(o.id)}</b></td><td>${esc(o.name)}</td><td><a href="${esc(o.url)}" target="_blank" rel="noopener">${esc(o.label || new URL(o.url).hostname.replace(/^www\./, ""))} ↗</a></td></tr>`).join("")}</tbody></table></div></details>` : ""}
   <div class="layout"><aside class="filters" id="gf">
@@ -628,7 +610,7 @@ function bindFilters() {
   const c = $("#clearf"); if (c) c.onclick = () => { state.filters = {}; render(); };
 }
 
-V.recs = () => `<div class="section-h"><div><span class="eyebrow">Recommendation-level database</span><h1>Recommendations</h1></div><div class="toc"><a class="btn" href="${url(`guidelines`)}">Guidelines</a><a class="btn" aria-pressed="true" href="${url(`recs`)}">Recommendations</a></div></div>
+V.recs = () => `<div class="section-h"><div><span class="eyebrow">Recommendation-level database</span><h1>Recommendations</h1></div><div class="toc"><a class="btn" href="${url(`guidelines`)}">Guidelines</a><a class="btn" aria-pressed="true" href="${url(`recs`)}">Recommendations</a><a class="btn" href="${url(`updates`)}">Updates</a></div></div>
   ${seedBanner()}<p class="banner info">Recommendation text below is an <b>ARVEEN paraphrase</b>, not a quotation. Grades and strengths are blank until transcribed from the source in its original framework.</p>
   ${byDisease(D.recommendations, r => r.disease, its => [...new Set(its.map(r => r.guideline))].map(gid => { const g = byId(D.guidelines, gid); return `<details class="recgrp"><summary><b>${esc(g ? `${orgs(g)} ${g.version || ""}` : gid)}</b> <span class="muted">${esc(g?.title || "")} · ${its.filter(r => r.guideline === gid).length} recommendations</span></summary>${recTable(its.filter(r => r.guideline === gid))}</details>`; }).join(""))}`;
 function recTable(recs) {
@@ -885,7 +867,7 @@ const litSection = (place, title, intro) => {
       <p><a href="https://doi.org/${encodeURIComponent(x.doi).replace(/%2F/g, "/")}" target="_blank" rel="noopener">Read the article (doi ${esc(x.doi)}) ↗</a></p></details>`).join("")}</div>`).join("")}</section>`;
 };
 
-V.updates = () => `<span class="eyebrow">Guideline update intelligence</span><h1>Guideline updates</h1>
+V.updates = () => `<div class="section-h"><div><span class="eyebrow">Guidelines · update intelligence</span><h1>Guideline updates</h1></div><div class="toc"><a class="btn" href="${url(`guidelines`)}">Guidelines</a><a class="btn" href="${url(`recs`)}">Recommendations</a><a class="btn" aria-pressed="true" href="${url(`updates`)}">Updates</a></div></div>
   <p class="prose muted">The issuing organisation's publication date is shown separately from the date ARVEEN detected and verified the change. Detected changes do not alter approved content until a reviewer decides.</p>
   ${updatesTable(D.updates)}
   <section class="section"><h2>Linked content flagged for review</h2><div class="list">${D.updates.map(u => `<div class="row"><span class="row-t">${esc(u.title)} ${statusPill(u.state)}</span><span class="row-m">${u.affected.map(a => `<span>${esc(a)}</span>`).join("")}</span><span class="row-m">Reviewer: <span class="na">Unassigned</span> · Decision: <span class="na">Pending</span> · Clinical significance: ${esc(u.significance)}</span></div>`).join("")}</div></section>
@@ -1294,7 +1276,7 @@ V.welcome = () => `<section class="hero hero-welcome"><span class="eyebrow">Gyna
   </div>
   <p class="banner info"><b>New here or not sure where to go?</b> The <a href="guide.html">Site guide</a> lists every page, what it is for and how to use it.</p>
   <p class="muted"><a href="governance.html">How DR ARVEEN checks and approves its information</a></p>`;
-V.login = () => !sb ? `<h1>Sign in</h1>${notConfigured()}` : state.user ? `<h1>You're signed in</h1><p><a class="btn primary" href="professional.html">Open the clinical reference</a></p>` : `<span class="eyebrow">Healthcare professionals</span><h1>Sign in</h1>${PARAMS.get("timeout") ? `<p class="banner info">You were signed out after ${IDLE_MIN} minutes without activity, to protect your account on shared computers. Your bookmarks and notes are saved to your account.</p>` : ""}${loginForm()}`;
+V.login = () => !sb ? `<h1>Sign in</h1>${notConfigured()}` : state.user ? `<h1>You're signed in</h1><p><a class="btn primary" href="professional.html">Open the clinical reference</a></p>` : `<span class="eyebrow">Healthcare professionals</span><h1>Sign in</h1>${loginForm()}`;
 V.register = () => !sb ? `<h1>Request an account</h1>${notConfigured()}` : `<span class="eyebrow">Healthcare professionals</span><h1>Request an account</h1>
   <p class="prose muted">Accounts are for registered healthcare professionals. After you confirm your email, an administrator checks your registration with the relevant Malaysian board or council before approving access. Patients don't need an account.</p>
   <form class="calc authbox" id="regf">
@@ -1504,7 +1486,9 @@ V.guide = () => {
   <p class="muted">Needs an approved account. The menu has two dropdowns, <b>Reference</b> and <b>Tools</b>. Your personal and admin pages are in the <b>account menu</b> (the circle with your initial, top right).</p>
   <h3>Reference menu</h3>
   ${table([
+    ["notes", "Textbook notes", "Revision notes on Chapters 37–42 of Berek & Novak's Gynecology (uterine, cervix and vagina, ovary, vulva, trophoblastic disease, breast).", "Pick a chapter on the left or type in the search box (e.g. LACC, p57). Read the orange 'Check against current guidance' box at the top of each chapter first.", 1],
     ["guidelines", "Guidelines", "Every guideline we hold, with version, status and its extracted recommendations.", "Filter by cancer. Open a guideline to read its summary and the table of recommendations with original levels and grades.", 1],
+    ["updates", "Guideline updates", "Guideline changes detected and what they affect.", "Check after logging in to see what is new or under review.", 1],
     ["recs", "Recommendations", "All recommendations in one searchable list.", "Filter by cancer, setting or status; click an ID to see its guideline.", 1],
     ["diseases", "Diseases", "A 24-section reference for each cancer: pathology, staging, treatment, follow-up, pearls, exam questions.", "Open a cancer; use the section list to jump around.", 1],
     ["staging", "Staging", "FIGO staging systems (cervix, ovary, endometrium, vulva, vagina, sarcoma, GTN).", "Open a system and use the filter box to find a stage.", 1],
@@ -1516,12 +1500,10 @@ V.guide = () => {
     ["algorithms", "Clinical pathways", "Six step-by-step pathways: cervical staging work-up, suspected ovarian cancer, suspected endometrial cancer, endometrial risk group, suspected recurrence, biomarker testing.", "Choose a pathway at the top, then answer one question at a time. Each end point shows the recommendations it is based on. It does not choose treatment.", 1],
     ["calculators", "Calculators", "BSA, BMI, creatinine clearance, eGFR, RMI, carboplatin (Calvert).", "Type the values; the answer appears as you type. Open 'Formula and limitations' before using it.", 1],
     ["compare", "Evidence and comparisons", "Compare guideline recommendations on one question, plus the Research library of summarised studies.", "Choose a clinical question from the list. Scroll down for the Research library; click a study to open its summary.", 1],
-    ["education", "Education", "FIGO staging quiz, reviews, surgical videos and teaching cases.", "Answer quiz questions to see the explanation. Videos open on the journal website.", 1],
-    ["notes", "Textbook notes", "Revision notes on Chapters 37–42 of Berek & Novak's Gynecology (uterine, cervix and vagina, ovary, vulva, trophoblastic disease, breast).", "Pick a chapter on the left or type in the search box (e.g. LACC, p57). Read the orange 'Check against current guidance' box at the top of each chapter first.", 1]])}
+    ["education", "Education", "FIGO staging quiz, reviews, surgical videos and teaching cases.", "Answer quiz questions to see the explanation. Videos open on the journal website.", 1]])}
   <h3>Other pages</h3>
   ${table([
     ["home", "Clinical reference home", "Search, disease hubs, review progress and key evidence.", "Start with the big search box, or click a disease hub.", 1],
-    ["updates", "Updates", "Guideline changes detected and what they affect.", "Check after logging in to see what is new or under review.", 1],
     ["sdm", "Shared decisions", "Question prompts to use with patients.", "Print and use in clinic."],
     ["workspace", "My Workspace", "Your bookmarks and private notes.", "Add notes at the bottom of any record; they stay in this browser."],
     ["search", "Search", "Search across everything you can see.", "Type in the box at the top of any page."]])}
@@ -1845,7 +1827,7 @@ async function boot() {
   renderNav();
   app.innerHTML = `<div class="skeleton" role="status" aria-label="Loading"><span class="sk sk-eyebrow"></span><span class="sk sk-h1"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span><div class="sk-grid"><span class="sk sk-card"></span><span class="sk sk-card"></span><span class="sk sk-card"></span></div></div>`;
   try { await loadSession(); await loadPatientItems(); if (approved() && (GATED || PAGE === "search" || PAGE === "workspace")) await loadPro(); } catch (e) { console.error(e); }
-  IDX = index(); bindSuggest(); startIdleWatch();
+  IDX = index(); bindSuggest();
   // Staff tools need a session verified with the authenticator app: send them to the two-step page first.
   if (STAFF_PAGES.includes(PAGE) && state.proLoaded && needsMfa()) {
     location.replace(`two-step.html?need=1&next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}`); return;

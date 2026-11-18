@@ -587,8 +587,6 @@ section.nblock h3 { margin: 0 0 8px; color: var(--teal) }
 .aw-check li.todo { color: var(--bad); font-weight: 600 }
 @media (max-width: 560px) { .aw-prog { grid-template-columns: 1fr 70px } .aw-prog .rq-prog { grid-column: 1 / -1; grid-row: 2 } }
 
-/* Inactivity warning and two-step sign-in */
-.idlewarn { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 60; max-width: min(520px, calc(100% - 32px)); display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 14px 18px; background: var(--surface); color: var(--fg); border: 2px solid var(--warn); border-radius: var(--r-lg); box-shadow: var(--shadow-2) }
-.idlewarn p { margin: 0; flex: 1 1 240px }
+/* Two-step sign-in */
 .mfa-qr { background: #fff; padding: 8px; border-radius: 8px; border: 1px solid var(--line) }
 #mfabox code { font: .9rem var(--f-mono); word-break: break-all }
