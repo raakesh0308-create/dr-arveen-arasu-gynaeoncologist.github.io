@@ -76,7 +76,7 @@ const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"],
   { label: "Tools", items: [["sdm", "Prepare for appointments"], ["tracker", "Side-effect tracker"], ["workspace", "Saved pages"]] },
   ["guide", "Help"]];
 /* Each route name maps to its own HTML file; records use ?id= */
-const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", adminws: "admin-workspace.html", guide: "guide.html", notes: "textbook-notes.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
+const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", adminws: "admin-workspace.html", security: "two-step.html", guide: "guide.html", notes: "textbook-notes.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
   algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
@@ -143,7 +143,7 @@ const NAV_PRO_GROUPS = [["home", "Home"],
   { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"], ["notes", "Textbook notes"], ["sdm", "Shared decisions"]] },
   ["pt", "Patients"], ["guide", "Help"]];
 /* Account menu (top right): personal and admin pages, shown only to the roles that can use them */
-const ACCT_PERSONAL = [["workspace", "My Workspace"]];
+const ACCT_PERSONAL = [["workspace", "My Workspace"], ["security", "Two-step sign-in"]];
 const ACCT_ADMIN = [["adminws", "Admin workspace"], ["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial dashboard"], ["accounts", "Accounts"]];
 const ACCT_INFO = [["governance", "Governance"], ["about", "About"]];
 function renderNav() {
@@ -226,6 +226,10 @@ const approved = () => state.profile?.status === "approved";
 const isAdmin = () => approved() && state.profile.role === "admin";
 const isEditor = () => approved() && ["editor", "reviewer", "admin"].includes(state.profile.role);
 const isReviewer = () => approved() && ["reviewer", "admin"].includes(state.profile.role);
+/* Staff (editor, reviewer, admin) must complete two-step sign-in (authenticator app) before using staff tools. */
+const staffRole = () => approved() && ["editor", "reviewer", "admin"].includes(state.profile.role);
+const needsMfa = () => staffRole() && state.aal !== "aal2";
+const STAFF_PAGES = ["adminws", "review", "cms", "accounts", "admin"];
 const isPharmacist = () => approved() && state.profile.profession === "Pharmacist";
 const canApprove = () => approved() && ["reviewer", "admin"].includes(state.profile.role);
 /* Online edits to patient content (Supabase patient_items) are applied on top of the built-in content */
@@ -263,7 +267,8 @@ async function loadSession() {
   if (!sb) return;
   const { data: { session } } = await sb.auth.getSession();
   state.user = session?.user || null;
-  if (state.user) { const { data } = await sb.from("profiles").select("*").eq("id", state.user.id).maybeSingle(); state.profile = data; await wsPull(); }
+  if (state.user) { const { data } = await sb.from("profiles").select("*").eq("id", state.user.id).maybeSingle(); state.profile = data; await wsPull();
+    try { const a = await sb.auth.mfa.getAuthenticatorAssuranceLevel(); state.aal = a.data?.currentLevel || "aal1"; state.aalNext = a.data?.nextLevel || "aal1"; } catch { state.aal = "aal1"; } }
 }
 async function loadPro() {
   const { data, error } = await sb.from("pro_content").select("key,data");
@@ -308,10 +313,32 @@ function renderAcct() {
       ${[["Personal", ACCT_PERSONAL], ["Administration", ACCT_ADMIN], ["", ACCT_INFO]].map(([h, items]) => { const its = items.filter(allowed); return its.length ? `${h ? `<span class="menu-sec">${h}</span>` : `<span class="menu-sep"></span>`}${its.map(([r, t]) => `<a href="${url(r)}" ${r === PAGE ? 'aria-current="page"' : ""}>${t}</a>`).join("")}` : ""; }).join("")}
       <button class="menu-btn" id="signout" type="button">Sign out</button></div></details>`
     : `<a class="theme-btn" href="${url("workspace")}">Saved</a><a class="theme-btn" href="login.html?next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}">Sign in</a>`;
-  const so = $("#signout"); if (so) so.onclick = async () => {
-    clearTimeout(wsTimer); await wsPush(); // save any last change to the account, then remove it from this computer
-    const uid = state.user?.id; await sb.auth.signOut(); if (uid && state.wsCloud !== false) wsWipeLocal(uid); location.href = "index.html";
-  };
+  const so = $("#signout"); if (so) so.onclick = () => signOutNow();
+}
+/* Sign out: save the workspace to the account, then remove the local copy (shared computers). */
+async function signOutNow(reason) {
+  clearTimeout(wsTimer); try { await wsPush(); } catch {}
+  const uid = state.user?.id; try { await sb.auth.signOut(); } catch {}
+  if (uid && state.wsCloud !== false) wsWipeLocal(uid);
+  try { localStorage.removeItem("arveen.lastActive"); } catch {}
+  location.href = reason === "idle" ? "login.html?timeout=1" : "index.html";
+}
+/* Automatic sign-out after 30 minutes without activity in any DR ARVEEN tab; warning 2 minutes before. */
+const IDLE_MIN = 30, WARN_MIN = 2;
+function startIdleWatch() {
+  if (!state.user || document.body.dataset.idle) return; document.body.dataset.idle = "1";
+  let lastWrite = 0;
+  const touch = () => { const now = Date.now(); if (now - lastWrite > 15000) { lastWrite = now; store.set("lastActive", now); } const w = $("#idlewarn"); if (w) w.hidden = true; };
+  ["pointerdown", "keydown", "scroll", "touchstart"].forEach(ev => document.addEventListener(ev, touch, { passive: true }));
+  store.set("lastActive", Date.now());
+  const warn = document.createElement("div"); warn.id = "idlewarn"; warn.className = "idlewarn"; warn.hidden = true; warn.setAttribute("role", "alertdialog");
+  warn.innerHTML = `<p><b>Still there?</b> For safety on shared computers you'll be signed out in about ${WARN_MIN} minutes.</p><button class="btn primary" type="button">Stay signed in</button>`;
+  warn.querySelector("button").onclick = () => { lastWrite = 0; touch(); };
+  document.body.appendChild(warn);
+  setInterval(() => {
+    const idle = (Date.now() - (store.get("lastActive", Date.now()) || Date.now())) / 60000;
+    if (idle >= IDLE_MIN) signOutNow("idle"); else if (idle >= IDLE_MIN - WARN_MIN) warn.hidden = false;
+  }, 20000);
 }
 const authErr = (msg) => { const e = $("#autherr"); if (e) { e.hidden = false; e.textContent = msg; } };
 const authOk = (msg) => { const e = $("#authok"); if (e) { e.hidden = false; e.innerHTML = msg; } };
@@ -896,6 +923,60 @@ V.workspace = () => {
   ${state.aud === "pro" ? `<section class="section"><h2>Private notes</h2><div class="list">${Object.entries(n).filter(([, v]) => v).map(([k, v]) => `<div class="row"><span class="row-t mono">${esc(k)}</span><span>${esc(v)}</span></div>`).join("") || `<div class="row muted">No notes yet.</div>`}</div></section>` : ""}`;
 };
 
+/* ---------- two-step sign-in (authenticator app) ---------- */
+V.security = () => {
+  const staff = staffRole(), on = state.aal === "aal2", hasFactor = state.aalNext === "aal2";
+  return `<span class="eyebrow">Account security</span><h1>Two-step sign-in</h1>
+  <p class="prose">Two-step sign-in asks for a 6-digit code from an authenticator app on your phone (for example Google Authenticator, Microsoft Authenticator or Authy) as well as your password. ${staff ? "<b>It is required for your role</b>: editor, reviewer and admin tools only work after the second step." : "It is optional for your account and recommended."}</p>
+  ${PARAMS.get("need") ? `<p class="banner bad">The page you opened is a staff tool. Complete two-step sign-in below to continue.</p>` : ""}
+  <div class="calc authbox" id="mfabox">
+    ${on ? `<p class="banner">${statusPill("APPROVED")} Two-step sign-in is <b>on</b> and this session is verified.</p>
+      ${PARAMS.get("next") ? `<p><a class="btn primary" href="${esc(PARAMS.get("next"))}">Continue</a></p>` : ""}
+      <details><summary>Remove two-step sign-in</summary><p class="muted">${staff ? "Staff tools will stop working until you set it up again." : ""} You will need to set it up again with a new code.</p><button class="btn" type="button" id="mfa-remove">Remove it</button></details>`
+    : hasFactor ? `<h2>Enter your code</h2><p class="muted">Open your authenticator app and enter the 6-digit code for DR ARVEEN.</p>
+      <label for="mfa-code">6-digit code<input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"></label><button class="btn primary" type="button" id="mfa-verify">Verify</button>`
+    : `<h2>Set it up</h2><ol class="prose"><li>Install an authenticator app on your phone.</li><li>Click <b>Start</b>, then scan the QR code with the app.</li><li>Type the 6-digit code the app shows, and click <b>Verify</b>.</li></ol>
+      <button class="btn primary" type="button" id="mfa-start">Start</button><div id="mfa-enrol" hidden></div>`}
+    <p class="result err" role="alert" id="mfa-err" hidden></p></div>
+  <p class="muted" style="font-size:.86rem">Lost your phone? An administrator can't see your codes. Contact the site owner, who can remove the second step for your account in Supabase (Authentication → Users → your account → remove the factor).</p>`;
+};
+function bindSecurity() {
+  if (PAGE !== "security" || !sb) return;
+  const err = m => { const e = $("#mfa-err"); e.hidden = !m; e.textContent = m || ""; };
+  const done = () => { const n = PARAMS.get("next"); location.href = n && !/^[a-z]+:|^\/\//i.test(n) ? n : "two-step.html"; };
+  const start = $("#mfa-start");
+  if (start) start.onclick = async () => {
+    err(""); start.disabled = true;
+    const lf = await sb.auth.mfa.listFactors(); // remove half-finished set-ups first
+    for (const f of (lf.data?.all || []).filter(f => f.status !== "verified")) await sb.auth.mfa.unenroll({ factorId: f.id });
+    const { data, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: "DR ARVEEN " + new Date().toISOString().slice(0, 16) });
+    if (error) { start.disabled = false; return err(error.message); }
+    const box = $("#mfa-enrol"); box.hidden = false;
+    box.innerHTML = `<p><img class="mfa-qr" alt="QR code for your authenticator app" src="${esc(data.totp.qr_code)}" width="200" height="200"></p>
+      <p class="muted">Can't scan? Enter this key in the app: <code>${esc(data.totp.secret)}</code></p>
+      <label for="mfa-code">6-digit code<input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label><button class="btn primary" type="button" id="mfa-verify">Verify</button>`;
+    bindVerify(data.id);
+  };
+  const bindVerify = factorId => { const b = $("#mfa-verify"); if (!b) return; b.onclick = async () => {
+    err(""); const code = ($("#mfa-code").value || "").replace(/\D/g, "");
+    if (code.length !== 6) return err("Enter the 6-digit code from your app.");
+    let id = factorId;
+    if (!id) { const lf = await sb.auth.mfa.listFactors(); id = (lf.data?.totp || [])[0]?.id; }
+    if (!id) return err("No authenticator is set up for this account.");
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: id, code });
+    if (error) return err("That code didn't work. Check the time on your phone is correct and try the newest code.");
+    done();
+  }; };
+  bindVerify(null);
+  const rm = $("#mfa-remove");
+  if (rm) rm.onclick = async () => {
+    if (!confirm("Remove two-step sign-in from your account?")) return;
+    const lf = await sb.auth.mfa.listFactors();
+    for (const f of lf.data?.all || []) { const { error } = await sb.auth.mfa.unenroll({ factorId: f.id }); if (error) return err(error.message); }
+    await sb.auth.refreshSession(); location.reload();
+  };
+}
+
 /* ---------- admin workspace (editors, reviewers, admins): everything needed to run the site ---------- */
 V.adminws = () => {
   const role = state.profile?.role || "reader", today = new Date().toISOString().slice(0, 10);
@@ -1213,7 +1294,7 @@ V.welcome = () => `<section class="hero hero-welcome"><span class="eyebrow">Gyna
   </div>
   <p class="banner info"><b>New here or not sure where to go?</b> The <a href="guide.html">Site guide</a> lists every page, what it is for and how to use it.</p>
   <p class="muted"><a href="governance.html">How DR ARVEEN checks and approves its information</a></p>`;
-V.login = () => !sb ? `<h1>Sign in</h1>${notConfigured()}` : state.user ? `<h1>You're signed in</h1><p><a class="btn primary" href="professional.html">Open the clinical reference</a></p>` : `<span class="eyebrow">Healthcare professionals</span><h1>Sign in</h1>${loginForm()}`;
+V.login = () => !sb ? `<h1>Sign in</h1>${notConfigured()}` : state.user ? `<h1>You're signed in</h1><p><a class="btn primary" href="professional.html">Open the clinical reference</a></p>` : `<span class="eyebrow">Healthcare professionals</span><h1>Sign in</h1>${PARAMS.get("timeout") ? `<p class="banner info">You were signed out after ${IDLE_MIN} minutes without activity, to protect your account on shared computers. Your bookmarks and notes are saved to your account.</p>` : ""}${loginForm()}`;
 V.register = () => !sb ? `<h1>Request an account</h1>${notConfigured()}` : `<span class="eyebrow">Healthcare professionals</span><h1>Request an account</h1>
   <p class="prose muted">Accounts are for registered healthcare professionals. After you confirm your email, an administrator checks your registration with the relevant Malaysian board or council before approving access. Patients don't need an account.</p>
   <form class="calc authbox" id="regf">
@@ -1356,7 +1437,7 @@ function render() {
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
-  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes(); bindAdminWs(); bindWorkspace();
+  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes(); bindAdminWs(); bindWorkspace(); bindSecurity();
 }
 /* ---------- textbook study notes (Berek & Novak's, Ch 37–42), professional only ---------- */
 V.notes = () => {
@@ -1764,7 +1845,11 @@ async function boot() {
   renderNav();
   app.innerHTML = `<div class="skeleton" role="status" aria-label="Loading"><span class="sk sk-eyebrow"></span><span class="sk sk-h1"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span><div class="sk-grid"><span class="sk sk-card"></span><span class="sk sk-card"></span><span class="sk sk-card"></span></div></div>`;
   try { await loadSession(); await loadPatientItems(); if (approved() && (GATED || PAGE === "search" || PAGE === "workspace")) await loadPro(); } catch (e) { console.error(e); }
-  IDX = index(); bindSuggest();
+  IDX = index(); bindSuggest(); startIdleWatch();
+  // Staff tools need a session verified with the authenticator app: send them to the two-step page first.
+  if (STAFF_PAGES.includes(PAGE) && state.proLoaded && needsMfa()) {
+    location.replace(`two-step.html?need=1&next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}`); return;
+  }
   if ((GATED && !state.proLoaded) || (PAGE === "accounts" && !isAdmin()) || (PAGE === "cms" && !isEditor()) || (PAGE === "review" && !isReviewer()) || (PAGE === "adminws" && !isEditor())) {
     renderNav();
     app.innerHTML = PAGE === "accounts" && state.proLoaded ? `<h1>Administrators only</h1><p class="prose">Account approvals are limited to administrators.</p>`

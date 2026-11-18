@@ -115,6 +115,21 @@ It creates `user_workspace`: one row per person holding their bookmarks, recentl
 
 Until you run it, workspaces still stay separate per account, but only on that one device, and they are not wiped at sign-out (so nothing is lost).
 
+## 13. Two-step sign-in for staff, and automatic sign-out (upgrade 7)
+
+**Order matters. Do these steps in this order:**
+
+1. Sign in on the site, open the **account menu → Two-step sign-in**, and set it up with an authenticator app (Google Authenticator, Microsoft Authenticator or Authy).
+2. Then run `supabase/upgrade-7-staff-2fa.sql` in **SQL Editor → New query**.
+
+After that, editor, reviewer and admin powers only work in a session verified with an authenticator code. That covers approving accounts, editing content, uploading pictures, signing off reviews and reading reports, and it's enforced by the database, not just the website. Reading professional content still needs only the password.
+
+**If you get locked out:** the last line of the SQL file is an emergency rollback. Run it in SQL Editor to switch the requirement off.
+
+**If a staff member loses their phone:** go to Supabase **Authentication → Users**, open their account and delete their MFA factor. They can then set it up again.
+
+**Everyone is signed out automatically after 30 minutes without activity** in any DR ARVEEN tab, with a warning 2 minutes before. Their bookmarks and notes stay saved to their account.
+
 ## Test the protection
 
 After setup, check all of these:
