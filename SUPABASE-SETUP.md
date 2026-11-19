@@ -129,6 +129,17 @@ After that, editor, reviewer and admin powers only work in a session verified wi
 **If a staff member loses their phone:** go to Supabase **Authentication → Users**, open their account and delete their MFA factor. They can then set it up again.
 
 
+## 14. Edit every section, with pictures (upgrade 9)
+
+Run `supabase/upgrade-9-site-edits.sql` once (it is also inside `update-all-now.sql`). Then editors, reviewers and admins can open **Edit content** and change:
+
+- the home page carousels (both sides), including a picture per slide;
+- the Dr Arveen portfolio (details, clinics and profile photo);
+- a banner picture and short introduction for every page;
+- patient articles, leaflets and cancer pages (as before);
+- any clinical record: guidelines, recommendations, disease reference, staging, protocols, drugs, trials, pathways, research library and textbook note chapters, each with its own picture.
+
+While signed in as an editor, every page also shows a **✎ Edit** button. Only the fields that are changed are stored, every save needs a reason and is logged in `site_edits_audit`, and **Discard online edits** returns a record to the built-in version. Editing clinical content does not sign it off: the record shows "Edited after sign-off" until re-reviewed, and a changed dose goes back to PENDING PHARMACIST REVIEW.
 ## Test the protection
 
 After setup, check all of these:

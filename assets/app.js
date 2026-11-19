@@ -283,7 +283,30 @@ async function loadPatientItems() {
       d.image = row.data.image || null; d.pageStatus = row.status; Object.assign(d, meta);
     }
   }
+  const se = await sb.from("site_edits").select("*"); // upgrade-9-site-edits.sql
+  state.editsTable = !se.error; state.edits = Object.fromEntries((se.data || []).map(r => [r.id, r]));
+  applyEdits(P);
 }
+/* ---------- site-wide online edits (site_edits): any record, page banner, carousel or the portfolio ----------
+   Row id "collection:recordId" patches that record; "page:<route>" adds a picture/intro to a page;
+   "slides:pro|pt" replaces the carousel; "portfolio:main" patches the portfolio. Originals are kept for diffing and revert. */
+state.edits = {}; const ORIG = {};
+const EDIT_COLLS = [["guidelines", "Guidelines"], ["recommendations", "Recommendations"], ["diseases", "Disease reference"], ["staging", "Staging systems"], ["protocols", "Treatment protocols"], ["drugs", "Drugs"], ["trials", "Clinical trials"], ["algorithms", "Clinical pathways"], ["literature", "Research library"], ["notes", "Textbook note chapters"]];
+const editList = (target, coll) => coll === "notes" ? (target.notes?.chapters || null) : target[coll];
+function applyEdits(target) {
+  state.slides = {}; state.pageEdits = {};
+  for (const row of Object.values(state.edits)) {
+    const i = row.id.indexOf(":"), coll = row.id.slice(0, i), id = row.id.slice(i + 1), data = row.data || {};
+    if (coll === "slides") { if (Array.isArray(data.slides)) state.slides[id] = data.slides; continue; }
+    if (coll === "page") { state.pageEdits[id] = data; continue; }
+    if (coll === "portfolio") { const p = window.ARVEEN_PUBLIC.portfolio || (window.ARVEEN_PUBLIC.portfolio = {}); if (!ORIG[row.id]) ORIG[row.id] = JSON.parse(JSON.stringify(p)); Object.assign(p, data); continue; }
+    const list = editList(target, coll); if (!Array.isArray(list)) continue;
+    const x = list.find(r => r.id === id); if (!x) continue;
+    if (!ORIG[row.id] || ORIG[row.id].__src !== list) ORIG[row.id] = { ...JSON.parse(JSON.stringify(x)), __src: list };
+    Object.assign(x, data, { editedAt: row.updated_at, editedBy: row.editor, editKeys: Object.keys(data) });
+  }
+}
+const origOf = key => { const o = ORIG[key]; if (!o) return null; const { __src, ...r } = o; return r; };
 const photo = img => img && /^https:\/\//.test(img.url || "") ? `<figure class="photo"><img src="${esc(img.url)}" alt="${esc(img.alt || "")}" loading="lazy">${img.credit ? `<figcaption>${esc(img.credit)}</figcaption>` : ""}</figure>` : "";
 const siteBase = () => location.origin + location.pathname.replace(/[^/]*$/, "");
 async function loadSession() {
@@ -300,6 +323,7 @@ async function loadPro() {
   for (const k of ["leaflets", "articles", "glossary", "journey", "concerns", "sdmQuestions"]) delete pro[k]; // patient content always comes from the public file
   if (pro.diseases) pro.diseases = pro.diseases.map(d => { const p = pub.diseases.find(x => x.id === d.id) || {}; return { ...d, patient: p.patient || d.patient, patientSections: p.patientSections || null, image: p.image || null, pageStatus: p.pageStatus, online: p.online, reviewer: p.reviewer, lastReview: p.lastReview, nextReview: p.nextReview }; });
   D = { ...pub, ...pro };
+  applyEdits(D);
   state.proLoaded = true;
   const rv = await sb.from("pro_reviews").select("*"); // table exists after upgrade-4-reviews.sql
   state.reviews = {}; state.reviewsTable = !rv.error; if (!rv.error) applyReviews(rv.data || []);
@@ -319,10 +343,14 @@ function applyReviews(rows) {
       continue;
     }
     if (r.kind === "dose") {
-      const x = byId(D.drugs, id) || byId(D.protocols, id); if (x) Object.assign(x, { doseStatus: r.status, doseReviewer: r.reviewer, doseReviewedOn: r.reviewed_on, doseNote: r.note });
+      const x = byId(D.drugs, id) || byId(D.protocols, id); if (!x) continue;
+      // A dose edited online after the pharmacist's sign-off goes back to pending until verified again.
+      if (x.editedAt && String(x.editedAt) > String(r.updated_at) && (x.editKeys || []).some(k => /dose|regimen|schedule/i.test(k))) { x.doseEditedAfterReview = true; continue; }
+      Object.assign(x, { doseStatus: r.status, doseReviewer: r.reviewer, doseReviewedOn: r.reviewed_on, doseNote: r.note });
       continue;
     }
     const x = byId(D[REVIEW_KINDS[r.kind]] || [], id); if (!x) continue;
+    if (x.editedAt && String(x.editedAt) > String(r.updated_at)) x.editedAfterReview = true;
     if (r.kind === "disease") { x.refReview = info; continue; }
     Object.assign(x, info);
     if (r.kind === "trial" && x.outcome) x.outcome.status = r.status;
@@ -588,7 +616,7 @@ const SLIDES = {
     { eyebrow: "Just diagnosed", title: "Understanding my diagnosis", text: "Write down your diagnosis in your own words, with the questions to ask.", cta: "Open the guide", route: "tool.diagnosis", icon: "articles", tone: "teal" }]
 };
 function carousel(aud) {
-  const s = SLIDES[aud] || []; if (!s.length) return "";
+  const s = state.slides?.[aud] || SLIDES[aud] || []; if (!s.length) return "";
   return `<section class="carousel" aria-roledescription="carousel" aria-label="Featured" data-carousel>
     <div class="car-track">${s.map((x, i) => `<div class="car-slide tone-${x.tone || "teal"}" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${s.length}" ${i ? 'aria-hidden="true"' : ""}>
       <div class="car-panel"><span class="car-eyebrow">${esc(x.eyebrow)}</span><h2 class="car-title">${esc(x.title)}</h2><p class="car-text">${esc(x.text)}</p><a class="car-cta" href="${url(x.route)}" ${i ? 'tabindex="-1"' : ""}>${esc(x.cta)}</a></div>
@@ -1304,7 +1332,25 @@ function reviewBlock(rec) {
   return `<aside class="reviewed" aria-label="Review information"><div><span class="eyebrow">Reviewed by</span><span>${by ? esc(by) : '<span class="na">Not yet reviewed</span>'}</span></div>
     <div><span class="eyebrow">Last reviewed</span><span>${last ? esc(last) : '<span class="na">—</span>'}</span></div>
     <div><span class="eyebrow">Next review due</span><span>${next ? esc(next) : '<span class="na">Set at first review</span>'}</span></div>
-    <div><span class="eyebrow">Status</span><span>${statusPill(rec.status || rec.approval || "NOT VERIFIED")}</span></div>${rec.reviewNote ? `<div><span class="eyebrow">Reviewer note</span><span>${esc(rec.reviewNote)}</span></div>` : ""}</aside>`;
+    <div><span class="eyebrow">Status</span><span>${statusPill(rec.status || rec.approval || "NOT VERIFIED")}</span></div>${rec.reviewNote ? `<div><span class="eyebrow">Reviewer note</span><span>${esc(rec.reviewNote)}</span></div>` : ""}
+    ${rec.editedAt ? `<div><span class="eyebrow">Edited online</span><span>${esc(String(rec.editedAt).slice(0, 10))}${rec.editedBy ? " by " + esc(rec.editedBy) : ""}${rec.editedAfterReview ? ' <span class="pill warn">Edited after sign-off: needs re-review</span>' : ""}${rec.doseEditedAfterReview ? ' <span class="pill warn">Dose edited: pending pharmacist review again</span>' : ""}</span></div>` : ""}</aside>`;
+}
+/* Pictures and intros added online: a banner on any page ("page:<route>") and a picture on any record */
+const IMG_FIELD = coll => coll === "diseases" ? "refImage" : "image";
+function pageExtras(base, arg) {
+  const out = [];
+  const pe = state.pageEdits?.[base];
+  if (pe && (pe.image?.url || pe.intro)) out.push(`<div class="page-extra">${photo(pe.image)}${pe.intro ? `<p class="prose page-intro">${fmt(pe.intro)}</p>` : ""}</div>`);
+  const coll = { g: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", algorithms: "algorithms" }[base];
+  const rec = coll && (base === "algorithms" ? (byId(D.algorithms || [], algoId) || (D.algorithms || [])[0]) : byId(D[coll] || [], arg));
+  const img = rec && rec[IMG_FIELD(coll)];
+  if (img?.url && !app.innerHTML.includes(img.url)) out.push(photo(img));
+  if (isEditor() && !["cms", "review", "adminws", "accounts", "security", "login", "register", "reset"].includes(base)) {
+    const key = rec ? `edit:${coll}:${rec.id}` : `edit:page:${base}`;
+    const car = base === "home" || base === "pt" ? ` <a class="btn" href="${FILES.cms}?id=${encodeURIComponent(`edit:slides:${base === "pt" ? "pt" : "pro"}`)}">✎ Edit the carousel</a>` : base === "portfolio" ? ` <a class="btn" href="${FILES.cms}?id=edit%3Aportfolio%3Amain">✎ Edit the portfolio</a>` : "";
+    out.push(`<p class="edit-here"><a class="btn" href="${FILES.cms}?id=${encodeURIComponent(key)}">✎ Edit ${rec ? "this record" : "this page's picture and intro"}</a>${car}</p>`);
+  }
+  return out.join("");
 }
 
 /* ---------- views: patient ---------- */
@@ -1425,10 +1471,10 @@ V.portfolio = () => {
   const filled = ["summary", "qualifications", "interests", "locations"].filter(k => has(P[k])).length;
   const name = P.name || "Dr Arveen";
   return `<div class="${pro ? "" : "patient "}detail portfolio">
-  <section class="hero pf-hero">${P.photo && /^https:\/\//.test(P.photo) ? `<img class="pf-photo" src="${esc(P.photo)}" alt="${esc(P.photoAlt || name)}">` : `<div class="pf-photo pf-ph" aria-hidden="true">${esc(name.replace(/^Dr\.?\s*/i, "").charAt(0) || "A")}</div>`}
+  <section class="hero pf-hero">${P.image?.url && /^https:\/\//.test(P.image.url) ? `<img class="pf-photo" src="${esc(P.image.url)}" alt="${esc(P.image.alt || name)}">` : P.photo && /^https:\/\//.test(P.photo) ? `<img class="pf-photo" src="${esc(P.photo)}" alt="${esc(P.photoAlt || name)}">` : `<div class="pf-photo pf-ph" aria-hidden="true">${esc(name.replace(/^Dr\.?\s*/i, "").charAt(0) || "A")}</div>`}
     <div><span class="eyebrow">${pro ? "For healthcare professionals" : "For patients and families"} · About the doctor</span><h1>${esc(name)}</h1><p class="pf-title">${esc(P.title || "")}</p>${has(P.summary) ? `<p>${esc(P.summary)}</p>` : ""}</div></section>
   ${!filled && !ed ? `<p class="banner info">This profile is being prepared. Please check back soon.</p>` : ""}
-  ${ed && filled < 4 ? `<p class="banner">Editor view: empty sections below are hidden from the public. Send the details to be added to <code>dr-arveen-content/portfolio.js</code>. Information must be factual and follow Malaysian Medical Council guidance on information about doctors (no testimonials or claims of superiority).</p>` : ""}
+  ${ed && filled < 4 ? `<p class="banner">Editor view: empty sections below are hidden from the public. Fill them in with <a href="${FILES.cms}?id=edit%3Aportfolio%3Amain">Edit content → Dr Arveen portfolio</a>. Information must be factual and follow Malaysian Medical Council guidance on information about doctors (no testimonials or claims of superiority).</p>` : ""}
   ${pro ? sec("Referrals", P.referrals, "how clinicians refer: letter or email, MDT, urgent route", v => `<p class="prose">${esc(v)}</p>`) : ""}
   ${sec(pro ? "Clinical interests" : "Areas of care", P.interests, "clinical interests", list)}
   ${sec(pro ? "Services" : "What you can be seen for", P.services, "services offered", list)}
@@ -1703,6 +1749,8 @@ function render() {
   const base = PAGE, arg = PARAMS.get("id") || "";
   renderNav();
   const view = V[base]; app.innerHTML = view ? view(arg) : notFound();
+  const extra = view ? pageExtras(base, arg) : "";
+  if (extra) { const h = app.querySelector(".hero h1, h1"); const anchor = h && (h.closest(".hero, .section-h, .dhead") || h); anchor ? anchor.insertAdjacentHTML("afterend", extra) : app.insertAdjacentHTML("afterbegin", extra); }
   stackTables();
   const h1 = app.querySelector("h1"); if (h1 && !["home", "pt", "welcome"].includes(base)) document.title = h1.textContent.trim() + " · DR ARVEEN";
   const rec = REVIEW_SRC[base] && (D[REVIEW_SRC[base]] || []).find(x => x.id === arg);
@@ -1738,7 +1786,7 @@ V.notes = () => {
   <div class="nlayout"><nav class="nrail" aria-label="Chapters">${rail}</nav>
   <div class="nmain"><p class="banner" id="nempty" hidden>No section matches that search. Try a shorter term, such as a trial name or a gene.</p>
   ${N.chapters.map(c => `<article class="nchap" id="nb-${c.id}"><div class="nchap-h">${badge(c.disease === "all" ? "all" : c.disease, true)}<div><span class="eyebrow">Chapter ${c.n}</span><h2>${esc(c.title)}</h2><p class="muted">${esc(c.byline)}</p><div class="row-m">${statusPill(c.status || "NOT VERIFIED")}${c.reviewer ? ` <span class="muted">Reviewed by ${esc(c.reviewer)}, ${esc(c.verifiedOn)}${c.reviewNote ? ` — ${esc(c.reviewNote)}` : ""}</span>` : ""}</div></div></div>
-    ${flagBox(c)}${c.html}</article>`).join("")}</div></div>`;
+    ${photo(c.image)}${isEditor() ? `<p class="edit-here"><a class="btn" href="${FILES.cms}?id=${encodeURIComponent("edit:notes:" + c.id)}">✎ Edit this chapter's details or picture</a></p>` : ""}${flagBox(c)}${c.html}</article>`).join("")}</div></div>`;
 };
 function bindNotes() {
   if (PAGE !== "notes" || !D.notes) return;
@@ -2005,13 +2053,161 @@ const secEditor = secs => `<div id="secs" class="secs">${(secs.length ? secs : [
   <label>Text, one point per line<textarea class="sec-b" rows="${Math.min(10, Math.max(3, ps.length + 1))}">${esc(ps.join("\n"))}</textarea></label></div>`).join("")}</div>
   <button class="btn" type="button" id="secadd">+ Add section</button>`;
 const lines = v => String(v || "").split("\n").map(s => s.trim()).filter(Boolean);
+/* ---------- general editor: any record, page, carousel or the portfolio (site_edits) ---------- */
+const EDIT_SKIP = new Set(["id", "status", "reviewer", "verifiedOn", "nextReview", "reviewNote", "doseStatus", "doseReviewer", "doseReviewedOn", "doseNote", "refReview", "online", "updatedAt", "editedAt", "editedBy", "editKeys", "editedAfterReview", "doseEditedAfterReview", "html", "file", "image", "refImage", "pageStatus", "lastReview", "approval", "patient", "patientSections", "photo", "photoAlt", "__src"]);
+const PAGE_LABELS = (() => { const out = [["home", "Professional home"], ["pt", "Patient home"]]; const walk = a => a.forEach(x => Array.isArray(x) ? out.push(x) : walk(x.items)); walk(NAV_PRO_GROUPS); walk(NAV_PT);
+  const seen = new Set(); return out.filter(([r]) => !seen.has(r) && seen.add(r)).map(([r, l]) => [r, l.replace(/^↳\s*/, "")]); })();
+const recTitle = r => r.title || r.name || r.short || (r.text ? `${r.id} · ${String(r.text).slice(0, 70)}…` : r.id);
+function editTarget(key) { // key = "edit:<coll>:<id>"
+  const rest = key.slice(5), i = rest.indexOf(":"), coll = rest.slice(0, i), id = rest.slice(i + 1), row = state.edits[`${coll}:${id}`];
+  if (coll === "page") { const pl = PAGE_LABELS.find(([r]) => r === id); return { coll, id, row, label: `Page: ${pl ? pl[1] : id}`, rec: state.pageEdits?.[id] || {}, scope: PUBLIC_PAGES.includes(id) ? "public" : "pro", view: id }; }
+  if (coll === "slides") return { coll, id, row, label: id === "pt" ? "Patient home carousel" : "Professional home carousel", rec: { slides: state.slides?.[id] || SLIDES[id] || [] }, scope: id === "pt" ? "public" : "pro", view: id === "pt" ? "pt" : "home" };
+  if (coll === "portfolio") return { coll, id, row, label: "Dr Arveen portfolio", rec: window.ARVEEN_PUBLIC.portfolio || {}, orig: origOf("portfolio:main") || window.ARVEEN_PUBLIC.portfolio || {}, scope: "public", view: "portfolio" };
+  const rec = byId(editList(D, coll) || [], id); if (!rec) return null;
+  const view = { guidelines: `g.${id}`, diseases: `d.${id}`, staging: `s.${id}`, protocols: `p.${id}`, drugs: `dr.${id}`, trials: `t.${id}`, algorithms: `algorithms.${id}`, notes: "notes", recommendations: "recs", literature: "compare" }[coll];
+  return { coll, id, row, label: `${(EDIT_COLLS.find(([c]) => c === coll) || [, coll])[1]} · ${recTitle(rec)}`, rec, orig: origOf(`${coll}:${id}`) || rec, scope: "pro", view };
+}
+const humanKey = k => k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ").replace(/^./, c => c.toUpperCase());
+function fieldHtml(k, v) {
+  const lab = esc(humanKey(k));
+  if (typeof v === "boolean") return `<label class="ef ef-check"><input type="checkbox" data-k="${esc(k)}" data-kind="bool" ${v ? "checked" : ""}> ${lab}</label>`;
+  if (k === "locations" && Array.isArray(v)) return `<label class="ef">Clinics <span class="muted">(one clinic per line: Name | Address | Clinic days and hours | Appointment phone)</span><textarea data-k="locations" data-kind="clinics" rows="${Math.max(2, v.length + 1)}" placeholder="Hospital name | Street, city | Mon and Thu 9am–1pm | +60 3-1234 5678">${esc(v.map(l => [l.name, l.address, l.days, l.phone].map(x => x || "").join(" | ")).join("\n"))}</textarea></label>`;
+  if (typeof v === "number") return `<label class="ef">${lab}<input type="number" step="any" data-k="${esc(k)}" data-kind="num" value="${esc(v)}"></label>`;
+  if (Array.isArray(v) && v.every(x => typeof x === "string")) return `<label class="ef">${lab} <span class="muted">(one per line)</span><textarea data-k="${esc(k)}" data-kind="lines" rows="${Math.min(12, Math.max(2, v.length + 1))}">${esc(v.join("\n"))}</textarea></label>`;
+  if (v && typeof v === "object") return `<label class="ef">${lab} <span class="muted">(structured — keep the JSON format)</span><textarea class="mono" data-k="${esc(k)}" data-kind="json" rows="${Math.min(16, Math.max(3, JSON.stringify(v, null, 1).split("\n").length))}">${esc(JSON.stringify(v, null, 2))}</textarea></label>`;
+  const s = v == null ? "" : String(v);
+  return s.length > 90 || s.includes("\n") ? `<label class="ef">${lab}<textarea data-k="${esc(k)}" data-kind="${v == null ? "nstr" : "str"}" rows="${Math.min(10, Math.max(2, Math.ceil(s.length / 90)))}">${esc(s)}</textarea></label>`
+    : `<label class="ef">${lab}<input type="text" data-k="${esc(k)}" data-kind="${v == null ? "nstr" : "str"}" value="${esc(s)}"></label>`;
+}
+const imgSlot = (img, legend = "Picture") => `<fieldset><legend>${esc(legend)}</legend>
+  <div class="img-slot"><div class="img-prev" id="img-prev">${img?.url ? `<img src="${esc(img.url)}" alt="">` : `<span class="muted">No picture</span>`}</div>
+  <div class="img-fields"><input type="hidden" id="img-url" value="${esc(img?.url || "")}">
+    <label>Upload a picture (JPEG, PNG or WebP, up to 3 MB)<input type="file" id="img-file" accept="image/jpeg,image/png,image/webp"></label>
+    <label>Description for screen readers (required with a picture)<input type="text" id="img-alt" value="${esc(img?.alt || "")}"></label>
+    <label>Credit or caption (optional)<input type="text" id="img-credit" value="${esc(img?.credit || "")}"></label>
+    <div class="toc"><button class="btn" type="button" id="img-remove">Remove picture</button></div>
+    <p class="muted" style="font-size:.84rem">Only upload pictures you own or have permission to use. Get written consent from anyone identifiable, and never show patient information. Clinical images must be fully de-identified.</p></div></div></fieldset>`;
+async function uploadPic(file, folder) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Choose a JPEG, PNG or WebP picture.");
+  if (file.size > 3 * 1024 * 1024) throw new Error("That picture is over 3 MB. Resize it and try again.");
+  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${file.type.split("/")[1].replace("jpeg", "jpg")}`;
+  const { error } = await sb.storage.from("site-images").upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+  if (error) throw new Error("The picture couldn't be uploaded: " + error.message);
+  return sb.storage.from("site-images").getPublicUrl(path).data.publicUrl;
+}
+function bindImgSlot(folder, err, ok) {
+  $("#img-file").onchange = async e => { const file = e.target.files[0]; if (!file) return; ok("Uploading picture…");
+    try { const u = await uploadPic(file, folder); $("#img-url").value = u; $("#img-prev").innerHTML = `<img src="${esc(u)}" alt="">`; ok("Picture uploaded. Add a description, then Save."); } catch (x) { err(x.message); } };
+  $("#img-remove").onclick = () => { $("#img-url").value = ""; $("#img-prev").innerHTML = `<span class="muted">No picture</span>`; };
+}
+function readImgSlot() { const u = $("#img-url").value, alt = $("#img-alt").value.trim(); if (u && !alt) throw new Error("Add a description of the picture for people using screen readers."); return u ? { url: u, alt, credit: $("#img-credit").value.trim() } : null; }
+const SLIDE_TONES = ["teal", "lav", "navy"];
+const slideBlock = (x = {}) => `<div class="secblock slblock"><div class="sec-top"><b>Slide</b><div class="sec-tools"><button class="btn" type="button" data-slmv="-1" aria-label="Move slide up">↑</button><button class="btn" type="button" data-slmv="1" aria-label="Move slide down">↓</button><button class="btn" type="button" data-sldel>Remove</button></div></div>
+  <div class="fields"><label>Small heading<input type="text" class="sl-eyebrow" value="${esc(x.eyebrow || "")}"></label><label>Colour<select class="sl-tone">${SLIDE_TONES.map(t => `<option ${t === x.tone ? "selected" : ""}>${t}</option>`).join("")}</select></label></div>
+  <label>Title<input type="text" class="sl-title" value="${esc(x.title || "")}"></label>
+  <label>Text<textarea class="sl-text" rows="2">${esc(x.text || "")}</textarea></label>
+  <div class="fields"><label>Button label<input type="text" class="sl-cta" value="${esc(x.cta || "")}"></label><label>Button goes to (page name, e.g. notes, g.G-NICE-NG12, tool.chemo)<input type="text" class="sl-route" value="${esc(x.route || "")}"></label><label>Icon (if no picture)<input type="text" class="sl-icon" value="${esc(x.icon || "")}"></label></div>
+  <div class="fields"><label>Picture (optional)<input type="file" class="sl-file" accept="image/jpeg,image/png,image/webp"></label><input type="hidden" class="sl-photo" value="${esc(x.photo || "")}"><span class="sl-prev">${x.photo ? `<img src="${esc(x.photo)}" alt="">` : '<span class="muted">No picture: shapes and icon shown</span>'}</span><button class="btn" type="button" data-slnopic>Remove picture</button></div></div>`;
+function editAnyForm(key) {
+  const t = editTarget(key);
+  if (!t) return `<div class="cms-empty"><h2>Not found</h2><p class="muted">That record isn't in the current content.</p></div>`;
+  const head = `<div class="section-h"><div><span class="eyebrow">${t.scope === "public" ? "Public" : "Professional only"} · ${esc(t.coll)}</span><h2>${esc(t.label)}</h2></div>
+    <div class="toc"><a class="btn" href="${url(t.view)}" target="_blank" rel="noopener">View page ↗</a></div></div>
+    ${t.row ? `<p class="banner info">Edited online by ${esc(t.row.editor || "an editor")} on ${esc(String(t.row.updated_at || "").slice(0, 16).replace("T", " "))}. The site shows this version.</p>` : `<p class="muted">Not edited online yet: you are looking at the built-in version. Saving creates an online version; only the fields you change are stored.</p>`}`;
+  let body;
+  if (t.coll === "page") body = `<fieldset><legend>Introduction shown under the page title (optional)</legend><label>Text<textarea id="pg-intro" rows="3">${esc(t.rec.intro || "")}</textarea></label></fieldset>${imgSlot(t.rec.image, "Banner picture under the page title")}`;
+  else if (t.coll === "slides") body = `<fieldset><legend>Slides (shown in this order, changing every 7 seconds)</legend><div id="slides" class="secs">${t.rec.slides.map(slideBlock).join("")}</div><button class="btn" type="button" id="sladd">+ Add slide</button></fieldset>`;
+  else {
+    const keys = Object.keys(t.rec).filter(k => !EDIT_SKIP.has(k) && t.rec[k] !== undefined && typeof t.rec[k] !== "function");
+    const clinical = t.scope === "pro";
+    body = `${clinical ? `<p class="banner">Clinical content: editing does not sign it off. After saving, the record shows "Edited after sign-off" until a reviewer re-checks it in the Review queue${t.coll === "drugs" || t.coll === "protocols" ? ", and any changed dose goes back to PENDING PHARMACIST REVIEW" : ""}. Keep sources and grades exactly as published.</p>` : ""}
+      ${t.coll === "portfolio" ? `<p class="banner">Factual information only, following Malaysian Medical Council guidance: no testimonials, no claims of superiority, and no subspecialty title unless it is on the National Specialist Register.</p>` : ""}
+      <fieldset><legend>Details</legend><div class="efields">${keys.map(k => fieldHtml(k, t.rec[k])).join("")}</div></fieldset>
+      ${imgSlot(t.rec[t.coll === "portfolio" ? "image" : IMG_FIELD(t.coll)] || (t.coll === "portfolio" && t.rec.photo ? { url: t.rec.photo, alt: t.rec.photoAlt } : null), t.coll === "portfolio" ? "Profile photo" : "Picture shown on this record")}`;
+  }
+  return `<form id="editf" class="cms-form" data-key="${esc(key)}">${head}${body}
+    <fieldset><legend>Reason for this change (kept in the audit log)</legend><label>Reason<input type="text" id="ef-reason" required minlength="3" maxlength="500" placeholder="Corrected typo / added clinic photo / updated to 2025 version"></label></fieldset>
+    <p class="result err" id="cms-err" role="alert" hidden></p><p class="banner info" id="cms-ok" role="status" hidden></p>
+    <div class="toc cms-actions"><button class="btn primary" type="submit">Save</button>
+      ${t.row ? `<button class="btn" type="button" id="cms-revert">Discard online edits…</button><span id="cms-revert-confirm" hidden>Go back to the built-in version? <button class="btn" type="button" id="cms-revert-yes">Yes, discard</button> <button class="btn" type="button" id="cms-revert-no">Cancel</button></span>` : ""}</div></form>`;
+}
+function bindEditAny() {
+  const f = $("#editf"); if (!f) return;
+  const key = f.dataset.key, t = editTarget(key); if (!t) return;
+  const rowId = `${t.coll}:${t.id}`;
+  const err = m => { const e = $("#cms-err"); e.hidden = !m; e.textContent = m || ""; if (m) $("#cms-ok").hidden = true; };
+  const ok = m => { const o = $("#cms-ok"); o.hidden = false; o.textContent = m; err(""); };
+  if ($("#img-file")) bindImgSlot(`${t.coll}/${t.id}`.replace(/[^\w/.-]/g, "_"), err, ok);
+  const sl = $("#slides");
+  if (sl) {
+    $("#sladd").onclick = () => sl.insertAdjacentHTML("beforeend", slideBlock({ tone: "teal" }));
+    sl.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; const blk = b.closest(".slblock");
+      if (b.hasAttribute("data-sldel")) blk.remove();
+      if (b.hasAttribute("data-slnopic")) { blk.querySelector(".sl-photo").value = ""; blk.querySelector(".sl-prev").innerHTML = '<span class="muted">No picture: shapes and icon shown</span>'; }
+      if (b.dataset.slmv === "-1" && blk.previousElementSibling) sl.insertBefore(blk, blk.previousElementSibling);
+      if (b.dataset.slmv === "1" && blk.nextElementSibling) sl.insertBefore(blk.nextElementSibling, blk); });
+    sl.addEventListener("change", async e => { if (!e.target.classList.contains("sl-file")) return; const file = e.target.files[0]; if (!file) return; const blk = e.target.closest(".slblock"); ok("Uploading picture…");
+      try { const u = await uploadPic(file, `slides/${t.id}`); blk.querySelector(".sl-photo").value = u; blk.querySelector(".sl-prev").innerHTML = `<img src="${esc(u)}" alt="">`; ok("Picture uploaded. Save to publish."); } catch (x) { err(x.message); } });
+  }
+  const revert = $("#cms-revert");
+  if (revert) {
+    revert.onclick = () => { $("#cms-revert-confirm").hidden = false; revert.hidden = true; };
+    $("#cms-revert-no").onclick = () => { $("#cms-revert-confirm").hidden = true; revert.hidden = false; };
+    $("#cms-revert-yes").onclick = async () => { const { error } = await sb.from("site_edits").delete().eq("id", rowId); if (error) return err(error.message); location.reload(); };
+  }
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const reason = $("#ef-reason").value.trim(); if (reason.length < 3) return err("Give a short reason for the change.");
+    let data;
+    try {
+      if (t.coll === "page") { const image = readImgSlot(), intro = $("#pg-intro").value.trim(); data = {}; if (image) data.image = image; if (intro) data.intro = intro; }
+      else if (t.coll === "slides") {
+        const slides = [...sl.querySelectorAll(".slblock")].map(b => { const v = c => b.querySelector(c).value.trim(); const s = { eyebrow: v(".sl-eyebrow"), title: v(".sl-title"), text: v(".sl-text"), cta: v(".sl-cta"), route: v(".sl-route"), icon: v(".sl-icon") || "articles", tone: v(".sl-tone") }; if (v(".sl-photo")) s.photo = v(".sl-photo"); return s; });
+        if (!slides.length) throw new Error("Keep at least one slide.");
+        const bad = slides.find(s => !s.title || !s.cta || !s.route); if (bad) throw new Error("Every slide needs a title, a button label and where the button goes.");
+        const badRoute = slides.find(s => !FILES[s.route.split(".")[0]]); if (badRoute) throw new Error(`"${badRoute.route}" isn't a page on this site. Use a page name such as notes, recs, tool.chemo or g.G-NICE-NG12.`);
+        data = { slides };
+      } else {
+        const base = t.orig || t.rec; data = {};
+        for (const el of f.querySelectorAll("[data-k]")) {
+          const k = el.dataset.k, kind = el.dataset.kind; let v;
+          if (kind === "bool") v = el.checked; else if (kind === "num") v = el.value === "" ? null : Number(el.value);
+          else if (kind === "lines") v = lines(el.value);
+          else if (kind === "clinics") v = lines(el.value).map(l => { const [name, address, days, phone] = l.split("|").map(s => s.trim()); return { name: name || "", address: address || "", days: days || "", phone: phone || "" }; });
+          else if (kind === "json") { try { v = JSON.parse(el.value); } catch { throw new Error(`"${humanKey(k)}" isn't valid JSON. Check brackets, quotes and commas.`); } }
+          else if (kind === "nstr") v = el.value.trim() || null; else v = el.value.trim();
+          if (JSON.stringify(v) !== JSON.stringify(base[k])) data[k] = v;
+        }
+        const image = readImgSlot(), ik = t.coll === "portfolio" ? "image" : IMG_FIELD(t.coll);
+        if (JSON.stringify(image) !== JSON.stringify(base[ik] || null)) data[ik] = image;
+        if (!Object.keys(data).length) throw new Error("Nothing has changed yet.");
+      }
+    } catch (x) { return err(x.message); }
+    const { error } = await sb.from("site_edits").upsert({ id: rowId, scope: t.scope, data, reason });
+    if (error) return err(/relation|does not exist|schema cache/i.test(error.message) ? "The site_edits table isn't set up yet: run supabase/upgrade-9-site-edits.sql in Supabase first." : "Couldn't save: " + error.message);
+    ok("Saved. The site now shows this version.");
+    setTimeout(() => location.reload(), 900);
+  };
+}
 V.cms = () => {
   const items = cmsItems();
   const sel = PARAMS.get("id");
-  const cur = sel ? cmsCurrent(sel) : null;
-  const listHtml = CMS_KINDS.map(([k, t]) => `<details class="cms-group" ${!sel || sel.startsWith(k + ":") ? "open" : ""}><summary>${t} <span class="muted">${items.filter(x => x.kind === k).length}</span></summary>
+  const generic = sel && sel.startsWith("edit:");
+  const cur = sel && !generic ? cmsCurrent(sel) : null;
+  const patientHtml = CMS_KINDS.map(([k, t]) => `<details class="cms-group" ${sel && sel.startsWith(k + ":") ? "open" : ""}><summary>${t} <span class="muted">${items.filter(x => x.kind === k).length}</span></summary>
     ${items.filter(x => x.kind === k).map(x => `<a class="cms-item" href="${FILES.cms}?id=${encodeURIComponent(x.key)}" ${x.key === sel ? 'aria-current="page"' : ""}><span>${esc(x.title)}</span><span class="row-m">${statusPill(x.status)}${x.online ? '<span class="pill teal">Edited online</span>' : ""}</span></a>`).join("")}</details>`).join("");
-  let form = `<div class="cms-empty"><h2>Choose something to edit</h2><p class="muted">Pick an article, leaflet or cancer page on the left, or start a new article.</p>
+  const gItem = (key, title) => { const k = key.slice(5); return `<a class="cms-item" href="${FILES.cms}?id=${encodeURIComponent(key)}" ${key === sel ? 'aria-current="page"' : ""}><span>${esc(title)}</span>${state.edits[k] ? '<span class="row-m"><span class="pill teal">Edited online</span></span>' : ""}</a>`; };
+  const gGroup = (prefix, title, entries) => `<details class="cms-group" ${sel && sel.startsWith(prefix) ? "open" : ""}><summary>${esc(title)} <span class="muted">${entries.length}</span></summary>${entries.map(([k, t]) => gItem(k, t)).join("")}</details>`;
+  const listHtml = `<label class="cms-filter">Find something to edit<input type="search" id="cms-filter" placeholder="e.g. carboplatin, ESGO, carousel"></label>
+    <p class="cms-gh">Whole site</p>
+    ${gGroup("edit:slides:", "Home page carousels", [["edit:slides:pro", "Professional home carousel"], ["edit:slides:pt", "Patient home carousel"]])}
+    ${gGroup("edit:portfolio:", "Dr Arveen portfolio", [["edit:portfolio:main", "Portfolio details and photo"]])}
+    ${gGroup("edit:page:", "Page pictures and intros", PAGE_LABELS.map(([r, l]) => [`edit:page:${r}`, l]))}
+    <p class="cms-gh">Patient Education Centre</p>${patientHtml}
+    <p class="cms-gh">Clinical reference</p>
+    ${EDIT_COLLS.map(([c, t]) => { const list = editList(D, c) || []; return list.length ? gGroup(`edit:${c}:`, t, list.map(r => [`edit:${c}:${r.id}`, recTitle(r)])) : ""; }).join("")}
+    ${state.editsTable === false ? `<p class="banner slim">Whole-site editing needs <code>supabase/upgrade-9-site-edits.sql</code> run once in Supabase.</p>` : ""}`;
+  let form = generic ? editAnyForm(sel) : `<div class="cms-empty"><h2>Choose something to edit</h2><p class="muted">Pick anything on the left: the home carousels, the portfolio, a picture and intro for any page, patient articles, leaflets and cancer pages, or any clinical record (guidelines, recommendations, drugs, protocols, trials, staging, pathways, research, note chapters). You can also press "✎ Edit" at the top of any page while signed in as an editor.</p>
     <div class="cms-new"><label for="new-title">New article title<input type="text" id="new-title" placeholder="Coping with sleep problems"></label><button class="btn primary" type="button" id="new-article">Create draft</button></div></div>`;
   if (cur && cur.item) {
     const it = cur.item, row = cur.row || {}, img = it.image || {};
@@ -2059,11 +2255,15 @@ V.cms = () => {
   </form>`;
   }
   return `<span class="eyebrow">Content</span><h1>Edit content</h1>
-  <p class="prose muted">Edit patient articles, leaflets and cancer pages, add pictures, and record reviews. Saved changes appear on the site straight away. Every save is logged.</p>
+  <p class="prose muted">Edit any section of the site and add pictures. Saved changes appear on the site straight away. Every save is logged with your name and reason. Editing clinical content does not sign it off: reviewers still check it in the Review queue.</p>
   <div class="cms">${`<nav class="cms-list" aria-label="Content items">${listHtml}</nav>`}<div>${form}</div></div>`;
 };
 function bindCms() {
   if (PAGE !== "cms" || !isEditor()) return;
+  const cf = $("#cms-filter");
+  if (cf) cf.oninput = () => { const q = cf.value.trim().toLowerCase();
+    app.querySelectorAll(".cms-group").forEach(g => { let n = 0; g.querySelectorAll(".cms-item").forEach(a => { const hit = !q || a.textContent.toLowerCase().includes(q); a.hidden = !hit; n += hit; }); g.hidden = q && !n; if (q) g.open = n > 0 && n < 40; }); };
+  bindEditAny();
   const nb = $("#new-article");
   if (nb) nb.onclick = () => { const t = $("#new-title").value.trim(); if (!t) { $("#new-title").focus(); return; } const id = slug(t) || "article-" + Date.now();
     D.articles.push({ id, title: t, summary: "", category: "Living with cancer", journey: "during", cancers: [], sections: [["", [""]]], status: "DRAFT" }); location.href = `${FILES.cms}?id=${encodeURIComponent("article:" + id)}&title=${encodeURIComponent(t)}`; };
@@ -2080,19 +2280,7 @@ function bindCms() {
     if (b.dataset.secmv === "-1" && blk.previousElementSibling) secs.insertBefore(blk, blk.previousElementSibling);
     if (b.dataset.secmv === "1" && blk.nextElementSibling) secs.insertBefore(blk.nextElementSibling, blk);
   });
-  $("#img-file").onchange = async e => {
-    const file = e.target.files[0]; if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) return err("Choose a JPEG, PNG or WebP picture.");
-    if (file.size > 3 * 1024 * 1024) return err("That picture is over 3 MB. Resize it and try again.");
-    ok("Uploading picture…");
-    const path = `${cur.kind}/${cur.id}-${Date.now()}.${file.type.split("/")[1].replace("jpeg", "jpg")}`;
-    const { error } = await sb.storage.from("site-images").upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
-    if (error) return err("The picture couldn't be uploaded: " + error.message);
-    const u = sb.storage.from("site-images").getPublicUrl(path).data.publicUrl;
-    $("#img-url").value = u; $("#img-prev").innerHTML = `<img src="${esc(u)}" alt="">`;
-    ok("Picture uploaded. Add a description, then Save.");
-  };
-  $("#img-remove").onclick = () => { $("#img-url").value = ""; $("#img-prev").innerHTML = `<span class="muted">No picture</span>`; };
+  bindImgSlot(`${cur.kind}/${cur.id}`, err, ok);
   const revert = $("#cms-revert");
   if (revert) {
     revert.onclick = () => { $("#cms-revert-confirm").hidden = false; revert.hidden = true; };
