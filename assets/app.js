@@ -163,7 +163,7 @@ renderShell();
 /* Professional menu grouped so the bar stays short; patient menu stays flat */
 const NAV_PRO_GROUPS = [["home", "Home"],
   { label: "Reference", items: [["notes", "Textbook notes"], ["guidelines", "Guidelines"], ["updates", "↳ Guideline updates"], ["recs", "↳ Recommendations"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
-  { label: "Tools", items: [["algorithms", "Clinical pathways"], ["calculators", "Calculators"], ["compare", "Evidence and comparisons"], ["education", "Education"], ["sdm", "Shared decisions"]] },
+  { label: "Tools", items: [["calculators", "Calculators"], ["algorithms", "Clinical pathways"], ["education", "Education"], ["compare", "Evidence and comparisons"], ["sdm", "Shared decisions"]] },
   ["portfolio", "Dr Arveen"], ["pt", "Patients"], ["guide", "Help"]];
 /* Account menu (top right): personal and admin pages, shown only to the roles that can use them */
 const ACCT_PERSONAL = [["workspace", "My Workspace"], ["security", "Two-step sign-in"]];
