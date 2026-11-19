@@ -694,6 +694,29 @@ V.g = id => {
 V.diseases = () => `<span class="eyebrow">Disease reference library</span><h1>Diseases</h1>
   <div class="grid">${D.diseases.map(d => `<a class="tile" href="${url(`d.${d.id}`)}">${badge(d.id)}<b>${esc(d.name)}</b><span>${esc(d.short)}</span></a>`).join("")}</div>`;
 const DTEMPLATE = ["Definition and epidemiology", "Risk factors and hereditary predisposition", "Histological classification", "Molecular classification and biomarkers", "Clinical presentation", "Diagnostic pathway", "Imaging and pathology", "Staging", "Risk stratification", "Treatment intent", "Management by stage and subtype", "Surgery", "Radiotherapy", "Systemic therapy", "Recurrent and metastatic disease", "Follow-up", "Survivorship", "Pivotal trials", "Current guideline references", "Malaysian applicability", "Clinical pearls", "Case-based learning", "Examination questions", "Patient education links"];
+/* "Everything on DR ARVEEN for this cancer": one panel linking every section of the site, in the notes' order */
+function diseaseHub(d) {
+  const id = d.id, key = ["tubal", "peritoneal"].includes(id) ? "ovarian" : id, mine = x => x === id || x === key;
+  const recs = D.recommendations.filter(r => mine(r.disease)), gls = D.guidelines.filter(g => mine(g.disease));
+  const ch = (D.notes?.chapters || []).find(c => mine(c.disease) || (c.also || []).includes(id));
+  const paths = (D.algorithms || []).filter(a => mine(a.disease) || a.disease === "all");
+  const lit = (D.literature || []).filter(x => mine(x.disease));
+  const n = (arr, f) => arr.filter(f).length;
+  const tile = (href, title, count, sub) => `<a class="tile hubt" href="${href}"><b>${esc(title)}</b><span class="hubn">${count}</span><span>${sub}</span></a>`;
+  const phaseLinks = REC_PHASES.map(([k, t]) => { const c = recs.filter(r => recPhase(r) === k).length; return c ? `<li>${esc(t.replace(/^\d\.\s*/, "").split(":")[0])} <span class="muted">${c}</span></li>` : ""; }).join("");
+  return `<section class="section dhub"><h2>Everything on DR ARVEEN for ${esc(d.name.toLowerCase())}</h2><div class="grid hubgrid">
+    ${ch ? tile(`${url("notes")}#nb-${ch.id}`, "Textbook notes", `Ch ${ch.n}`, esc(ch.title)) : ""}
+    ${tile(`${url("guidelines")}#dg-${key}`, "Guidelines", gls.length, gls.map(g => esc(orgs(g) + " " + (g.version || ""))).slice(0, 3).join(" · ") || "None entered yet")}
+    ${recs.length ? `<a class="tile hubt" href="${url("recs")}#dg-${key}"><b>Recommendations</b><span class="hubn">${recs.length}</span><ul class="hubphases">${phaseLinks}</ul></a>` : ""}
+    ${tile(`${url("staging")}#dg-${key}`, "Staging", n(D.staging, s => mine(s.cancer) && !s.superseded), "Current FIGO staging")}
+    ${paths.length ? tile(`${url("algorithms")}?id=${encodeURIComponent((paths.find(a => mine(a.disease)) || paths[0]).id)}`, "Clinical pathways", paths.length, paths.map(a => esc(a.title.split(":")[0])).slice(0, 3).join(" · ")) : ""}
+    ${tile(`${url("protocols")}#dg-${key}`, "Treatment protocols", n(D.protocols, p => mine(p.disease)), "Regimens with doses (check status)")}
+    ${tile(`${url("drugs")}#dg-${key}`, "Drugs", n(D.drugs, x => x.cancers.some(mine)), "Monographs and doses")}
+    ${tile(`${url("trials")}#dg-${key}`, "Clinical trials", n(D.trials, t => mine(t.disease)), "Pivotal and ongoing")}
+    ${lit.length ? tile(`${url("compare")}#dg-${key}`, "Research library", lit.length, "Summarised studies") : ""}
+    ${(() => { const nl = n(D.leaflets, l => mine(l.disease)); return tile(url(`ptd.${id}`), "For patients", nl ? `${nl} leaflet${nl > 1 ? "s" : ""}` : "Patient page", "Plain-language page, leaflets and planning guides"); })()}
+  </div></section>`;
+}
 V.d = id => {
   const d = disease(id); if (!d) return notFound();
   recent("Disease", d.id, d.name);
@@ -718,6 +741,7 @@ V.d = id => {
     return `${txt.length ? `<ul class="plist" style="font-size:.92rem">${txt.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${lk.length ? `<div style="display:grid;gap:4px;font-size:.9rem">${lk.map(x => `<span>${x}</span>`).join("")}</div>` : ""}`; };
   return `<article class="detail"><div class="dhead"><div class="dtitle">${badge(d.id, true)}<div><span class="eyebrow">Disease reference</span><h1>${esc(d.name)}</h1></div></div><p class="prose muted">${esc(d.short)}</p>
     <div class="actions"><button class="btn" data-mode="quick" aria-pressed="${mode === "quick"}">Quick reference</button><button class="btn" data-mode="comp" aria-pressed="${mode !== "quick"}">Comprehensive reference</button>${bmBtn("Disease", d.id, d.name)}</div></div>
+  ${diseaseHub(d)}
   <section class="glance" aria-label="At a glance">
     <div><span class="eyebrow">Staging</span>${st.filter(s => !s.superseded).map(s => `<a href="${url(`s.${s.id}`)}">${esc(s.authority)} ${esc(s.version)}</a>`).join("") || `<span class="na">Not entered</span>`}</div>
     <div><span class="eyebrow">Key trials</span>${tr.length ? tr.map(t => `<a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a>${t.outcome ? `<span class="glance-res">${esc(headline(t))}</span>` : ""}`).join("") : `<span class="na">None entered</span>`}</div>
@@ -1040,6 +1064,8 @@ V.adminws = () => {
     ${tool("guide", "Site owner guide", "How content gets onto the site: PDFs, seed.sql, git push.").replace(`href="${url("guide")}"`, `href="${url("guide")}#g-owner"`)}
   </div></section>
   <section class="section"><h2>Recent sign-offs</h2><div class="list">${recentRev.map(r => `<div class="row"><span class="row-t">${esc(r.item_id)} ${statusPill(r.status)}</span><span class="row-m"><span>${esc(r.reviewer)}</span><span>${esc(r.reviewed_on)}</span>${r.note ? `<span>${esc(r.note)}</span>` : ""}</span></div>`).join("") || `<div class="row muted">No sign-offs yet.</div>`}</div></section>
+  ${isAdmin() ? `<section class="section"><h2>Backup</h2><p class="prose muted">Sign-offs, online edits to patient pages, reported problems, account records and audit logs exist only in Supabase. Download a dated copy regularly (for example monthly) and keep it somewhere safe and private: it contains staff names and account details. Personal workspaces are not included; only their owners can read them.</p>
+    <p><button class="btn primary" type="button" id="aw-backup">Download backup (JSON)</button> <span class="muted" id="aw-backup-msg" role="status"></span></p></section>` : ""}
   ${isAdmin() ? `<section class="section"><h2>Setup check</h2><ul class="aw-check">
     ${check(state.proLoaded, "Professional content loaded from Supabase", "run seed.sql")}
     ${check(!!D.notes?.chapters?.length && !!(D.literature || []).length, "Latest content (research library and textbook notes) loaded", "run the latest seed.sql")}
@@ -1063,6 +1089,15 @@ function bindWorkspace() {
 async function bindAdminWs() {
   if (PAGE !== "adminws" || !sb) return;
   const set = (k, v) => { const el = app.querySelector(`[data-live="${k}"]`); if (el) el.textContent = v; };
+  const bk = $("#aw-backup");
+  if (bk) bk.onclick = async () => {
+    const msg = $("#aw-backup-msg"); msg.textContent = "Collecting…"; bk.disabled = true;
+    const tables = ["pro_reviews", "pro_review_audit", "patient_items", "content_audit", "feedback", "profiles", "account_audit"], out = { exportedAt: new Date().toISOString(), exportedBy: state.user?.email, site: location.origin + location.pathname.replace(/[^/]*$/, ""), tables: {} }, problems = [];
+    for (const t of tables) { const { data, error } = await sb.from(t).select("*"); if (error) problems.push(`${t}: ${error.message}`); else out.tables[t] = data; }
+    const blob = new Blob([JSON.stringify(out, null, 1)], { type: "application/json" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = `dr-arveen-backup-${new Date().toISOString().slice(0, 10)}.json`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    msg.textContent = problems.length ? `Downloaded, but some tables were skipped (${problems.join("; ")}). Two-step sign-in may be needed.` : `Downloaded ${Object.values(out.tables).reduce((s, x) => s + (Array.isArray(x) ? x.length : x ? 1 : 0), 0)} records.`; bk.disabled = false;
+  };
   if (isAdmin()) {
     const a = await sb.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending");
     set("accounts", a.error ? "–" : a.count ?? 0);
@@ -2010,6 +2045,12 @@ async function boot() {
     bindAuth(); return;
   }
   render();
+  // Links like recommendations.html#dg-cervical: scroll to the section once the page has been built.
+  if (location.hash.length > 1) {
+    try { history.scrollRestoration = "manual"; } catch {}
+    const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (el) { const go = () => window.scrollTo(0, Math.max(0, el.getBoundingClientRect().top + window.scrollY - 16)); requestAnimationFrame(() => requestAnimationFrame(go)); setTimeout(go, 400); }
+  }
 }
 boot();
 })();
