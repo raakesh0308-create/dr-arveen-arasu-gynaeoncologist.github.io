@@ -109,7 +109,7 @@ function renderShell() {
     <div class="mast-ctrl">
       <span class="acct" id="acct"></span>
       <div class="mast-prefs">
-        <button class="theme-btn" id="textsize" type="button" title="Make text larger or smaller" aria-pressed="false">A<span aria-hidden="true">+</span><span class="sr-only"> Larger text</span></button>
+        <span class="tsize" role="group" aria-label="Text size"><button class="theme-btn" id="ts-down" type="button" title="Smaller text">A<span aria-hidden="true">−</span><span class="sr-only"> Smaller text</span></button><button class="theme-btn" id="ts-up" type="button" title="Bigger text">A<span aria-hidden="true">+</span><span class="sr-only"> Bigger text</span></button></span>
         <select class="lang" id="lang" aria-label="Language"><option value="en">English</option><option value="ms">Bahasa Malaysia</option><option value="zh">中文</option><option value="ta">தமிழ்</option></select>
         <button class="theme-btn" id="theme" type="button" title="Switch light or dark mode">☾ Dark</button>
       </div>
@@ -286,6 +286,8 @@ async function loadPro() {
   state.proLoaded = true;
   const rv = await sb.from("pro_reviews").select("*"); // table exists after upgrade-4-reviews.sql
   state.reviews = {}; state.reviewsTable = !rv.error; if (!rv.error) applyReviews(rv.data || []);
+  const mc = await sb.from("my_cpg").select("*"); // Malaysian positions (upgrade-8-malaysia-cpg.sql)
+  state.mycpgTable = !mc.error; state.mycpg = Object.fromEntries((mc.data || []).map(r => [r.rec_id, r]));
   return true;
 }
 /* Online sign-offs (pro_reviews) are laid over the built-in records. Item ids look like "recommendation:R-EN-A01". */
@@ -419,9 +421,12 @@ function applyTheme(t) { if (t) root.dataset.theme = t; $("#theme").textContent 
 applyTheme(store.get("theme", null));
 $("#theme").onclick = () => { const t = isDark() ? "light" : "dark"; store.set("theme", t); applyTheme(t); };
 /* Larger text: remembered in this browser */
-function applyTextSize(big) { root.classList.toggle("big-text", big); const b = $("#textsize"); b.setAttribute("aria-pressed", big); b.firstChild.textContent = "A"; b.querySelector("[aria-hidden]").textContent = big ? "−" : "+"; b.title = big ? "Make text smaller" : "Make text larger"; }
-applyTextSize(!!store.get("bigtext", false));
-$("#textsize").onclick = () => { const big = !store.get("bigtext", false); store.set("bigtext", big); applyTextSize(big); };
+/* Text size: A− and A+ step the whole page from 87.5% to 150%, remembered in this browser */
+const TS_STEPS = [87.5, 100, 112.5, 125, 137.5, 150];
+function applyTextSize(level) { level = Math.max(-1, Math.min(4, level | 0)); root.style.fontSize = TS_STEPS[level + 1] + "%"; const d = $("#ts-down"), u = $("#ts-up"); if (d) d.disabled = level <= -1; if (u) u.disabled = level >= 4; return level; }
+applyTextSize(store.get("textlevel", store.get("bigtext", false) ? 2 : 0));
+$("#ts-down").onclick = () => store.set("textlevel", applyTextSize(store.get("textlevel", 0) - 1));
+$("#ts-up").onclick = () => store.set("textlevel", applyTextSize(store.get("textlevel", 0) + 1));
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => applyTheme());
 $("#lang").value = state.lang;
 $("#lang").onchange = e => { state.lang = e.target.value; store.set("lang", state.lang); render(); };
@@ -660,14 +665,52 @@ V.recs = () => {
   <div class="chips" role="group" aria-label="Arrange recommendations"><span class="muted">Arrange:</span><button class="chip" data-recmode="topic" aria-pressed="${mode === "topic"}">By clinical topic (introduction → treatment → follow-up)</button><button class="chip" data-recmode="guideline" aria-pressed="${mode === "guideline"}">By guideline</button></div>
   ${byDisease(D.recommendations, r => r.disease, mode === "topic" ? byTopic : byGuideline)}`;
 };
+/* Malaysian position on a recommendation (reviewers build the Malaysian CPG; everyone signed in can read it) */
+const MY_DECISIONS = { ADOPT: ["Adopt as is", "ok"], ADAPT: ["Adapt for Malaysia", "teal"], "NOT ADOPTED": ["Not adopted", "bad"], PENDING: ["Under discussion", "warn"] };
+function myCell(r) {
+  const m = state.mycpg?.[r.id], edit = isReviewer() && state.mycpgTable !== false ? `<button class="mybtn" type="button" data-mycpg="${esc(r.id)}" title="Record the Malaysian position">${m ? "✎ Edit" : "+ Malaysian position"}</button>` : "";
+  if (!m) return `<span class="mynone">Not yet assessed</span>${edit}`;
+  const [label, tone] = MY_DECISIONS[m.decision] || [m.decision, ""];
+  return `<span class="pill ${tone} mypill">${esc(label)}</span>${m.statement ? `<div class="mystmt">${esc(m.statement)}</div>` : ""}${m.notes ? `<details class="mynotes"><summary>Local notes</summary>${esc(m.notes)}</details>` : ""}<div class="myby">${esc(m.author)}, ${esc(String(m.updated_at || "").slice(0, 10))}</div>${edit}`;
+}
 function recTable(recs) {
-  return `<div class="tablewrap"><table><thead><tr><th>ID</th><th>Recommendation</th><th>Context</th><th>Original grade / strength</th><th>Malaysia</th><th>Links</th></tr></thead><tbody>
-  ${recs.map(r => { const g = byId(D.guidelines, r.guideline); return `<tr><td class="mono">${r.id}</td><td>${esc(r.text)}<div class="muted" style="font-size:.78rem">${esc(r.textType)} · ${listPill(r.status)}</div></td>
-    <td style="font-size:.82rem">${dname(r.disease)}<br>${esc(r.stage)}<br>${esc(r.setting)} · ${esc(r.intent)}<br>Biomarker: ${esc(r.biomarker)}</td>
-    <td>${/^Not /.test(r.grade) ? `<span class="na">${esc(r.grade)}</span>` : `<b>${esc(r.grade)}</b>`}<br>${/^Not /.test(r.strength) ? `<span class="na">${esc(r.strength)}</span>` : esc(r.strength)}</td><td>${myLabel(r.malaysia)}</td>
-    <td style="font-size:.82rem"><a href="${url(`g.${g.id}`)}">${esc(orgs(g))} ${esc(g.version || "")}</a><br>${r.trials.map(t => `<a href="${url(`t.${t}`)}">${esc(byId(D.trials, t)?.name)}</a>`).join(", ")}${r.protocols.map(p => `<br><a href="${url(`p.${p}`)}">${p}</a>`).join("")}</td></tr>` }).join("")}
+  const grade = r => `${/^Not /.test(r.grade) ? `<span class="na">${esc(r.grade)}</span>` : `<b>${esc(r.grade)}</b>`}<div>${/^Not /.test(r.strength) ? `<span class="na">${esc(r.strength)}</span>` : esc(r.strength)}</div>`;
+  return `<div class="tablewrap"><table class="rectbl"><thead><tr><th>ID</th><th>Recommendation</th><th>Grade</th><th>Malaysia</th><th>Source</th></tr></thead><tbody>
+  ${recs.map(r => { const g = byId(D.guidelines, r.guideline); return `<tr id="rec-${esc(r.id)}"><td class="mono recid">${r.id}</td>
+    <td class="rectext" title="${esc(`${r.stage} · ${r.setting}`)}">${esc(r.text)} ${listPill(r.status)}</td>
+    <td class="recgrade">${grade(r)}</td>
+    <td class="recmy">${myCell(r)}</td>
+    <td class="recsrc"><a href="${url(`g.${g.id}`)}">${esc(orgs(g))} ${esc(g.version || "")}</a>${r.trials.map(t => ` · <a href="${url(`t.${t}`)}">${esc(byId(D.trials, t)?.name)}</a>`).join("")}${r.protocols.map(p => ` · <a href="${url(`p.${p}`)}">${p}</a>`).join("")}</td></tr>` }).join("")}
   </tbody></table></div>`;
 }
+/* Editing dialog for the Malaysian position (one shared dialog, opened from any recommendation table) */
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-mycpg]"); if (!b || !isReviewer()) return;
+  const r = byId(D.recommendations, b.dataset.mycpg); if (!r) return;
+  const m = state.mycpg?.[r.id] || {};
+  let dlg = document.getElementById("mydlg"); if (!dlg) { dlg = document.createElement("dialog"); dlg.id = "mydlg"; dlg.className = "mydlg"; document.body.appendChild(dlg); }
+  dlg.innerHTML = `<form method="dialog" id="myform"><span class="eyebrow">Malaysian CPG · ${esc(r.id)}</span><h2>Malaysian position</h2>
+    <p class="prose"><b>${esc(orgs(byId(D.guidelines, r.guideline)))}:</b> ${esc(r.text)} <span class="muted">(${esc(r.grade)}, ${esc(r.strength)})</span></p>
+    <label>Decision<select name="decision">${Object.entries(MY_DECISIONS).map(([k, [l]]) => `<option value="${k}" ${(m.decision || "PENDING") === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label>Malaysian statement (how this applies in Malaysia; required for Adapt)<textarea name="statement" rows="3" maxlength="2000">${esc(m.statement || "")}</textarea></label>
+    <label>Local notes (availability, cost, MOH policy, rationale, sources)<textarea name="notes" rows="3" maxlength="2000">${esc(m.notes || "")}</textarea></label>
+    <label>Recorded by<input name="author" required minlength="2" value="${esc(m.author || state.profile?.full_name || "")}"></label>
+    <p class="result err" id="myerr" hidden></p>
+    <div class="dlg-actions"><button class="btn primary" type="submit" value="save">Save</button><button class="btn" type="submit" value="cancel" formnovalidate>Cancel</button>${m.rec_id ? `<button class="btn" type="button" id="mydel">Remove position</button>` : ""}</div></form>`;
+  dlg.showModal();
+  const f = dlg.querySelector("#myform"), err = t => { const x = dlg.querySelector("#myerr"); x.hidden = !t; x.textContent = t || ""; };
+  f.onsubmit = async ev => {
+    if (ev.submitter?.value !== "save") return;
+    ev.preventDefault();
+    const v = n => f.elements[n].value.trim() || null, row = { rec_id: r.id, decision: v("decision"), statement: v("statement"), notes: v("notes"), author: v("author") };
+    if (row.decision === "ADAPT" && !row.statement) return err("Write the Malaysian statement for an adapted recommendation.");
+    const { data, error } = await sb.from("my_cpg").upsert(row).select().single();
+    if (error) return err(/does not exist|schema cache/.test(error.message) ? "The Malaysian CPG table isn't set up yet: run supabase/upgrade-8-malaysia-cpg.sql." : error.message);
+    state.mycpg = { ...(state.mycpg || {}), [r.id]: data }; dlg.close(); render();
+  };
+  const del = dlg.querySelector("#mydel");
+  if (del) del.onclick = async () => { if (!confirm("Remove the Malaysian position for this recommendation?")) return; const { error } = await sb.from("my_cpg").delete().eq("rec_id", r.id); if (error) return err(error.message); delete state.mycpg[r.id]; dlg.close(); render(); };
+});
 
 V.g = id => {
   const g = byId(D.guidelines, id); if (!g) return notFound();
@@ -700,21 +743,23 @@ function diseaseHub(d) {
   const recs = D.recommendations.filter(r => mine(r.disease)), gls = D.guidelines.filter(g => mine(g.disease));
   const ch = (D.notes?.chapters || []).find(c => mine(c.disease) || (c.also || []).includes(id));
   const paths = (D.algorithms || []).filter(a => mine(a.disease) || a.disease === "all");
-  const lit = (D.literature || []).filter(x => mine(x.disease));
-  const n = (arr, f) => arr.filter(f).length;
-  const tile = (href, title, count, sub) => `<a class="tile hubt" href="${href}"><b>${esc(title)}</b><span class="hubn">${count}</span><span>${sub}</span></a>`;
-  const phaseLinks = REC_PHASES.map(([k, t]) => { const c = recs.filter(r => recPhase(r) === k).length; return c ? `<li>${esc(t.replace(/^\d\.\s*/, "").split(":")[0])} <span class="muted">${c}</span></li>` : ""; }).join("");
-  return `<section class="section dhub"><h2>Everything on DR ARVEEN for ${esc(d.name.toLowerCase())}</h2><div class="grid hubgrid">
-    ${ch ? tile(`${url("notes")}#nb-${ch.id}`, "Textbook notes", `Ch ${ch.n}`, esc(ch.title)) : ""}
-    ${tile(`${url("guidelines")}#dg-${key}`, "Guidelines", gls.length, gls.map(g => esc(orgs(g) + " " + (g.version || ""))).slice(0, 3).join(" · ") || "None entered yet")}
-    ${recs.length ? `<a class="tile hubt" href="${url("recs")}#dg-${key}"><b>Recommendations</b><span class="hubn">${recs.length}</span><ul class="hubphases">${phaseLinks}</ul></a>` : ""}
-    ${tile(`${url("staging")}#dg-${key}`, "Staging", n(D.staging, s => mine(s.cancer) && !s.superseded), "Current FIGO staging")}
-    ${paths.length ? tile(`${url("algorithms")}?id=${encodeURIComponent((paths.find(a => mine(a.disease)) || paths[0]).id)}`, "Clinical pathways", paths.length, paths.map(a => esc(a.title.split(":")[0])).slice(0, 3).join(" · ")) : ""}
-    ${tile(`${url("protocols")}#dg-${key}`, "Treatment protocols", n(D.protocols, p => mine(p.disease)), "Regimens with doses (check status)")}
-    ${tile(`${url("drugs")}#dg-${key}`, "Drugs", n(D.drugs, x => x.cancers.some(mine)), "Monographs and doses")}
-    ${tile(`${url("trials")}#dg-${key}`, "Clinical trials", n(D.trials, t => mine(t.disease)), "Pivotal and ongoing")}
-    ${lit.length ? tile(`${url("compare")}#dg-${key}`, "Research library", lit.length, "Summarised studies") : ""}
-    ${(() => { const nl = n(D.leaflets, l => mine(l.disease)); return tile(url(`ptd.${id}`), "For patients", nl ? `${nl} leaflet${nl > 1 ? "s" : ""}` : "Patient page", "Plain-language page, leaflets and planning guides"); })()}
+  const lit = (D.literature || []).filter(x => mine(x.disease)), st = D.staging.filter(s => mine(s.cancer) && !s.superseded);
+  const tr = D.trials.filter(t => mine(t.disease)), pr = D.protocols.filter(p => mine(p.disease)), dr = D.drugs.filter(x => x.cancers.some(mine));
+  const lf = D.leaflets.filter(l => mine(l.disease) && (l.sections || []).length);
+  const more = (items, max, href) => items.length > max ? `${items.slice(0, max).join(" · ")} · <a href="${href}">+${items.length - max} more</a>` : items.join(" · ");
+  const row = (label, count, href, body) => `<div class="hubrow"><a class="hublabel" href="${href}">${esc(label)}${count !== null ? ` <span class="hubc">${count}</span>` : ""}</a><div class="hubitems">${body || '<span class="na">None yet</span>'}</div></div>`;
+  const phases = REC_PHASES.map(([k, t]) => { const c = recs.filter(r => recPhase(r) === k).length; return c ? `${esc(t.replace(/^\d\.\s*/, "").split(":")[0])} <span class="hubc">${c}</span>` : ""; }).filter(Boolean);
+  return `<section class="dhub" aria-label="Everything on DR ARVEEN for this cancer"><h2>Everything on DR ARVEEN for ${esc(d.name.toLowerCase())}</h2><div class="hubrows">
+    ${ch ? row("Textbook notes", null, `${url("notes")}#nb-${ch.id}`, `<a href="${url("notes")}#nb-${ch.id}">Ch ${ch.n} · ${esc(ch.title)}</a>`) : ""}
+    ${row("Guidelines", gls.length, `${url("guidelines")}#dg-${key}`, more(gls.map(g => `<a href="${url(`g.${g.id}`)}">${esc(orgs(g))} ${esc(String(g.version || "").replace(/\s*\(.*\)$/, ""))}</a>`), 4, `${url("guidelines")}#dg-${key}`))}
+    ${row("Recommendations", recs.length, `${url("recs")}#dg-${key}`, phases.length ? `<a href="${url("recs")}#dg-${key}" class="hubplain">${phases.join(" · ")}</a>` : "")}
+    ${row("Staging", st.length, `${url("staging")}#dg-${key}`, st.map(s => `<a href="${url(`s.${s.id}`)}">${esc(s.authority)} ${esc(s.version)}</a>`).join(" · "))}
+    ${row("Clinical pathways", paths.length, url("algorithms"), paths.map(a => `<a href="${url("algorithms")}?id=${encodeURIComponent(a.id)}">${esc(a.title.split(":")[0])}</a>`).join(" · "))}
+    ${row("Key trials", tr.length, `${url("trials")}#dg-${key}`, more(tr.map(t => `<a href="${url(`t.${t.id}`)}" title="${esc(t.outcome ? headline(t) : t.intervention + " vs " + t.comparator)}">${esc(t.name)}</a>`), 6, `${url("trials")}#dg-${key}`))}
+    ${row("Treatment protocols", pr.length, `${url("protocols")}#dg-${key}`, pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join(" · "))}
+    ${row("Drugs", dr.length, `${url("drugs")}#dg-${key}`, more(dr.map(x => `<a href="${url(`dr.${x.id}`)}">${esc(x.name)}</a>`), 6, `${url("drugs")}#dg-${key}`))}
+    ${lit.length ? row("Research library", lit.length, `${url("compare")}#dg-${key}`, `<a href="${url("compare")}#dg-${key}">${lit.length} summarised studies</a>`) : ""}
+    ${row("For patients", null, url(`ptd.${id}`), [`<a href="${url(`ptd.${id}`)}">Patient page</a>`, ...lf.map(l => `<a href="${url(`l.${l.id}`)}">${esc(l.title)}</a>`), `<a href="${url("tool")}">Planning guides</a>`].join(" · "))}
   </div></section>`;
 }
 V.d = id => {
@@ -742,12 +787,6 @@ V.d = id => {
   return `<article class="detail"><div class="dhead"><div class="dtitle">${badge(d.id, true)}<div><span class="eyebrow">Disease reference</span><h1>${esc(d.name)}</h1></div></div><p class="prose muted">${esc(d.short)}</p>
     <div class="actions"><button class="btn" data-mode="quick" aria-pressed="${mode === "quick"}">Quick reference</button><button class="btn" data-mode="comp" aria-pressed="${mode !== "quick"}">Comprehensive reference</button>${bmBtn("Disease", d.id, d.name)}</div></div>
   ${diseaseHub(d)}
-  <section class="glance" aria-label="At a glance">
-    <div><span class="eyebrow">Staging</span>${st.filter(s => !s.superseded).map(s => `<a href="${url(`s.${s.id}`)}">${esc(s.authority)} ${esc(s.version)}</a>`).join("") || `<span class="na">Not entered</span>`}</div>
-    <div><span class="eyebrow">Key trials</span>${tr.length ? tr.map(t => `<a href="${url(`t.${t.id}`)}"><b>${esc(t.name)}</b></a>${t.outcome ? `<span class="glance-res">${esc(headline(t))}</span>` : ""}`).join("") : `<span class="na">None entered</span>`}</div>
-    <div><span class="eyebrow">Guidelines</span>${gl.map(g => `<a href="${url(`g.${g.id}`)}">${esc(orgs(g))} ${esc(g.version || "")}</a>`).join("") || `<span class="na">None entered</span>`}</div>
-    <div><span class="eyebrow">For patients</span><a href="${url(`ptd.${d.id}`)}">Patient page</a>${D.leaflets.filter(l => l.disease === id && (l.sections || []).length).map(l => `<a href="${url(`l.${l.id}`)}">${esc(l.title)}</a>`).join("")}</div>
-  </section>
   ${d.reference ? `<p class="banner"><span class="pill teal">ARVEEN educational summary</span> ${statusPill(d.refReview?.status || "NOT VERIFIED")} ${d.refReview ? `Reviewed by ${esc(d.refReview.reviewer)} on ${esc(d.refReview.verifiedOn)}.` : "Written for education and awaiting clinical review against the cited guidelines."} For doses see the drug and protocol pages. Do not use for prescribing.</p>` : ""}
   ${mode !== "quick" ? `<p class="banner info">Comprehensive reference uses the standard 24-section template.</p>` : ""}
   <div class="list">${secs.map((s, i) => `<div class="row"><span class="row-t">${mode !== "quick" ? `<span class="mono muted">${String(DTEMPLATE.indexOf(s) + 1).padStart(2, "0")}</span>` : ""} ${s}</span>

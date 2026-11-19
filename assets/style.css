@@ -265,8 +265,8 @@ a.chip[aria-current="page"] { background: var(--lav-soft); border-color: var(--l
 :root { --r: 10px; --r-lg: 16px; --shadow-1: 0 1px 2px rgba(14,60,70,.06), 0 1px 1px rgba(14,60,70,.04); --shadow-2: 0 10px 28px rgba(14,60,70,.12) }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --shadow-1: 0 1px 2px rgba(0,0,0,.35); --shadow-2: 0 12px 30px rgba(0,0,0,.45) } }
 :root[data-theme="dark"] { --shadow-1: 0 1px 2px rgba(0,0,0,.35); --shadow-2: 0 12px 30px rgba(0,0,0,.45) }
-body { font-size: 16px; line-height: 1.62 }
-body.aud-pt { font-size: 17px }
+body { font-size: 1rem; line-height: 1.62 }
+body.aud-pt { font-size: 1.0625rem }
 main { padding-block: 40px 88px; gap: 52px }
 h1 { font-size: clamp(1.9rem, 3.4vw, 2.6rem); letter-spacing: -0.012em }
 h2 { font-size: 1.5rem; letter-spacing: -0.005em }
@@ -422,9 +422,6 @@ details.rq summary::-webkit-details-marker { display: none; }
 .banner.slim { background: var(--info-bg); color: var(--fg); padding: 9px 14px; font-size: .84rem }
 
 /* Larger text */
-html.big-text body { font-size: 18.5px }
-html.big-text body.aud-pt { font-size: 20px }
-html.big-text .mnav > a, html.big-text .navgrp > summary { font-size: 1rem }
 
 /* Account menu (top right) */
 .acctgrp > summary.acct-name { max-width: none; display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: var(--r); background: var(--navy-2); color: var(--mast-fg) }
@@ -633,3 +630,42 @@ details.recgrp.phase > summary b { color: var(--teal) }
 .hubt { gap: 2px }
 .hubn { font: 700 1.6rem/1.1 var(--f-display); color: var(--teal) }
 .hubphases { margin: 4px 0 0; padding-left: 1rem; font-size: .8rem; color: var(--fg) }
+
+/* Recommendation tables: text gets the width; ID on one line; compact Malaysia column */
+table.rectbl { table-layout: auto; width: 100% }
+.rectbl .recid { white-space: nowrap; font-size: .78rem; color: var(--muted) }
+.rectbl .rectext { width: 60%; line-height: 1.5 }
+.rectbl .recgrade { white-space: nowrap; font-size: .86rem }
+.rectbl .recmy { width: 14%; min-width: 130px; font-size: .8rem }
+.rectbl .recsrc { white-space: nowrap; font-size: .8rem }
+.mynone { color: var(--muted); font-size: .78rem; display: block }
+.mypill { font-size: .7rem }
+.mystmt { margin-top: 4px; font-size: .82rem; line-height: 1.4 }
+.mynotes { font-size: .78rem; margin-top: 2px } .mynotes summary { cursor: pointer; color: var(--teal) }
+.myby { color: var(--muted); font-size: .72rem; margin-top: 2px }
+.mybtn { margin-top: 4px; background: none; border: 1px dashed var(--teal); color: var(--teal); border-radius: 6px; padding: 2px 8px; font: 600 .74rem var(--f-body); cursor: pointer }
+.mybtn:hover { background: var(--teal-soft) }
+dialog.mydlg { max-width: min(640px, calc(100% - 32px)); width: 100%; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); color: var(--fg); padding: 20px 22px; box-shadow: var(--shadow-2) }
+dialog.mydlg::backdrop { background: rgba(0,0,0,.45) }
+.mydlg form { display: grid; gap: 10px } .mydlg h2 { margin: 0 }
+.mydlg label { display: grid; gap: 4px; font-weight: 600; font-size: .88rem }
+.mydlg textarea, .mydlg input, .mydlg select { font: inherit; font-weight: 400; padding: 8px 10px; border: 1px solid var(--field); border-radius: var(--r); background: var(--bg); color: var(--fg) }
+.dlg-actions { display: flex; gap: 8px; flex-wrap: wrap }
+@media (max-width: 640px) { .rectbl .recid, .rectbl .recsrc, .rectbl .recgrade { white-space: normal } .rectbl .rectext, .rectbl .recmy { width: auto } }
+
+/* Text size buttons */
+.tsize { display: inline-flex; gap: 2px }
+.tsize .theme-btn:first-child { border-radius: var(--r) 0 0 var(--r) }
+.tsize .theme-btn:last-child { border-radius: 0 var(--r) var(--r) 0 }
+.tsize .theme-btn:disabled { opacity: .45; cursor: default }
+
+/* Disease hub: one compact panel (replaces tiles + glance strip) */
+.dhub { border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: var(--r-lg); padding: 12px 16px 6px; background: var(--surface); margin: 14px 0 }
+.dhub h2 { font-size: 1.05rem; margin: 0 0 6px }
+.hubrows { columns: 2 420px; column-gap: 32px }
+.hubrow { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); break-inside: avoid; font-size: .88rem }
+.hublabel { font-weight: 600; color: var(--fg); text-decoration: none }
+.hublabel:hover { color: var(--teal) }
+.hubc { display: inline-block; min-width: 1.6em; text-align: center; font: 600 .74rem var(--f-body); color: var(--teal); background: var(--teal-soft); border-radius: 999px; padding: 0 6px }
+.hubitems { line-height: 1.55 }
+.hubplain { color: var(--fg); text-decoration: none }
