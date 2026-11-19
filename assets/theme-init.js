@@ -1,0 +1,2 @@
+/* Applies the saved theme and text size before the page is drawn (kept in a file so the Content Security Policy needs no inline script). */
+try{var t=JSON.parse(localStorage.getItem("arveen.theme"));if(t)document.documentElement.dataset.theme=t;var l=JSON.parse(localStorage.getItem("arveen.textlevel"));if(typeof l==="number")document.documentElement.style.fontSize=[87.5,100,112.5,125,137.5,150][Math.max(-1,Math.min(4,l))+1]+"%"}catch(e){}

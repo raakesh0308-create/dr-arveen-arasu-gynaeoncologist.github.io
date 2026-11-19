@@ -38,6 +38,12 @@ for (const f of fs.readdirSync(root).filter(f => f.endsWith(".html"))) {
   if (!/<title>[^<]+<\/title>/.test(h)) fail(`${f}: missing <title>.`);
   if (!/<meta name="description" content="[^"]+">/.test(h)) fail(`${f}: missing meta description.`);
   for (const s of ["assets/config.js", "assets/patient-data.js", "assets/app.js"]) if (!h.includes(`src="${s}"`)) fail(`${f}: doesn't load ${s}.`);
+  // Security (SECURITY_AUDIT.md M2): every page has a Content Security Policy, no inline executable scripts,
+  // and every third-party script carries an integrity hash.
+  if (!/<meta http-equiv="Content-Security-Policy" content="[^"]*default-src 'self'[^"]*object-src 'none'/.test(h)) fail(`${f}: missing or weakened Content-Security-Policy meta tag.`);
+  if (/<script(?![^>]*\bsrc=)(?![^>]*type="application\/ld\+json")[^>]*>/i.test(h)) fail(`${f}: has an inline <script> (blocked by the Content Security Policy).`);
+  for (const tag of h.match(/<script[^>]+src="https?:\/\/[^"]+"[^>]*>/gi) || []) if (!/\bintegrity="sha(256|384|512)-/.test(tag)) fail(`${f}: third-party script without integrity hash: ${tag.slice(0, 90)}`);
+  if (/\son[a-z]+="/i.test(h)) fail(`${f}: inline event handler attribute (blocked by the Content Security Policy).`);
 }
 
 // 5. Scripts parse.
