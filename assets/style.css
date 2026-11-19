@@ -669,3 +669,24 @@ dialog.mydlg::backdrop { background: rgba(0,0,0,.45) }
 .hubc { display: inline-block; min-width: 1.6em; text-align: center; font: 600 .74rem var(--f-body); color: var(--teal); background: var(--teal-soft); border-radius: 999px; padding: 0 6px }
 .hubitems { line-height: 1.55 }
 .hubplain { color: var(--fg); text-decoration: none }
+
+/* Readable points: each sentence / clause on its own line; bold lead-in label */
+.ln { display: block }
+.ln + .ln { margin-top: 3px }
+.ln.lead { font-weight: 700; color: var(--fg) }
+.plist > li { margin-bottom: 12px; line-height: 1.55 }
+.plist > li::marker { color: var(--teal) }
+.rectext .ln + .ln { margin-top: 2px }
+
+/* Clearer hierarchy: page title > section heading > subheading > small label > body */
+main h1 { font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.6rem); line-height: 1.15; letter-spacing: -.01em; margin: 4px 0 12px; color: var(--fg) }
+main h2 { font-size: 1.35rem; line-height: 1.25; color: var(--fg); margin: 28px 0 12px; padding-bottom: 7px; border-bottom: 2px solid var(--teal-soft) }
+main h3 { font-size: 1.08rem; line-height: 1.3; color: var(--teal); margin: 20px 0 8px }
+main h4 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 16px 0 6px }
+main .row-t, main .list .row-t { font-weight: 600 }
+main .row > h2, main .dhub h2, main .tile h2, main .chap-h h2, main .nchap-h h2, main .dgroup-h, main summary h2 { border-bottom: 0; padding-bottom: 0; margin-top: 0 }
+main .dgroup-h { border-bottom: 1px solid var(--line); padding-bottom: 8px }
+main .section-h h2 { margin-top: 0 }
+main .eyebrow { letter-spacing: .1em }
+main .prose, main p { color: var(--fg) }
+main .muted, main p.muted { color: var(--muted) }

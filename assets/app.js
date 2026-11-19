@@ -4,6 +4,23 @@ let D = { ...window.ARVEEN_PUBLIC };
 const $ = (s, el = document) => el.querySelector(s);
 const app = $("#app");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+/* Readable points: a short label before a colon is shown in bold on its own line, and each sentence or
+   semicolon-separated part starts on a new line. Abbreviations (e.g., i.e., vs., et al., Dr.) never cause a break. */
+const ABBR_END = /(?:\be\.g|\bi\.e|\bvs|\bet al|\bDr|\bNo|\bapprox|\bFig|\bSt|\bMr|\bMrs|\bMs|\bcf)\.$/i;
+function fmt(text) {
+  let s = String(text ?? "").trim(); if (!s) return "";
+  let lead = "";
+  const m = s.match(/^([^:.;]{3,90}):\s+(.+)$/s);
+  if (m && !/https?$/i.test(m[1]) && !(/\d$/.test(m[1]) && /^\d/.test(m[2]))) { lead = m[1]; s = m[2]; }
+  const parts = []; let buf = "";
+  for (const tok of s.split(/(?<=[.;])\s+/)) {
+    buf = buf ? buf + " " + tok : tok;
+    if (/;$/.test(buf) || (/\.$/.test(buf) && !ABBR_END.test(buf) && !/\b[A-Z]\.$/.test(buf))) { parts.push(buf); buf = ""; }
+  }
+  if (buf) parts.push(buf);
+  const body = parts.length > 1 ? parts.map(p => `<span class="ln">${esc(p)}</span>`).join("") : esc(parts[0] || "");
+  return lead ? `<span class="ln lead">${esc(lead)}:</span>${parts.length > 1 ? body : `<span class="ln">${body}</span>`}` : body;
+}
 const na = v => (v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length)) ? `<span class="na">Not recorded</span>` : esc(Array.isArray(v) ? v.join(", ") : v);
 const byId = (arr, id) => arr.find(x => x.id === id);
 const disease = id => byId(D.diseases, id);
@@ -677,7 +694,7 @@ function recTable(recs) {
   const grade = r => `${/^Not /.test(r.grade) ? `<span class="na">${esc(r.grade)}</span>` : `<b>${esc(r.grade)}</b>`}<div>${/^Not /.test(r.strength) ? `<span class="na">${esc(r.strength)}</span>` : esc(r.strength)}</div>`;
   return `<div class="tablewrap"><table class="rectbl"><thead><tr><th>ID</th><th>Recommendation</th><th>Grade</th><th>Malaysia</th><th>Source</th></tr></thead><tbody>
   ${recs.map(r => { const g = byId(D.guidelines, r.guideline); return `<tr id="rec-${esc(r.id)}"><td class="mono recid">${r.id}</td>
-    <td class="rectext" title="${esc(`${r.stage} · ${r.setting}`)}">${esc(r.text)} ${listPill(r.status)}</td>
+    <td class="rectext" title="${esc(`${r.stage} · ${r.setting}`)}">${fmt(r.text)} ${listPill(r.status)}</td>
     <td class="recgrade">${grade(r)}</td>
     <td class="recmy">${myCell(r)}</td>
     <td class="recsrc"><a href="${url(`g.${g.id}`)}">${esc(orgs(g))} ${esc(g.version || "")}</a>${r.trials.map(t => ` · <a href="${url(`t.${t}`)}">${esc(byId(D.trials, t)?.name)}</a>`).join("")}${r.protocols.map(p => ` · <a href="${url(`p.${p}`)}">${p}</a>`).join("")}</td></tr>` }).join("")}
@@ -783,7 +800,7 @@ V.d = id => {
   const ref = d.reference || {};
   const body = s => { const txt = ref[s] || [], lk = linked[s] || [];
     if (!txt.length && !lk.length) return `<span class="na" style="font-size:.86rem">Content not yet authored. Requires source-linked authoring and clinical review.</span>`;
-    return `${txt.length ? `<ul class="plist" style="font-size:.92rem">${txt.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${lk.length ? `<div style="display:grid;gap:4px;font-size:.9rem">${lk.map(x => `<span>${x}</span>`).join("")}</div>` : ""}`; };
+    return `${txt.length ? `<ul class="plist">${txt.map(x => `<li>${fmt(x)}</li>`).join("")}</ul>` : ""}${lk.length ? `<div style="display:grid;gap:4px;font-size:.9rem">${lk.map(x => `<span>${x}</span>`).join("")}</div>` : ""}`; };
   return `<article class="detail"><div class="dhead"><div class="dtitle">${badge(d.id, true)}<div><span class="eyebrow">Disease reference</span><h1>${esc(d.name)}</h1></div></div><p class="prose muted">${esc(d.short)}</p>
     <div class="actions"><button class="btn" data-mode="quick" aria-pressed="${mode === "quick"}">Quick reference</button><button class="btn" data-mode="comp" aria-pressed="${mode !== "quick"}">Comprehensive reference</button>${bmBtn("Disease", d.id, d.name)}</div></div>
   ${diseaseHub(d)}
@@ -971,7 +988,7 @@ const litSection = (place, title, intro) => {
   return `<section class="section"><h2>${esc(title)}</h2><p class="muted">${esc(intro)}</p>
     ${groups.map(g => `<h3 class="dgroup-h small">${badge(g)}<span>${esc(dn(g))}</span></h3><div class="list">${items.filter(x => x.disease === g).map(x => `<details class="row lit">
       <summary><span class="row-t">${esc(x.title)} ${listPill(x.status)}</span><span class="row-m"><span>${esc(x.type)}</span><span>${esc(x.topic)}</span><span>${esc(x.authors)} ${esc(x.citation)}</span></span></summary>
-      <p class="prose">${esc(x.summary)}</p><ul>${x.findings.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
+      <p class="prose">${fmt(x.summary)}</p><ul class="plist">${x.findings.map(f => `<li>${fmt(f)}</li>`).join("")}</ul>
       <p class="muted"><b>Caveat:</b> ${esc(x.caveat)}</p>
       ${x.related.length || x.drugs.length ? `<p class="muted">Related: ${[...x.related.map(link), ...x.drugs.map(d => `<a href="${url(`dr.${d}`)}">${esc(byId(D.drugs, d)?.name || d)}</a>`)].join(", ")}</p>` : ""}
       <p><a href="https://doi.org/${encodeURIComponent(x.doi).replace(/%2F/g, "/")}" target="_blank" rel="noopener">Read the article (doi ${esc(x.doi)}) ↗</a></p></details>`).join("")}</div>`).join("")}</section>`;
@@ -1267,7 +1284,7 @@ V.pt = () => `<div class="patient detail">${transBanner()}
 const TREATMENT_LINKS = [["Surgery", "PIL-SX-HYST"], ["Chemotherapy", "PIL-TX-CHEMO"], ["Radiotherapy", "PIL-TX-RT"], ["Brachytherapy", "PIL-TX-BT"], ["Immunotherapy", "PIL-TX-IO"], ["Targeted therapy", null], ["Hormonal therapy", null], ["Fertility-sparing treatment", null], ["Maintenance treatment", null], ["Palliative treatment", null]];
 const journeyItems = stage => [...(D.articles || []).filter(a => a.journey === stage).map(a => ({ kind: "Article", route: "a." + a.id, title: a.title, summary: a.summary, status: a.status })),
   ...D.leaflets.filter(l => l.journey === stage && (l.sections || []).length).map(l => ({ kind: "Leaflet", route: "l." + l.id, title: l.title, summary: l.audience, status: l.approval }))];
-const sectionsHtml = secs => secs.map(([h, ps]) => `<section><h2>${esc(h)}</h2>${ps.length > 1 ? `<ul>${ps.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : `<p>${esc(ps[0])}</p>`}</section>`).join("");
+const sectionsHtml = secs => secs.map(([h, ps]) => `<section><h2>${esc(h)}</h2>${ps.length > 1 ? `<ul class="plist">${ps.map(p => `<li>${fmt(p)}</li>`).join("")}</ul>` : `<p>${fmt(ps[0])}</p>`}</section>`).join("");
 V.articles = () => {
   const stage = new URLSearchParams(location.search).get("stage") || "";
   const cats = [...new Set((D.articles || []).map(a => a.category))];
@@ -1302,7 +1319,7 @@ V.ptd = id => {
   const arts = (D.articles || []).filter(a => (a.cancers || []).includes(id) || (["tubal", "peritoneal"].includes(id) && (a.cancers || []).includes("ovarian")));
   return `<article class="patient detail">${transBanner()}<div class="dhead"><div class="ptd-intro"><div><div class="dtitle">${badge(d.id, true)}<div><span class="eyebrow">Understanding your cancer</span><h1>${esc(d.name)}</h1></div></div><p class="prose" style="font-size:1.05rem">${esc(d.patient)}</p></div><figure class="anatomy">${anatomySvg(d.id)}<figcaption>${id === "rare" ? "The organs of the female reproductive system." : "The highlighted area shows where this cancer starts."}</figcaption></figure></div>${photo(d.image)}<div class="row-m">${statusPill("DRAFT")} <span>Not yet clinically reviewed</span></div><div class="actions">${bmBtn("Patient page", d.id, d.name)}</div></div>
   ${["tubal", "peritoneal"].includes(id) && secs ? `<p class="banner info">This cancer is usually staged and treated in the same way as ovarian cancer, so the information below covers all three.</p>` : ""}
-  <div class="cols">${secs ? secs.map(([h, ps]) => `<section class="section"><h2>${esc(h)}</h2><ul class="plist">${ps.map(p => `<li>${esc(p)}</li>`).join("")}</ul></section>`).join("")
+  <div class="cols">${secs ? secs.map(([h, ps]) => `<section class="section"><h2>${esc(h)}</h2><ul class="plist">${ps.map(p => `<li>${fmt(p)}</li>`).join("")}</ul></section>`).join("")
     : ["What stage means", "Tests you may have", "Treatment options", "Living with and after cancer"].map(h => `<section class="section"><h2>${h}</h2><p class="na">This section is being written and reviewed. Your treating team is the best source of information about this cancer.</p></section>`).join("")}</div>
   <section class="section"><h2>Leaflets</h2><div class="list">${ls.map(l => `<a class="row" href="${url(`l.${l.id}`)}"><span class="row-t">${esc(l.title)} ${listPill(l.approval)}</span></a>`).join("") || `<div class="row muted">No leaflet for this cancer yet.</div>`}</div></section>
   ${arts.length ? `<section class="section"><h2>Articles</h2><div class="list">${arts.map(a => `<a class="row" href="${url(`a.${a.id}`)}"><span class="row-t">${esc(a.title)}</span><span class="row-m"><span>${esc(a.summary)}</span></span></a>`).join("")}</div></section>` : ""}
@@ -1441,7 +1458,7 @@ V.tool = id => {
   const s = store.get("tool." + t.id, { c: {}, f: {}, l: {} });
   const block = (b, bi) => {
     if (b.type === "banner") return `<p class="banner bad">${esc(b.text)}</p>`;
-    if (b.type === "info") return `<section class="section"><h2>${esc(b.title)}</h2><ul>${b.items.map(x => `<li>${esc(x)}</li>`).join("")}</ul></section>`;
+    if (b.type === "info") return `<section class="section"><h2>${esc(b.title)}</h2><ul class="plist">${b.items.map(x => `<li>${fmt(x)}</li>`).join("")}</ul></section>`;
     if (b.type === "checklist") return `<section class="section"><h2>${esc(b.title)}</h2><div class="checklist">${b.items.map((x, i) => { const k = `${bi}.${i}`; return `<label><input type="checkbox" data-tc="${k}" ${s.c[k] ? "checked" : ""}> ${esc(x)}</label>`; }).join("")}</div></section>`;
     if (b.type === "fields") return `<section class="section"><h2>${esc(b.title)}</h2><div class="calc tool-fields">${b.fields.map(([k, l]) => `<label>${esc(l)}<textarea rows="2" data-tf="${bi}.${k}">${esc(s.f[`${bi}.${k}`] || "")}</textarea></label>`).join("")}</div></section>`;
     if (b.type === "log") { const rows = s.l[b.id] || [];
