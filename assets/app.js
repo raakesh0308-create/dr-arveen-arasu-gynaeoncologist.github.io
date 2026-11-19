@@ -1,4 +1,6 @@
 (() => {
+// Clickjacking protection (M6): never run inside another website's frame (see assets/theme-init.js).
+if (window.top !== window.self) return;
 /* Patient content is public (patient-data.js). Professional content is loaded from Supabase after sign-in. */
 let D = { ...window.ARVEEN_PUBLIC };
 const $ = (s, el = document) => el.querySelector(s);

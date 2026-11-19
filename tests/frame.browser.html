@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Clickjacking test</title><meta name="robots" content="noindex"></head>
+<body>
+<!-- M6: serve the repository locally, open /tests/frame.browser.html. The framed sign-in page must stay hidden
+     (sandboxed frame without top-navigation, as an attacker's page would use, so the page cannot escape). -->
+<pre id="out">Running…</pre>
+<iframe id="f" src="../accounts.html" sandbox="allow-scripts allow-same-origin" width="600" height="300"></iframe>
+<script>
+document.getElementById("f").onload = () => setTimeout(() => {
+  const doc = document.getElementById("f").contentDocument;
+  const hidden = doc.documentElement.style.display === "none";
+  const appRan = !!doc.querySelector("#mast .mast-in");
+  const ok = hidden && !appRan;
+  document.getElementById("out").textContent = (ok ? "ALL PASSED" : "FAILED") + `\nframed page hidden: ${hidden}\napp did not run inside the frame: ${!appRan}`;
+  document.title = ok ? "ALL PASSED" : "FAILED";
+}, 1200);
+</script>
+</body></html>
