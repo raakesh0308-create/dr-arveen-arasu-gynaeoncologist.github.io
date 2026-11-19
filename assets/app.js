@@ -21,7 +21,36 @@ function fmt(text) {
   const body = parts.length > 1 ? parts.map(p => `<span class="ln">${esc(p)}</span>`).join("") : esc(parts[0] || "");
   return lead ? `<span class="ln lead">${esc(lead)}:</span>${parts.length > 1 ? body : `<span class="ln">${body}</span>`}` : body;
 }
-const na = v => (v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length)) ? `<span class="na">Not recorded</span>` : esc(Array.isArray(v) ? v.join(", ") : v);
+// @test:SAFE_ID — record ids are used inside links and HTML attributes, so only these characters are allowed.
+const SAFE_ID = /^[A-Za-z0-9._:-]{1,120}$/;
+// @end
+/* Allow-list cleaner for the textbook-note HTML (M1): keeps simple formatting and tables, removes scripts,
+   event handlers, styles, embedded objects and unsafe links. Runs on an inert <template>, so nothing executes. */
+// @test:cleanHtml
+const CLEAN_TAGS = new Set(["section", "h2", "h3", "h4", "h5", "ul", "ol", "li", "strong", "em", "b", "i", "p", "div", "span", "table", "thead", "tbody", "tfoot", "tr", "th", "td", "br", "hr", "sup", "sub", "code", "pre", "blockquote", "a", "mark", "caption"]);
+const DROP_TAGS = /^(script|style|iframe|frame|frameset|object|embed|link|meta|base|svg|math|template|form|input|button|textarea|select|option|img|picture|video|audio|source|track|noscript|applet|portal)$/i;
+function cleanHtml(html) {
+  const t = document.createElement("template"); t.innerHTML = String(html ?? "");
+  const walk = node => {
+    for (const el of [...node.children]) {
+      const tag = el.tagName.toLowerCase();
+      if (DROP_TAGS.test(tag)) { el.remove(); continue; }
+      walk(el);
+      if (!CLEAN_TAGS.has(tag)) { el.replaceWith(...el.childNodes); continue; }
+      for (const a of [...el.attributes]) {
+        const n = a.name.toLowerCase(), v = a.value.trim();
+        const ok = (n === "class" && /^[\w\s-]{0,200}$/.test(v)) || (n === "id" && /^[\w-]{1,120}$/.test(v)) || ((n === "colspan" || n === "rowspan") && /^\d{1,2}$/.test(v))
+          || (n === "href" && tag === "a" && /^(https:\/\/[^\s"'<>]+|#[\w-]+|[a-z0-9-]+\.html(\?[\w=&%.-]*)?(#[\w-]*)?)$/i.test(v));
+        if (!ok) el.removeAttribute(a.name);
+      }
+      if (tag === "a" && /^https:/i.test(el.getAttribute("href") || "")) { el.setAttribute("rel", "noopener noreferrer"); el.setAttribute("target", "_blank"); }
+    }
+  };
+  walk(t.content);
+  return t.innerHTML;
+}
+// @end
+const na = v =>(v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length)) ? `<span class="na">Not recorded</span>` : esc(Array.isArray(v) ? v.join(", ") : v);
 const byId = (arr, id) => arr.find(x => x.id === id);
 const disease = id => byId(D.diseases, id);
 const dname = id => disease(id)?.name || "—";
@@ -209,7 +238,7 @@ const ICON = {
   glossary: '<path d="M4 18 8 6l4 12M5.5 14h5"/><path d="M14 6h6l-6 12h6"/>'
 };
 ICON.recs = ICON.guidelines; ICON.diseases = ICON.articles;
-const ic = name => ICON[name] ? `<span class="ticon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[name]}</svg></span>` : "";
+const ic = name => Object.hasOwn(ICON, name) ? `<span class="ticon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[name]}</svg></span>` : "";
 const HUE = { cervical: "#0e7c86", ovarian: "#5f4dbf", tubal: "#7046a8", peritoneal: "#4b5bb0", endometrial: "#b04a26", vulvar: "#a3316f", vaginal: "#1f6aa8", sarcoma: "#2f7a3e", gtn: "#875800", rare: "#4a5868" };
 const ABBR = { cervical: "CX", ovarian: "OV", tubal: "FT", peritoneal: "PP", endometrial: "EN", vulvar: "VU", vaginal: "VA", sarcoma: "US", gtn: "GTN", rare: "RG" };
 /* One order everywhere: the disease list order (cervical, ovarian, tubal, peritoneal, endometrial, vulvar, vaginal, sarcoma, GTN, rare), general items last. */
@@ -334,6 +363,9 @@ async function loadPro() {
   for (const k of ["leaflets", "articles", "glossary", "journey", "concerns", "sdmQuestions"]) delete pro[k]; // patient content always comes from the public file
   if (pro.diseases) pro.diseases = pro.diseases.map(d => { const p = pub.diseases.find(x => x.id === d.id) || {}; return { ...d, patient: p.patient || d.patient, patientSections: p.patientSections || null, image: p.image || null, pageStatus: p.pageStatus, online: p.online, reviewer: p.reviewer, lastReview: p.lastReview, nextReview: p.nextReview }; });
   D = { ...pub, ...pro };
+  // Defence in depth (M1): drop records whose id could break out of an HTML attribute, and clean note HTML.
+  for (const [k, v] of Object.entries(D)) if (Array.isArray(v) && v.some(x => x && typeof x === "object" && "id" in x)) D[k] = v.filter(x => !x || typeof x !== "object" || !("id" in x) || SAFE_ID.test(String(x.id)) || (console.warn("Skipped a record with an unsafe id in", k), false));
+  if (D.notes?.chapters) D.notes.chapters = D.notes.chapters.filter(c => SAFE_ID.test(String(c.id))).map(c => ({ ...c, html: cleanHtml(c.html) }));
   applyEdits(D);
   state.proLoaded = true;
   const rv = await sb.from("pro_reviews").select("*"); // table exists after upgrade-4-reviews.sql
@@ -629,7 +661,7 @@ const SLIDES = {
 function carousel(aud) {
   const s = state.slides?.[aud] || SLIDES[aud] || []; if (!s.length) return "";
   return `<section class="carousel" aria-roledescription="carousel" aria-label="Featured" data-carousel>
-    <div class="car-track">${s.map((x, i) => `<div class="car-slide tone-${x.tone || "teal"}" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${s.length}" ${i ? 'aria-hidden="true"' : ""}>
+    <div class="car-track">${s.map((x, i) => `<div class="car-slide tone-${["teal", "lav", "navy"].includes(x.tone) ? x.tone : "teal"}" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${s.length}" ${i ? 'aria-hidden="true"' : ""}>
       <div class="car-panel"><span class="car-eyebrow">${esc(x.eyebrow)}</span><h2 class="car-title">${esc(x.title)}</h2><p class="car-text">${esc(x.text)}</p><a class="car-cta" href="${url(x.route)}" ${i ? 'tabindex="-1"' : ""}>${esc(x.cta)}</a></div>
       <div class="car-art" aria-hidden="true">${x.photo && /^https:\/\//.test(x.photo) ? `<img src="${esc(x.photo)}" alt="">` : `<span class="car-blob b1"></span><span class="car-blob b2"></span><span class="car-blob b3"></span><span class="car-icon">${ic(x.icon)}</span>`}</div></div>`).join("")}</div>
     <button class="car-nav prev" type="button" aria-label="Previous slide">‹</button><button class="car-nav next" type="button" aria-label="Next slide">›</button>
@@ -992,7 +1024,7 @@ V.algorithms = () => {
   const picker = D.algorithms.length > 1 ? `<div class="chips" role="group" aria-label="Choose a pathway">${[...D.algorithms].sort((p, q) => DIS_ORDER(p.disease) - DIS_ORDER(q.disease)).map(x => `<button class="chip" data-algo="${esc(x.id)}" aria-pressed="${x.id === a.id}">${esc(x.title.split(":")[0])}</button>`).join("")}</div>` : "";
   const steps = algoPath.map((k, i) => {
     const n = a.nodes[k]; const last = i === algoPath.length - 1;
-    if (n.end) return `<div class="step end ${n.kind}"><span class="eyebrow">${n.kind === "missing" ? "Missing information" : n.kind === "escalate" ? "Referral / escalation" : n.kind === "action" ? "Required investigation" : "Outcome"}</span><p>${esc(n.end)}</p>${n.refs?.length ? `<p class="muted" style="font-size:.84rem">Based on: ${n.refs.map(refLink).join(" · ")}</p>` : ""}</div>`;
+    if (n.end) return `<div class="step end ${esc(n.kind)}"><span class="eyebrow">${n.kind === "missing" ? "Missing information" : n.kind === "escalate" ? "Referral / escalation" : n.kind === "action" ? "Required investigation" : "Outcome"}</span><p>${esc(n.end)}</p>${n.refs?.length ? `<p class="muted" style="font-size:.84rem">Based on: ${n.refs.map(refLink).join(" · ")}</p>` : ""}</div>`;
     const chosen = algoPath[i + 1];
     return `<div class="step ${last ? "" : "past"}"><p><b>${esc(n.q)}</b></p><div class="opts">${n.options.map(([t, to]) => `<button class="btn" data-step="${i}" data-to="${to}" aria-pressed="${chosen === to}">${esc(t)}</button>`).join("")}</div></div>`;
   }).join("");
@@ -1394,7 +1426,7 @@ V.articles = () => {
   const list = stage ? journeyItems(stage) : null;
   return `<div class="patient detail"><span class="eyebrow">Patient Education Centre</span><h1>${st ? esc(st.title) : "Articles"}</h1>${transBanner()}
   <div class="chips" role="navigation" aria-label="Journey stage"><a class="chip" href="${url(`articles`)}" ${!stage ? 'aria-current="page"' : ""}>All articles</a>${(D.journey || []).map(j => `<a class="chip" href="${url(`articles`)}?stage=${j.id}" ${stage === j.id ? 'aria-current="page"' : ""}>${esc(j.title)}</a>`).join("")}</div>${reviewStrip(true)}
-  ${list ? `<p class="prose muted">${esc(st.text)}</p><div class="list">${list.map(x => `<a class="row" href="${url(x.route)}"><span class="row-t">${esc(x.title)} ${listPill(x.status)}</span><span class="row-m"><span class="eyebrow">${x.kind}</span><span>${esc(x.summary)}</span></span></a>`).join("")}</div>`
+  ${list ? `<p class="prose muted">${esc(st.text)}</p><div class="list">${list.map(x => `<a class="row" href="${url(x.route)}"><span class="row-t">${esc(x.title)} ${listPill(x.status)}</span><span class="row-m"><span class="eyebrow">${esc(x.kind)}</span><span>${esc(x.summary)}</span></span></a>`).join("")}</div>`
   : cats.map(c => `<section class="section"><h2>${esc(c)}</h2><div class="list">${D.articles.filter(a => a.category === c).map(a => `<a class="row" href="${url(`a.${a.id}`)}"><span class="row-t">${esc(a.title)} ${listPill(a.status)}</span><span class="row-m"><span>${esc(a.summary)}</span></span></a>`).join("")}</div></section>`).join("")}</div>`;
 };
 V.a = id => {
@@ -1943,7 +1975,7 @@ V.review = () => {
   const opts = k => (k === "dose" ? ["PHARMACIST VERIFIED", "CHANGES NEEDED"] : ["VERIFIED AGAINST SOURCE", "CLINICALLY REVIEWED", "APPROVED", "CHANGES NEEDED"]);
   const optList = (k, sel) => opts(k).map(o => `<option ${sel === o ? "selected" : ""} ${o === "PHARMACIST VERIFIED" && !isPharmacist() ? "disabled" : ""}>${o}</option>`).join("");
   const me = esc(state.profile?.full_name || "");
-  const form = x => `<form class="rq-form" data-rkey="${esc(x.key)}" data-rkind="${x.kind}">
+  const form = x => `<form class="rq-form" data-rkey="${esc(x.key)}" data-rkind="${esc(x.kind)}">
       <label>Decision<select name="status">${optList(x.kind, x.review?.status)}</select></label>
       <label>Reviewer name<input name="reviewer" required minlength="2" value="${x.review?.reviewer ? esc(x.review.reviewer) : me}"></label>
       <label>Review date<input name="reviewed_on" type="date" required value="${esc(x.review?.reviewed_on || today)}"></label>

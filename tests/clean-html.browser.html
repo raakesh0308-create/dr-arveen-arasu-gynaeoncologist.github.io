@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>cleanHtml browser test</title><meta name="robots" content="noindex"></head>
+<body>
+<!-- M1: browser test for the textbook-note HTML cleaner (needs a real DOM).
+     Serve the repository locally (any static server), open /tests/clean-html.browser.html, and read the result.
+     The page loads the "@test:cleanHtml" block from assets/app.js; it never runs the site itself. -->
+<pre id="out">Running…</pre>
+<script>
+(async () => {
+  const src = await (await fetch("../assets/app.js")).text();
+  const block = src.match(/\/\/ @test:cleanHtml[^\n]*\n([\s\S]*?)\/\/ @end/)[1];
+  const cleanHtml = new Function(block + "\nreturn cleanHtml;")();
+  window.__xss = 0;
+  const attacks = [
+    '<script>window.__xss=1<\/script><p>ok</p>',
+    '<img src=x onerror="window.__xss=2">',
+    '<p onclick="window.__xss=3" onmouseover="window.__xss=3">hover</p>',
+    '<a href="javascript:window.__xss=4">link</a>',
+    '<a href=" javascript:window.__xss=4">link</a>',
+    '<svg><script>window.__xss=5<\/script></svg>',
+    '<iframe src="javascript:parent.__xss=6"></iframe>',
+    '<math><mtext><table><mglyph><style><img src=x onerror="window.__xss=7">',
+    '<div style="background:url(javascript:alert(1))">s</div>',
+    '<form action="https://evil.example"><input name=x></form>',
+    '<object data="data:text/html,<script>parent.__xss=8<\/script>"></object>',
+    '<details open ontoggle="window.__xss=9">x</details>',
+    '<a href="data:text/html,<script>alert(1)<\/script>">d</a>',
+    '<noscript><p title="<\/noscript><img src=x onerror=window.__xss=10>"><\/noscript>'
+  ];
+  const results = [];
+  const sink = document.createElement("div"); document.body.appendChild(sink);
+  for (const a of attacks) {
+    const out = cleanHtml(a); sink.innerHTML = out;
+    const bad = /\son\w+=|javascript:|<script|<iframe|<img|<svg|<object|<form|style=|data:/i.test(out);
+    results.push((bad ? "FAIL " : "PASS ") + JSON.stringify(a).slice(0, 70) + "  →  " + JSON.stringify(out).slice(0, 70));
+  }
+  await new Promise(r => setTimeout(r, 300));
+  const keep = '<section id="s1"><h3>Title</h3><ul><li><strong>Bold</strong> text</li></ul><table class="t"><thead><tr><th>A</th></tr></thead><tbody><tr><td colspan="2">1</td></tr></tbody></table><a href="drug.html?id=carboplatin">d</a><a href="https://example.org/x">e</a></section>';
+  const kept = cleanHtml(keep);
+  results.push((kept.includes('<section id="s1">') && kept.includes('<table class="t">') && kept.includes('colspan="2"') && kept.includes('href="drug.html?id=carboplatin"') && kept.includes('rel="noopener noreferrer"') ? "PASS" : "FAIL") + " normal note formatting is kept");
+  results.push((window.__xss === 0 ? "PASS" : "FAIL") + " no injected code ran (window.__xss = " + window.__xss + ")");
+  const fails = results.filter(r => r.startsWith("FAIL")).length;
+  document.getElementById("out").textContent = (fails ? fails + " FAILED" : "ALL PASSED") + "\n\n" + results.join("\n");
+  document.title = fails ? "FAILED" : "ALL PASSED";
+})();
+</script>
+</body></html>
