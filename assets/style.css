@@ -690,3 +690,41 @@ main .section-h h2 { margin-top: 0 }
 main .eyebrow { letter-spacing: .1em }
 main .prose, main p { color: var(--fg) }
 main .muted, main p.muted { color: var(--muted) }
+
+/* Feature carousel: slanted panel on the left, art or photo on the right */
+.carousel { position: relative; overflow: hidden; border-radius: var(--r-lg); margin: 4px 0 22px; background: var(--surface); box-shadow: var(--shadow-1); outline-offset: 3px }
+.car-track { display: flex; transition: transform .55s cubic-bezier(.22,.7,.25,1) }
+.car-slide { flex: 0 0 100%; min-height: 300px; display: grid; grid-template-columns: 58% 42%; position: relative }
+.car-panel { position: relative; z-index: 2; padding: 38px 64px 46px 58px; color: #fff; clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
+  background: radial-gradient(circle at 1px 1px, rgba(255,255,255,.13) 1px, transparent 1.5px) 0 0 / 14px 14px, var(--car-bg); display: grid; align-content: center; gap: 10px }
+.car-eyebrow { font: 600 .76rem var(--f-body); letter-spacing: .1em; text-transform: uppercase; opacity: .92 }
+.carousel h2.car-title { font: 700 clamp(1.5rem, 1.1rem + 1.6vw, 2.35rem)/1.15 var(--f-display); color: #fff; margin: 0; border: 0; padding: 0; max-width: 18ch }
+.car-text { margin: 0; max-width: 46ch; font-size: 1rem; color: rgba(255,255,255,.95) !important }
+.car-cta { justify-self: start; margin-top: 6px; background: #0b2733; color: #fff; text-decoration: none; font-weight: 700; padding: 11px 20px; border-radius: 10px; box-shadow: 0 2px 0 rgba(0,0,0,.15) }
+.car-cta:hover { background: #fff; color: #0b2733 }
+.car-art { position: relative; margin-left: -12%; overflow: hidden; background: var(--car-art) }
+.car-art img { width: 100%; height: 100%; object-fit: cover; display: block }
+.car-blob { position: absolute; border-radius: 50%; opacity: .55; filter: blur(.5px) }
+.car-blob.b1 { width: 260px; height: 260px; right: -40px; top: -60px; background: var(--car-b1) }
+.car-blob.b2 { width: 180px; height: 180px; left: 22%; bottom: -50px; background: var(--car-b2) }
+.car-blob.b3 { width: 90px; height: 90px; right: 30%; top: 30%; background: rgba(255,255,255,.55) }
+.car-icon { position: absolute; right: 16%; top: 50%; transform: translateY(-50%); width: 120px; height: 120px; display: grid; place-items: center; border-radius: 28px; background: rgba(255,255,255,.88); color: var(--car-ic); box-shadow: var(--shadow-2) }
+.car-icon .ticon, .car-icon svg { width: 64px; height: 64px; background: none }
+.tone-teal { --car-bg: linear-gradient(120deg, #0e6e78, #1f9c9f); --car-art: linear-gradient(135deg, #d8f1ef, #b9e3e1); --car-b1: #7fd0cc; --car-b2: #b9a7f0; --car-ic: #0e6e78 }
+.tone-lav { --car-bg: linear-gradient(120deg, #4c3d8f, #7a68c7); --car-art: linear-gradient(135deg, #ece8fb, #d9d1f6); --car-b1: #b9a7f0; --car-b2: #7fd0cc; --car-ic: #4c3d8f }
+.tone-navy { --car-bg: linear-gradient(120deg, #0b2f3d, #145668); --car-art: linear-gradient(135deg, #dceef3, #c3e2ea); --car-b1: #8cc9d6; --car-b2: #b9a7f0; --car-ic: #145668 }
+.car-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 3; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.9); color: #0b2733; font: 700 1.6rem/1 var(--f-body); cursor: pointer; box-shadow: var(--shadow-1) }
+.car-nav.prev { left: 10px } .car-nav.next { right: 10px }
+.car-nav:hover { background: #fff }
+.car-dots { position: absolute; left: 58px; bottom: 14px; z-index: 3; display: flex; gap: 8px; align-items: center }
+.car-dot { width: 10px; height: 10px; border-radius: 50%; border: 0; background: rgba(255,255,255,.5); cursor: pointer; padding: 0 }
+.car-dot[aria-current="true"] { background: #fff; width: 26px; border-radius: 6px }
+.car-pause { border: 0; background: rgba(0,0,0,.25); color: #fff; font-size: .62rem; border-radius: 6px; padding: 3px 7px; cursor: pointer; margin-left: 6px }
+@media (prefers-reduced-motion: reduce) { .car-track { transition: none } }
+@media (max-width: 760px) {
+  .car-slide { grid-template-columns: minmax(0, 1fr); min-height: 0 }
+  .car-panel { clip-path: none; padding: 26px 22px 46px }
+  .car-art { display: none }
+  .car-dots { left: 22px }
+  .car-nav { top: auto; bottom: 8px; transform: none; width: 32px; height: 32px; font-size: 1.3rem } .car-nav.prev { left: auto; right: 50px } .car-nav.next { right: 10px }
+}

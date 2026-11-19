@@ -572,7 +572,52 @@ const transBanner = () => state.lang === "en" ? "" : `<p class="banner info">Tra
 
 /* ---------- views: professional ---------- */
 const V = {};
-V.home = () => `
+/* ---------- feature carousel (top of the professional and patient home pages) ----------
+   Each slide: eyebrow, title, text, button label, route, icon, optional photo (https://, e.g. from Edit content → pictures). */
+const SLIDES = {
+  pro: [
+    { eyebrow: "New in the clinical reference", title: "Textbook notes, chapters 37–42", text: "Searchable revision notes, with flags wherever they differ from current guidelines.", cta: "Open the notes", route: "notes", icon: "education", tone: "teal" },
+    { eyebrow: "Clinical pathways", title: "From first symptom to biomarker testing", text: "Six step-by-step pathways linked to the recommendations behind each step.", cta: "Start a pathway", route: "algorithms", icon: "algorithms", tone: "lav" },
+    { eyebrow: "Guideline update", title: "NICE NG12, April 2026: age-specific CA125 thresholds", text: "The suspected ovarian cancer pathway now follows the new thresholds.", cta: "See the change", route: "g.G-NICE-NG12", icon: "updates", tone: "navy" },
+    { eyebrow: "Building the Malaysian CPG", title: "Record the Malaysian position on each recommendation", text: "Reviewers can adopt, adapt or set aside each recommendation for Malaysian practice.", cta: "Go to recommendations", route: "recs", icon: "guidelines", tone: "teal" },
+    { eyebrow: "Calculators", title: "RMI, BSA, creatinine clearance and Calvert", text: "Formulas checked against their sources, with limitations shown.", cta: "Open calculators", route: "calculators", icon: "calculators", tone: "lav" }],
+  pt: [
+    { eyebrow: "New for families and caregivers", title: "A guide for the people who care for you", text: "Practical ways to help, looking after yourself, and talking together.", cta: "Open the caregiver guide", route: "tool.caregiver", icon: "sdm", tone: "teal" },
+    { eyebrow: "Before your appointment", title: "Questions to ask your doctor", text: "Tick the questions that matter to you, then print the list and take it along.", cta: "Prepare now", route: "sdm", icon: "sdm", tone: "lav" },
+    { eyebrow: "During chemotherapy", title: "Keep a chemotherapy diary", text: "Note how you feel each day, so your team can help with side effects.", cta: "Start my diary", route: "tool.chemo", icon: "tracker", tone: "navy" },
+    { eyebrow: "Just diagnosed", title: "Understanding my diagnosis", text: "Write down your diagnosis in your own words, with the questions to ask.", cta: "Open the guide", route: "tool.diagnosis", icon: "articles", tone: "teal" }]
+};
+function carousel(aud) {
+  const s = SLIDES[aud] || []; if (!s.length) return "";
+  return `<section class="carousel" aria-roledescription="carousel" aria-label="Featured" data-carousel>
+    <div class="car-track">${s.map((x, i) => `<div class="car-slide tone-${x.tone || "teal"}" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${s.length}" ${i ? 'aria-hidden="true"' : ""}>
+      <div class="car-panel"><span class="car-eyebrow">${esc(x.eyebrow)}</span><h2 class="car-title">${esc(x.title)}</h2><p class="car-text">${esc(x.text)}</p><a class="car-cta" href="${url(x.route)}" ${i ? 'tabindex="-1"' : ""}>${esc(x.cta)}</a></div>
+      <div class="car-art" aria-hidden="true">${x.photo && /^https:\/\//.test(x.photo) ? `<img src="${esc(x.photo)}" alt="">` : `<span class="car-blob b1"></span><span class="car-blob b2"></span><span class="car-blob b3"></span><span class="car-icon">${ic(x.icon)}</span>`}</div></div>`).join("")}</div>
+    <button class="car-nav prev" type="button" aria-label="Previous slide">‹</button><button class="car-nav next" type="button" aria-label="Next slide">›</button>
+    <div class="car-dots">${s.map((x, i) => `<button type="button" class="car-dot" aria-label="Slide ${i + 1}: ${esc(x.title)}" aria-current="${i === 0}"></button>`).join("")}<button type="button" class="car-pause" aria-label="Pause">❚❚</button></div></section>`;
+}
+function bindCarousel() {
+  const c = app.querySelector("[data-carousel]"); if (!c) return;
+  const track = c.querySelector(".car-track"), slides = [...c.querySelectorAll(".car-slide")], dots = [...c.querySelectorAll(".car-dot")], pauseBtn = c.querySelector(".car-pause");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let i = 0, paused = reduce, hover = false; clearInterval(window.__carT);
+  const show = n => { i = (n + slides.length) % slides.length; track.style.transform = `translateX(-${i * 100}%)`;
+    slides.forEach((s, k) => { s.setAttribute("aria-hidden", k !== i); s.querySelector(".car-cta").tabIndex = k === i ? 0 : -1; });
+    dots.forEach((d, k) => d.setAttribute("aria-current", k === i)); };
+  const tick = () => { clearInterval(window.__carT); window.__carT = (!paused && !hover) ? setInterval(() => { if (!document.body.contains(c)) return clearInterval(window.__carT); show(i + 1); }, 7000) : null; };
+  c.querySelector(".prev").onclick = () => { show(i - 1); tick(); };
+  c.querySelector(".next").onclick = () => { show(i + 1); tick(); };
+  dots.forEach((d, k) => d.onclick = () => { show(k); tick(); });
+  pauseBtn.textContent = paused ? "▶" : "❚❚"; pauseBtn.setAttribute("aria-label", paused ? "Play" : "Pause");
+  pauseBtn.onclick = () => { paused = !paused; pauseBtn.textContent = paused ? "▶" : "❚❚"; pauseBtn.setAttribute("aria-label", paused ? "Play" : "Pause"); tick(); };
+  c.addEventListener("mouseenter", () => { hover = true; tick(); }); c.addEventListener("mouseleave", () => { hover = false; tick(); });
+  c.addEventListener("focusin", () => { hover = true; tick(); }); c.addEventListener("focusout", () => { hover = false; tick(); });
+  c.addEventListener("keydown", e => { if (e.key === "ArrowRight") { show(i + 1); tick(); } if (e.key === "ArrowLeft") { show(i - 1); tick(); } });
+  let x0 = null; c.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  c.addEventListener("touchend", e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) { show(i + (dx < 0 ? 1 : -1)); tick(); } x0 = null; });
+  show(0); tick();
+}
+V.home = () => `${carousel("pro")}
   <section class="hero hero-pro">
     <span class="eyebrow">Gynaecological oncology reference · Malaysia</span>
     <h1>DR ARVEEN — Evidence-Based Gynaecological Oncology.</h1>
@@ -1263,7 +1308,7 @@ function reviewBlock(rec) {
 }
 
 /* ---------- views: patient ---------- */
-V.pt = () => `<div class="patient detail">${transBanner()}
+V.pt = () => `<div class="patient detail">${transBanner()}${carousel("pt")}
   <section class="hero hero-pt"><span class="eyebrow">DR ARVEEN Patient Education Centre</span><h1>Understanding Your Cancer. Understanding Your Care.</h1>
   <p>Clear, reliable information to help you understand your diagnosis, prepare for treatment, manage side effects, and navigate life during and after gynaecological cancer.</p></section>
   <section class="section band start-here"><h2>Start here: where are you now?</h2><p class="muted">Choose one. We'll show you only the guides that matter at this stage.</p>
@@ -1678,7 +1723,7 @@ function render() {
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
-  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes(); bindAdminWs(); bindWorkspace(); bindSecurity(); bindTool();
+  bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes(); bindAdminWs(); bindWorkspace(); bindSecurity(); bindTool(); bindCarousel();
 }
 /* ---------- textbook study notes (Berek & Novak's, Ch 37–42), professional only ---------- */
 V.notes = () => {
