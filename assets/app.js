@@ -263,7 +263,8 @@ const canApprove = () => approved() && ["reviewer", "admin"].includes(state.prof
 state.items = [];
 async function loadPatientItems() {
   if (!sb) return;
-  const { data, error } = await sb.from("patient_items").select("*");
+  // Signed-out visitors may only read the public columns (upgrade-10-hardening.sql hides staff names and ids).
+  const { data, error } = await sb.from("patient_items").select(state.user ? "*" : "id,kind,data,status,reviewer,last_review,next_review,updated_at");
   if (error || !data) return;
   state.items = data;
   const P = window.ARVEEN_PUBLIC;
@@ -287,7 +288,7 @@ async function loadPatientItems() {
       d.image = row.data.image || null; d.pageStatus = row.status; Object.assign(d, meta);
     }
   }
-  const se = await sb.from("site_edits").select("*"); // upgrade-9-site-edits.sql
+  const se = await sb.from("site_edits").select(state.user ? "*" : "id,scope,data,updated_at"); // upgrade-9-site-edits.sql
   state.editsTable = !se.error; state.edits = Object.fromEntries((se.data || []).map(r => [r.id, r]));
   applyEdits(P);
 }
@@ -297,10 +298,16 @@ async function loadPatientItems() {
 state.edits = {}; const ORIG = {};
 const EDIT_COLLS = [["guidelines", "Guidelines"], ["recommendations", "Recommendations"], ["diseases", "Disease reference"], ["staging", "Staging systems"], ["protocols", "Treatment protocols"], ["drugs", "Drugs"], ["trials", "Clinical trials"], ["algorithms", "Clinical pathways"], ["literature", "Research library"], ["notes", "Textbook note chapters"]];
 const editList = (target, coll) => coll === "notes" ? (target.notes?.chapters || null) : target[coll];
+// @test:cleanEdit — an online edit can never set a record's id, raw HTML or sign-off fields (those come only from the
+// Review queue). The database refuses them too (upgrade-10-hardening.sql); this is the second line of defence.
+const RESERVED_EDIT_KEYS = ["id", "html", "status", "approval", "reviewer", "verifiedOn", "nextReview", "reviewNote", "reviewedOn", "doseStatus", "doseReviewer", "doseReviewedOn", "doseNote", "refReview", "reviewStatus", "editedAt", "editedBy", "editKeys", "editedAfterReview", "doseEditedAfterReview", "__proto__", "constructor", "prototype"];
+const cleanEdit = data => { const out = {}; if (!data || typeof data !== "object" || Array.isArray(data)) return out;
+  for (const [k, v] of Object.entries(data)) if (!RESERVED_EDIT_KEYS.includes(k)) out[k] = v; return out; };
+// @end
 function applyEdits(target) {
   state.slides = {}; state.pageEdits = {};
   for (const row of Object.values(state.edits)) {
-    const i = row.id.indexOf(":"), coll = row.id.slice(0, i), id = row.id.slice(i + 1), data = row.data || {};
+    const i = row.id.indexOf(":"), coll = row.id.slice(0, i), id = row.id.slice(i + 1), data = cleanEdit(row.data);
     if (coll === "slides") { if (Array.isArray(data.slides)) state.slides[id] = data.slides; continue; }
     if (coll === "page") { state.pageEdits[id] = data; continue; }
     if (coll === "portfolio") { const p = window.ARVEEN_PUBLIC.portfolio || (window.ARVEEN_PUBLIC.portfolio = {}); if (!ORIG[row.id]) ORIG[row.id] = JSON.parse(JSON.stringify(p)); Object.assign(p, data); continue; }
