@@ -105,6 +105,10 @@ function url(route) {
   return arg ? `${f}?id=${encodeURIComponent(arg)}` : f;
 }
 const PARAMS = new URLSearchParams(location.search);
+// @test:safeNext — where to go after sign-in: only a page of this site ("name.html", optional ?query and #anchor).
+// Anything else (javascript:, other websites, tricks with spaces, tabs or backslashes) falls back to the default.
+const safeNext = (n, dflt) => typeof n === "string" && /^[a-z0-9-]+\.html(\?[\w=&%.~+,-]*)?(#[\w-]*)?$/i.test(n) ? n : dflt;
+// @end
 const PAGE = document.body.dataset.page || PAGE_BY_FILE[location.pathname.split("/").pop()] || "welcome";
 const PT_PAGES = ["pt", "ptcancers", "ptd", "leaflets", "l", "articles", "a", "tracker", "glossary", "tool"];
 const SHARED_PAGES = ["welcome", "login", "register", "reset", "governance", "privacy", "workspace", "about", "sdm", "search", "guide", "portfolio"];
@@ -398,7 +402,7 @@ function bindAuth() {
     e.preventDefault();
     const { error } = await sb.auth.signInWithPassword({ email: $("#li-email").value.trim(), password: $("#li-pass").value });
     if (error) return authErr(error.message === "Email not confirmed" ? "Confirm your email first: open the link we sent you." : "That email and password don't match an account.");
-    const next = PARAMS.get("next"); location.href = PAGE === "login" ? (next && !/^[a-z]+:|^\/\//i.test(next) ? next : "professional.html") : location.href;
+    location.href = PAGE === "login" ? safeNext(PARAMS.get("next"), "professional.html") : location.href;
   };
   const rf = $("#regf");
   if (rf) rf.onsubmit = async e => {
@@ -1113,7 +1117,7 @@ V.security = () => {
   ${PARAMS.get("need") ? `<p class="banner bad">The page you opened is a staff tool. Complete two-step sign-in below to continue.</p>` : ""}
   <div class="calc authbox" id="mfabox">
     ${on ? `<p class="banner">${statusPill("APPROVED")} Two-step sign-in is <b>on</b> and this session is verified.</p>
-      ${PARAMS.get("next") ? `<p><a class="btn primary" href="${esc(PARAMS.get("next"))}">Continue</a></p>` : ""}
+      ${safeNext(PARAMS.get("next"), "") ? `<p><a class="btn primary" href="${esc(safeNext(PARAMS.get("next"), ""))}">Continue</a></p>` : ""}
       <details><summary>Remove two-step sign-in</summary><p class="muted">${staff ? "Staff tools will stop working until you set it up again." : ""} You will need to set it up again with a new code.</p><button class="btn" type="button" id="mfa-remove">Remove it</button></details>`
     : hasFactor ? `<h2>Enter your code</h2><p class="muted">Open your authenticator app and enter the 6-digit code for DR ARVEEN.</p>
       <label for="mfa-code">6-digit code<input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"></label><button class="btn primary" type="button" id="mfa-verify">Verify</button>`
@@ -1125,7 +1129,7 @@ V.security = () => {
 function bindSecurity() {
   if (PAGE !== "security" || !sb) return;
   const err = m => { const e = $("#mfa-err"); e.hidden = !m; e.textContent = m || ""; };
-  const done = () => { const n = PARAMS.get("next"); location.href = n && !/^[a-z]+:|^\/\//i.test(n) ? n : "two-step.html"; };
+  const done = () => { location.href = safeNext(PARAMS.get("next"), "two-step.html"); };
   const start = $("#mfa-start");
   if (start) start.onclick = async () => {
     err(""); start.disabled = true;

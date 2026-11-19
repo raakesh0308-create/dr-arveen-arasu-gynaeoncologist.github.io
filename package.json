@@ -1,0 +1,8 @@
+{
+  "name": "dr-arveen-site",
+  "private": true,
+  "description": "Static site; no runtime npm dependencies. Scripts run the security tests and deploy checks.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs && node tools/check.mjs"
+  }
+}
