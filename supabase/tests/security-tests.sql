@@ -1,7 +1,7 @@
 -- DR ARVEEN — database security tests (access control and anti-forgery rules).
 -- Run in Supabase: SQL Editor → New query → paste this whole file → Run.
 -- Everything happens inside one transaction that is ROLLED BACK at the end: the fake test users, test rows and
--- changes disappear and nothing real is changed. Run it after update-all-now.sql and upgrade-10-hardening.sql.
+-- changes disappear and nothing real is changed. Run it after update-all-now.sql (which includes upgrades 10 and 11).
 -- Result: the final row says "ALL SECURITY TESTS PASSED" (see the Messages/notices for each PASS line).
 -- If a rule is broken, the run stops with an error starting "FAIL:".
 
@@ -163,6 +163,22 @@ do $$ begin
     if found then raise notice 'WARNING 14: two-step sign-in is NOT enforced yet. Run upgrade-7-staff-2fa.sql once every staff account has set it up.';
     else raise notice 'PASS 14: staff powers need two-step sign-in'; end if;
   exception when others then raise notice 'PASS 14: staff powers need two-step sign-in'; end;
+end $$;
+reset role;
+
+-- ---------- 15. Problem reports are rate-limited (upgrade 11) ----------
+select set_config('request.headers', '{"x-forwarded-for":"203.0.113.77"}', true);
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
+do $$ declare i int; begin
+  for i in 1..5 loop
+    insert into public.feedback (page, category, message) values ('test.html', 'Test', 'Rate limit test report ' || i);
+  end loop;
+  begin
+    insert into public.feedback (page, category, message) values ('test.html', 'Test', 'Rate limit test report 6');
+    raise exception 'FAIL: a sixth report within an hour from the same address was accepted';
+  exception when others then if sqlerrm like 'FAIL:%' then raise; end if; end;
+  raise notice 'PASS 15: problem reports are limited to 5 per hour per address';
 end $$;
 reset role;
 
