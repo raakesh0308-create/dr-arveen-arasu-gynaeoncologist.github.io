@@ -746,3 +746,32 @@ textarea.mono { font-family: ui-monospace, Consolas, monospace; font-size: .82re
 .edit-here { margin: 6px 0 14px }
 .edit-here .btn { font-size: .82rem; padding: 4px 10px }
 @media print { .edit-here { display: none } }
+
+/* Calculators: groups, search, coloured results, copy */
+.calc-tools { display: grid; gap: 10px; margin: 14px 0 6px }
+.calc-find { display: grid; gap: 4px; font-weight: 600; font-size: .9rem; max-width: 420px }
+.calc-jump { margin: 0 }
+.calc-group { margin-top: 26px; scroll-margin-top: 16px }
+.calc-group > h2 { font-size: 1.15rem; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line) }
+.calc { scroll-margin-top: 16px }
+.calc:target { outline: 3px solid var(--teal); outline-offset: 3px }
+.calc-out { display: flex; gap: 8px; align-items: stretch }
+.calc-out .result { flex: 1 }
+.calc-copy { align-self: center; font-size: .8rem; padding: 4px 10px }
+.result.ok { border-left: 4px solid var(--ok); background: var(--ok-bg) }
+.result.warn { border-left: 4px solid var(--warn); background: var(--warn-bg) }
+.result.bad { border-left: 4px solid var(--bad); background: var(--bad-bg) }
+.calc-used { font-size: .84rem; margin: 6px 0 0 }
+
+/* Pathways: library cards, progress, steps */
+.algo-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) }
+.algo-card { display: grid; gap: 6px; align-content: start }
+.algo-card > span:not(.row-m) { font-size: .88rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden }
+.crumbs { font-size: .86rem; margin-bottom: 6px }
+.algo-progress { font-size: .92rem; margin: 10px 0 }
+.step { scroll-margin-top: 16px }
+.step-n { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px }
+.step.past .step-n { opacity: .7 }
+.step-calc { margin: 6px 0 }
+.step-calc .btn { font-size: .84rem }
+@media print { .calc-copy, .calc-tools, .step-calc, .algo-actions { display: none } }

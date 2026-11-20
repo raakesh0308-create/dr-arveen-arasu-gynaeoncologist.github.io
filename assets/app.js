@@ -1020,56 +1020,138 @@ const refLink = id => {
   const l = (D.literature || []).find(x => x.id === id); if (l) return `<a href="https://doi.org/${esc(l.doi)}" target="_blank" rel="noopener">${esc(l.authors.split(",")[0])} ${esc(l.citation.match(/20\d\d/)?.[0] || "")} ↗</a>`;
   return esc(id);
 };
+/* Pathway library (no ?id=) and pathway runner (?id=A-…). */
+const algoDis = a => a.disease === "all" ? "All cancers" : dname(a.disease);
+function algoLibrary() {
+  const list = [...D.algorithms].sort((p, q) => DIS_ORDER(p.disease) - DIS_ORDER(q.disease));
+  const groups = [...new Set(list.map(algoDis))];
+  const card = a => { const qs = Object.values(a.nodes).filter(n => !n.end).length, ends = Object.values(a.nodes).filter(n => n.end).length;
+    return `<a class="tile algo-card" href="${url("algorithms")}?id=${encodeURIComponent(a.id)}">${badge(a.disease === "all" ? "all" : a.disease)}<b>${esc(a.title)}</b><span>${esc(a.entry)}</span>
+      <span class="row-m">${listPill(a.status)}<span class="muted">${qs} questions · ${ends} outcomes · ${esc(a.source)}</span></span></a>`; };
+  return `<div class="section-h"><div><span class="eyebrow">Clinical pathways</span><h1>Clinical pathways</h1></div><div class="toc"><a class="btn" href="${url("calculators")}">Calculators</a></div></div>
+  <p class="prose muted">Step-by-step work-up pathways. Each outcome links to the guideline recommendations it is built from. Where information is missing the pathway says so rather than guessing. Pathways do not choose treatment: the MDT decides.</p>
+  ${groups.map(g => `<section class="section"><h2>${esc(g)}</h2><div class="grid algo-grid">${list.filter(a => algoDis(a) === g).map(card).join("")}</div></section>`).join("")}`;
+}
 V.algorithms = () => {
-  const a = byId(D.algorithms, algoId) || D.algorithms[0];
+  if (!algoId || !byId(D.algorithms, algoId)) return algoLibrary();
+  const a = byId(D.algorithms, algoId);
   if (!algoPath.length || !a.nodes[algoPath[0]]) algoPath = ["start"];
-  const picker = D.algorithms.length > 1 ? `<div class="chips" role="group" aria-label="Choose a pathway">${[...D.algorithms].sort((p, q) => DIS_ORDER(p.disease) - DIS_ORDER(q.disease)).map(x => `<button class="chip" data-algo="${esc(x.id)}" aria-pressed="${x.id === a.id}">${esc(x.title.split(":")[0])}</button>`).join("")}</div>` : "";
+  const qn = algoPath.filter(k => !a.nodes[k].end).length;
   const steps = algoPath.map((k, i) => {
     const n = a.nodes[k]; const last = i === algoPath.length - 1;
-    if (n.end) return `<div class="step end ${esc(n.kind)}"><span class="eyebrow">${n.kind === "missing" ? "Missing information" : n.kind === "escalate" ? "Referral / escalation" : n.kind === "action" ? "Required investigation" : "Outcome"}</span><p>${esc(n.end)}</p>${n.refs?.length ? `<p class="muted" style="font-size:.84rem">Based on: ${n.refs.map(refLink).join(" · ")}</p>` : ""}</div>`;
+    if (n.end) return `<div class="step end ${esc(n.kind)}" ${last ? 'id="algo-last"' : ""}><span class="eyebrow">${n.kind === "missing" ? "Missing information" : n.kind === "escalate" ? "Referral / escalation" : n.kind === "action" ? "Required investigation" : "Outcome"}</span><p>${esc(n.end)}</p>${n.refs?.length ? `<p class="muted" style="font-size:.84rem">Based on: ${n.refs.map(refLink).join(" · ")}</p>` : ""}</div>`;
     const chosen = algoPath[i + 1];
-    return `<div class="step ${last ? "" : "past"}"><p><b>${esc(n.q)}</b></p><div class="opts">${n.options.map(([t, to]) => `<button class="btn" data-step="${i}" data-to="${to}" aria-pressed="${chosen === to}">${esc(t)}</button>`).join("")}</div></div>`;
+    const calc = n.calc && CALCS[n.calc] ? `<p class="step-calc"><a class="btn" href="${url("calculators")}#calc-${esc(n.calc)}" target="_blank" rel="noopener">Open the ${esc(CALCS[n.calc].title)} calculator ↗</a></p>` : "";
+    return `<div class="step ${last ? "" : "past"}" ${last ? 'id="algo-last"' : ""}><span class="step-n">Question ${algoPath.slice(0, i + 1).filter(x => !a.nodes[x].end).length}</span><p><b>${esc(n.q)}</b></p>${calc}<div class="opts">${n.options.map(([t, to]) => `<button class="btn" data-step="${i}" data-to="${esc(to)}" aria-pressed="${chosen === to}">${esc(t)}</button>`).join("")}</div></div>`;
   }).join("");
   const g = byId(D.guidelines, a.source);
-  return `<span class="eyebrow">Clinical algorithms</span>${picker}<h1>${esc(a.title)}</h1>
+  const others = D.algorithms.filter(x => x.id !== a.id && (x.disease === a.disease || x.disease === "all" || a.disease === "all"));
+  const done = !!a.nodes[algoPath[algoPath.length - 1]].end;
+  return `<nav class="crumbs" aria-label="Breadcrumb"><a href="${url("algorithms")}">Clinical pathways</a> › <span>${esc(algoDis(a))}</span></nav>
+  <span class="eyebrow">Clinical pathway · ${esc(algoDis(a))}</span><h1>${esc(a.title)}</h1>
   <div class="row-m">${statusPill(a.status)} <span>Main source: <a href="${url(`g.${a.source}`)}">${esc(a.source)}</a>${g ? ` (${esc(g.version || "")}, ${esc(g.status || "not verified")})` : ""}</span><span>Verification date: ${a.verifiedOn ? `${esc(a.verifiedOn)} (${esc(a.reviewer)})` : '<span class="na">Not yet verified</span>'}</span></div>
   ${a.sourceNote ? `<p class="muted" style="font-size:.86rem">${esc(a.sourceNote)}</p>` : ""}
   <p class="banner info">Educational pathway. Where information is missing it says so instead of forcing a conclusion. It does not select treatment: the MDT decides.</p>
   <p class="prose"><b>Entry criteria:</b> ${esc(a.entry)}</p>
-  <div class="algo" aria-live="polite">${steps}<div class="algo-actions"><button class="btn" id="algoreset">Start again</button>${algoPath.length > 1 ? `<button class="btn" data-print>Print this pathway</button>` : ""}</div></div>
+  <p class="algo-progress" aria-live="polite">${done ? `<b>Finished</b> after ${qn} question${qn === 1 ? "" : "s"}.` : `Question ${qn}. Choose an answer to continue.`}</p>
+  <div class="algo" aria-live="polite">${steps}<div class="algo-actions">${algoPath.length > 1 ? `<button class="btn" id="algoback">← Back one step</button>` : ""}<button class="btn" id="algoreset">Start again</button>${algoPath.length > 1 ? `<button class="btn" data-print>Print this pathway</button>` : ""}</div></div>
+  ${others.length ? `<section class="section no-print"><h2>Related pathways</h2><div class="chips">${others.map(x => `<a class="chip" href="${url("algorithms")}?id=${encodeURIComponent(x.id)}">${esc(x.title.split(":")[0])}</a>`).join("")}</div></section>` : ""}
   <p class="print-only muted">Printed ${new Date().toISOString().slice(0, 10)} from DR ARVEEN. Educational pathway, NOT VERIFIED unless stated above. The MDT decides treatment.</p>`;
 };
 
-V.calculators = () => `<span class="eyebrow">Calculator library</span><h1>Calculators</h1>
+/* ---------- calculators ----------
+   Each calculator: id, title, fields [name, label, min, max, options?], formula text, limitations, source, and the pathways that use it.
+   Options can be plain strings or [value, label] pairs. Results may be a string or { text, tone } (tone: ok | warn | bad). */
+const CALC_GROUPS = [
+  ["body", "Body size and kidney function", ["bsa", "bmi", "ibw", "crcl", "egfr"]],
+  ["dose", "Dose support", ["calvert", "bsadose", "doxo"]],
+  ["blood", "Blood results", ["anc", "ccalc"]],
+  ["markers", "Tumour markers and risk of malignancy", ["rmi", "roma", "ca125"]],
+  ["scores", "Pathology and prognostic scores", ["sedlis", "gtn"]]
+];
+const GTN_OPTS = {
+  age: [["0", "Under 40"], ["1", "40 or over"]],
+  preg: [["0", "Hydatidiform mole"], ["1", "Abortion"], ["2", "Term pregnancy"]],
+  interval: [["0", "Under 4"], ["1", "4 to under 7"], ["2", "7 to under 13"], ["4", "13 or more"]],
+  hcg: [["0", "Under 1,000"], ["1", "1,000 to under 10,000"], ["2", "10,000 to under 100,000"], ["4", "100,000 or more"]],
+  size: [["0", "Under 3 cm (or none)"], ["1", "3 to under 5 cm"], ["2", "5 cm or more"]],
+  site: [["0", "None or lung"], ["1", "Spleen or kidney"], ["2", "Gastrointestinal tract"], ["4", "Liver or brain"]],
+  nmet: [["0", "None"], ["1", "1 to 4"], ["2", "5 to 8"], ["4", "More than 8"]],
+  chemo: [["0", "None"], ["2", "Single drug"], ["4", "Two or more drugs"]]
+};
+const CALCS = {
+  bsa: { title: "Body surface area", fields: [["h", "Height (cm)", 100, 230], ["w", "Weight (kg)", 25, 250]], formula: "Mosteller: √(height cm × weight kg / 3600). Du Bois: 0.007184 × W^0.425 × H^0.725.", limits: "Adults. Some protocols cap BSA or use adjusted weight; not applied here." },
+  bmi: { title: "Body mass index", fields: [["h", "Height (cm)", 100, 230], ["w", "Weight (kg)", 25, 250]], formula: "Weight (kg) / height (m)². WHO adult categories; Asian populations may use lower action thresholds.", limits: "Adults only. Does not reflect body composition." },
+  ibw: { title: "Ideal and adjusted body weight", fields: [["sex", "Sex", null, null, ["female", "male"]], ["h", "Height (cm)", 120, 230], ["w", "Actual weight (kg)", 25, 250]], formula: "Ideal body weight (Devine): 45.5 kg (female) or 50 kg (male) + 2.3 kg per inch over 5 feet (152.4 cm). Adjusted body weight = IBW + 0.4 × (actual − IBW), used when actual weight is above IBW.", limits: "Devine is not validated below 152 cm. Which weight to use for creatinine clearance or dosing is set by the local protocol.", source: "Devine BJ. Drug Intell Clin Pharm 1974;8:650–5." },
+  crcl: { title: "Creatinine clearance (Cockcroft–Gault)", fields: [["age", "Age (years)", 18, 110], ["w", "Weight (kg)", 25, 250], ["cr", "Serum creatinine (µmol/L)", 20, 1500], ["sex", "Sex", null, null, ["female", "male"]]], formula: "((140 − age) × weight × K) / creatinine (µmol/L); K = 1.04 female, 1.23 male.", limits: "Unreliable with unstable renal function, extremes of body weight or low muscle mass. The weight used (actual, ideal, adjusted) varies by protocol: see Ideal and adjusted body weight." },
+  egfr: { title: "eGFR (CKD-EPI 2021, race-free)", fields: [["age", "Age (years)", 18, 110], ["cr", "Serum creatinine (µmol/L)", 20, 1500], ["sex", "Sex", null, null, ["female", "male"]]], formula: "142 × min(Scr/κ,1)^α × max(Scr/κ,1)^−1.200 × 0.9938^age × 1.012 if female. κ 0.7 F / 0.9 M; α −0.241 F / −0.302 M. Scr in mg/dL (µmol/L ÷ 88.4).", limits: "Indexed to 1.73 m². Do not substitute into the Calvert formula without de-indexing per protocol." },
+  calvert: { title: "Carboplatin dose support (Calvert)", fields: [["auc", "Target AUC (mg/mL·min)", 1, 8], ["gfr", "GFR (mL/min)", 5, 200]], formula: "Dose (mg) = target AUC × (GFR + 25).", limits: "Target AUC comes from the verified protocol only. Many protocols cap GFR (for example at 125 mL/min); no cap is applied here." },
+  bsadose: { title: "Dose from mg/m² (BSA-based)", fields: [["dose", "Protocol dose (mg/m²)", 0.1, 5000], ["bsa", "Body surface area (m²)", 0.5, 3.5]], formula: "Dose (mg) = protocol dose (mg/m²) × BSA (m²).", limits: "The mg/m² dose must come from the verified protocol, which also sets rounding, BSA capping and dose adjustments for organ function or toxicity. Not applied here." },
+  doxo: { title: "Cumulative anthracycline (doxorubicin) dose", fields: [["prev", "Doxorubicin already given (mg/m²)", 0, 1500], ["per", "Planned dose per cycle (mg/m²)", 0, 150], ["n", "Planned cycles", 0, 20]], formula: "Cumulative dose = previous + (dose per cycle × cycles). Risk of cardiomyopathy rises steeply above about 450–550 mg/m² of conventional doxorubicin.", limits: "Conventional doxorubicin only: pegylated liposomal doxorubicin, epirubicin and prior chest radiotherapy change the risk and are not converted here. Cardiac monitoring follows the protocol.", source: "Swain SM et al. Cancer 2003;97:2869–79 (dose-related heart failure)." },
+  anc: { title: "Absolute neutrophil count", fields: [["wbc", "White cell count (×10⁹/L)", 0, 300], ["n", "Neutrophils (%)", 0, 100], ["b", "Band forms (%, 0 if not reported)", 0, 100]], formula: "ANC (×10⁹/L) = white cells × (neutrophils % + bands %) / 100. Grading per CTCAE v5: grade 1 below normal to 1.5; grade 2 1.0 to under 1.5; grade 3 0.5 to under 1.0; grade 4 under 0.5.", limits: "Most analysers report the ANC directly; use the laboratory value when available. Whether to treat or delay follows the protocol." },
+  ccalc: { title: "Albumin-corrected calcium", fields: [["ca", "Total calcium (mmol/L)", 0.5, 5], ["alb", "Albumin (g/L)", 5, 60]], formula: "Corrected calcium (mmol/L) = calcium + 0.02 × (40 − albumin g/L). Reference range typically about 2.2–2.6 mmol/L.", limits: "Correction formulas vary by laboratory; ionised calcium is preferred when available or when albumin is very low. Relevant, for example, to hypercalcaemia in ovarian small cell carcinoma." },
+  rmi: { title: "Risk of Malignancy Index (RMI I)", fields: [["f", "Ultrasound features present (0–5)", 0, 5], ["meno", "Menopausal status", null, null, ["postmenopausal", "premenopausal"]], ["ca", "Serum CA125 (IU/mL)", 0, 100000]], formula: "RMI = U × M × CA125. U = 0 (no features), 1 (one feature) or 3 (two to five) of: multilocular cyst, solid areas, metastases, ascites, bilateral lesions. M = 3 postmenopausal, 1 premenopausal. NICE CG122: refer to the specialist MDT if RMI is 250 or more.", limits: "Adnexal masses only. Not valid in pregnancy. CA125 can rise in benign conditions (endometriosis, infection, menstruation). Formula and threshold checked against NICE CG122 Box 3.1 (PDF). 'Postmenopausal' means no period for more than a year, or over 50 after hysterectomy.", pathways: ["A-OV-SUSPECT"] },
+  roma: { title: "ROMA (Risk of Ovarian Malignancy Algorithm)", fields: [["he4", "HE4 (pmol/L)", 1, 10000], ["ca", "CA125 (U/mL)", 1, 100000], ["meno", "Menopausal status", null, null, ["premenopausal", "postmenopausal"]], ["assay", "Assay (sets the cut-off)", null, null, [["roche", "Roche Elecsys (11.4% / 29.9%)"], ["abbott", "Abbott ARCHITECT (7.4% / 25.3%)"]]]], formula: "Premenopausal PI = −12.0 + 2.38 × ln(HE4) + 0.0626 × ln(CA125). Postmenopausal PI = −8.09 + 1.04 × ln(HE4) + 0.732 × ln(CA125). ROMA (%) = exp(PI) / (1 + exp(PI)) × 100. High risk at or above the assay's cut-off (premenopausal / postmenopausal).", limits: "For women with a pelvic mass already planned for surgery; not a screening test. Cut-offs are assay-specific: use the one your laboratory reports. HE4 rises with renal impairment and age. Not part of NICE CG122.", source: "Moore RG et al. Gynecol Oncol 2009;112:40–6; manufacturer cut-offs." },
+  ca125: { title: "CA125 change (GCIG response)", fields: [["base", "Pre-treatment CA125 (U/mL)", 0, 100000], ["now", "Current CA125 (U/mL)", 0, 100000], ["uln", "Upper limit of normal (U/mL)", 1, 200]], formula: "Change (%) = (current − pre-treatment) / pre-treatment × 100. GCIG CA125 response: at least a 50% fall from a pre-treatment value of at least twice the upper limit of normal, confirmed and maintained for at least 28 days.", limits: "Response needs a confirmatory sample at least 28 days later and is not assessable within 28 days of intraperitoneal therapy or after mouse antibodies. Progression by CA125 has separate GCIG criteria. Interpret with imaging and clinical findings.", source: "Rustin GJS et al. Int J Gynecol Cancer 2011;21:419–23 (GCIG definitions)." },
+  sedlis: { title: "Cervical cancer: Sedlis intermediate-risk criteria", fields: [["lvsi", "Lymphovascular space invasion", null, null, [["pos", "Present"], ["neg", "Absent"]]], ["depth", "Depth of stromal invasion", null, null, [["deep", "Deep third"], ["middle", "Middle third"], ["sup", "Superficial third"]]], ["size", "Clinical tumour size (cm)", 0, 15]], formula: "Meets the criteria if: LVSI present + deep third (any size); LVSI present + middle third + 2 cm or more; LVSI present + superficial third + 5 cm or more; LVSI absent + middle or deep third + 4 cm or more.", limits: "Applies to node-negative disease with clear margins and parametria after radical hysterectomy (otherwise high risk). GOG-92 trial criteria; ESGO 2023 frames intermediate risk by the same factors and lets the MDT choose radiotherapy or observation.", source: "Sedlis A et al. Gynecol Oncol 1999;73:177–83; ESGO/ESTRO/ESP 2023 (R-CX-E09).", pathways: ["A-CX-ADJ"] },
+  gtn: { title: "GTN prognostic score (FIGO 2000 / WHO)", fields: [["age", "Age", null, null, GTN_OPTS.age], ["preg", "Antecedent pregnancy", null, null, GTN_OPTS.preg], ["interval", "Months from index pregnancy", null, null, GTN_OPTS.interval], ["hcg", "Pre-treatment serum hCG (IU/L)", null, null, GTN_OPTS.hcg], ["size", "Largest tumour, including uterus", null, null, GTN_OPTS.size], ["site", "Site of metastases", null, null, GTN_OPTS.site], ["nmet", "Number of metastases", null, null, GTN_OPTS.nmet], ["chemo", "Previous failed chemotherapy", null, null, GTN_OPTS.chemo]], formula: "Sum of the eight item scores. 0–6: low risk (usually single-agent chemotherapy). 7 or more: high risk (multi-agent chemotherapy). 13 or more: ultra-high risk.", limits: "Score with the anatomical FIGO stage, written as stage:score (for example III:4). Not used for placental-site or epithelioid trophoblastic tumours. Treatment is decided by a specialist GTD centre.", source: "FIGO Oncology Committee 2002 (FIGO 2000 staging and risk-factor scoring); FIGO Cancer Report 2021." }
+};
+const CALC_PATHS = Object.fromEntries(Object.entries(CALCS).flatMap(([id, c]) => (c.pathways || []).map(p => [p + ":" + id, 1])));
+V.calculators = () => `<div class="section-h"><div><span class="eyebrow">Calculator library</span><h1>Calculators</h1></div>
+    <div class="toc"><a class="btn" href="${url("algorithms")}">Clinical pathways</a></div></div>
   <p class="banner bad">Calculation support only. Results are not a prescription. Rounding, capping and the choice of renal-function estimate follow your institution's protocol, which this tool does not apply.</p>
-  <div class="calcs">
-    ${calcCard("bsa", "Body surface area", [["h", "Height (cm)", 100, 230], ["w", "Weight (kg)", 25, 250]], "Mosteller: √(height cm × weight kg / 3600). Du Bois: 0.007184 × W^0.425 × H^0.725.", "Adults. Some protocols cap BSA or use adjusted weight; not applied here.")}
-    ${calcCard("bmi", "Body mass index", [["h", "Height (cm)", 100, 230], ["w", "Weight (kg)", 25, 250]], "Weight (kg) / height (m)². WHO adult categories; Asian populations may use lower action thresholds.", "Adults only. Does not reflect body composition.")}
-    ${calcCard("crcl", "Creatinine clearance (Cockcroft–Gault)", [["age", "Age (years)", 18, 110], ["w", "Weight (kg)", 25, 250], ["cr", "Serum creatinine (µmol/L)", 20, 1500], ["sex", "Sex", null, null, ["female", "male"]]], "((140 − age) × weight × K) / creatinine (µmol/L); K = 1.04 female, 1.23 male.", "Unreliable with unstable renal function, extremes of body weight or low muscle mass. The weight used (actual, ideal, adjusted) varies by protocol.")}
-    ${calcCard("egfr", "eGFR (CKD-EPI 2021, race-free)", [["age", "Age (years)", 18, 110], ["cr", "Serum creatinine (µmol/L)", 20, 1500], ["sex", "Sex", null, null, ["female", "male"]]], "142 × min(Scr/κ,1)^α × max(Scr/κ,1)^−1.200 × 0.9938^age × 1.012 if female. κ 0.7 F / 0.9 M; α −0.241 F / −0.302 M. Scr in mg/dL (µmol/L ÷ 88.4).", "Indexed to 1.73 m². Do not substitute into the Calvert formula without de-indexing per protocol.")}
-    ${calcCard("rmi", "Risk of Malignancy Index (RMI I)", [["f", "Ultrasound features present (0–5)", 0, 5], ["meno", "Menopausal status", null, null, ["postmenopausal", "premenopausal"]], ["ca", "Serum CA125 (IU/mL)", 0, 100000]], "RMI = U × M × CA125. U = 0 (no features), 1 (one feature) or 3 (two to five) of: multilocular cyst, solid areas, metastases, ascites, bilateral lesions. M = 3 postmenopausal, 1 premenopausal. NICE CG122: refer to the specialist MDT if RMI is 250 or more.", "Adnexal masses only. Not valid in pregnancy. CA125 can rise in benign conditions (endometriosis, infection, menstruation). Formula and threshold checked against NICE CG122 Box 3.1 (PDF). 'Postmenopausal' means no period for more than a year, or over 50 after hysterectomy.")}
-    ${calcCard("calvert", "Carboplatin dose support (Calvert)", [["auc", "Target AUC (mg/mL·min)", 1, 8], ["gfr", "GFR (mL/min)", 5, 200]], "Dose (mg) = target AUC × (GFR + 25).", "Target AUC comes from the verified protocol only. Many protocols cap GFR (for example at 125 mL/min); no cap is applied here.")}
-  </div>`;
-function calcCard(id, title, fields, formula, limits) {
-  return `<form class="calc" data-calc="${id}"><h3>${title}</h3><div class="fields">${fields.map(([k, l, mn, mx, opts]) => opts
-    ? `<label for="${id}-${k}">${l}<select id="${id}-${k}" name="${k}">${opts.map(o => `<option>${o}</option>`).join("")}</select></label>`
-    : `<label for="${id}-${k}">${l}<input id="${id}-${k}" name="${k}" type="number" step="any" min="${mn}" max="${mx}" inputmode="decimal"></label>`).join("")}</div>
-    <div class="result" id="${id}-out" aria-live="polite">Enter values</div>
-    <details><summary>Formula, population and limitations</summary><p><b>Formula:</b> ${esc(formula)}</p><p><b>Limitations:</b> ${esc(limits)}</p><p><b>Testing status:</b> unit-tested formula; not clinically validated in this build.</p></details></form>`;
+  <div class="calc-tools"><label class="calc-find">Find a calculator<input type="search" id="calcq" placeholder="e.g. ROMA, carboplatin, calcium" autocomplete="off"></label>
+    <nav class="chips calc-jump" aria-label="Calculator groups">${CALC_GROUPS.map(([g, t, ids]) => `<a class="chip" href="#cg-${g}">${esc(t)} <span class="muted">${ids.length}</span></a>`).join("")}</nav></div>
+  ${CALC_GROUPS.map(([g, t, ids]) => `<section class="calc-group" id="cg-${g}"><h2>${esc(t)}</h2><div class="calcs">${ids.map(calcCard).join("")}</div></section>`).join("")}
+  <p class="muted calc-none" id="calc-none" hidden>No calculator matches that search.</p>`;
+function calcCard(id) {
+  const c = CALCS[id];
+  const opt = o => Array.isArray(o) ? `<option value="${esc(o[0])}">${esc(o[1])}</option>` : `<option>${esc(o)}</option>`;
+  const paths = (c.pathways || []).map(p => byId(D.algorithms || [], p)).filter(Boolean);
+  return `<form class="calc" id="calc-${id}" data-calc="${id}"><h3>${esc(c.title)}</h3><div class="fields">${c.fields.map(([k, l, mn, mx, opts]) => opts
+    ? `<label for="${id}-${k}">${esc(l)}<select id="${id}-${k}" name="${k}">${opts.map(opt).join("")}</select></label>`
+    : `<label for="${id}-${k}">${esc(l)}<input id="${id}-${k}" name="${k}" type="number" step="any" min="${mn}" max="${mx}" inputmode="decimal"></label>`).join("")}</div>
+    <div class="calc-out"><div class="result" id="${id}-out" aria-live="polite">${c.fields.every(f => f[4]) ? "Choose the options above" : "Enter values"}</div><button class="btn calc-copy" type="button" data-copy="${id}" hidden>Copy</button></div>
+    ${paths.length ? `<p class="calc-used">Used in: ${paths.map(a => `<a href="${url("algorithms")}?id=${encodeURIComponent(a.id)}">${esc(a.title.split(":")[0])}</a>`).join(" · ")}</p>` : ""}
+    <details><summary>Formula, population and limitations</summary><p><b>Formula:</b> ${esc(c.formula)}</p><p><b>Limitations:</b> ${esc(c.limits)}</p>${c.source ? `<p><b>Source:</b> ${esc(c.source)}</p>` : ""}<p><b>Testing status:</b> unit-tested formula; not clinically validated in this build.</p></details></form>`;
 }
+// @test:CALC — the formulas (pure functions, unit-tested in tests/calculators.test.mjs)
 const CALC = {
   bsa: v => { const m = Math.sqrt(v.h * v.w / 3600), d = 0.007184 * Math.pow(v.w, .425) * Math.pow(v.h, .725); return `Mosteller ${m.toFixed(2)} m² · Du Bois ${d.toFixed(2)} m²`; },
   bmi: v => { const b = v.w / Math.pow(v.h / 100, 2); return `${b.toFixed(1)} kg/m²`; },
+  ibw: v => { const inch = v.h / 2.54 - 60, ibw = (v.sex === "male" ? 50 : 45.5) + 2.3 * inch, adj = v.w > ibw ? ibw + 0.4 * (v.w - ibw) : null;
+    const pct = v.w / ibw * 100; return { text: `Ideal ${ibw.toFixed(1)} kg · ${adj ? `adjusted ${adj.toFixed(1)} kg` : "adjusted not needed (actual ≤ ideal)"} · actual is ${pct.toFixed(0)}% of ideal${v.h < 152.4 ? " · height under 152 cm: Devine not validated" : ""}`, tone: v.h < 152.4 ? "warn" : "" }; },
   crcl: v => { const k = v.sex === "female" ? 1.04 : 1.23; return `${((140 - v.age) * v.w * k / v.cr).toFixed(0)} mL/min`; },
   egfr: v => { const f = v.sex === "female", s = v.cr / 88.4, k = f ? .7 : .9, a = f ? -.241 : -.302; const e = 142 * Math.pow(Math.min(s / k, 1), a) * Math.pow(Math.max(s / k, 1), -1.2) * Math.pow(.9938, v.age) * (f ? 1.012 : 1); return `${e.toFixed(0)} mL/min/1.73 m²`; },
   calvert: v => `${(v.auc * (v.gfr + 25)).toFixed(0)} mg (unrounded, uncapped)`,
-  rmi: v => { if (!Number.isInteger(v.f)) return "Features must be a whole number from 0 to 5."; const u = v.f === 0 ? 0 : v.f === 1 ? 1 : 3, m = v.meno === "postmenopausal" ? 3 : 1, r = u * m * v.ca; return `RMI ${r.toFixed(0)} (U ${u} × M ${m} × CA125 ${v.ca}) — ${r >= 250 ? "250 or more: refer to the specialist MDT (NICE CG122)" : "below 250"}`; }
+  bsadose: v => `${(v.dose * v.bsa).toFixed(1)} mg (unrounded; BSA cap and adjustments per protocol)`,
+  doxo: v => { const tot = v.prev + v.per * v.n; return { text: `Cumulative ${tot.toFixed(0)} mg/m²${tot >= 550 ? " — above 550 mg/m²: high cardiomyopathy risk" : tot >= 450 ? " — 450 mg/m² or more: cardiomyopathy risk rises steeply" : ""}`, tone: tot >= 550 ? "bad" : tot >= 450 ? "warn" : "ok" }; },
+  anc: v => { if (v.n + v.b > 100) return { text: "Neutrophils plus bands cannot exceed 100%.", tone: "bad" }; const a = v.wbc * (v.n + v.b) / 100;
+    const g = a < .5 ? "grade 4 neutropenia" : a < 1 ? "grade 3 neutropenia" : a < 1.5 ? "grade 2 neutropenia" : a < 2 ? "possible grade 1 (check the laboratory's lower limit)" : "not neutropenic";
+    return { text: `ANC ${a.toFixed(2)} ×10⁹/L — ${g}`, tone: a < 1 ? "bad" : a < 1.5 ? "warn" : "ok" }; },
+  ccalc: v => { const c = v.ca + 0.02 * (40 - v.alb); return { text: `Corrected calcium ${c.toFixed(2)} mmol/L${c > 2.6 ? " — above the usual range" : c < 2.2 ? " — below the usual range" : ""}`, tone: c >= 3 ? "bad" : c > 2.6 || c < 2.2 ? "warn" : "ok" }; },
+  rmi: v => { if (!Number.isInteger(v.f)) return "Features must be a whole number from 0 to 5."; const u = v.f === 0 ? 0 : v.f === 1 ? 1 : 3, m = v.meno === "postmenopausal" ? 3 : 1, r = u * m * v.ca; return { text: `RMI ${r.toFixed(0)} (U ${u} × M ${m} × CA125 ${v.ca}) — ${r >= 250 ? "250 or more: refer to the specialist MDT (NICE CG122)" : "below 250"}`, tone: r >= 250 ? "bad" : "ok" }; },
+  roma: v => { const pre = v.meno === "premenopausal"; const pi = pre ? -12 + 2.38 * Math.log(v.he4) + 0.0626 * Math.log(v.ca) : -8.09 + 1.04 * Math.log(v.he4) + 0.732 * Math.log(v.ca);
+    const r = Math.exp(pi) / (1 + Math.exp(pi)) * 100, cut = v.assay === "abbott" ? (pre ? 7.4 : 25.3) : (pre ? 11.4 : 29.9);
+    return { text: `ROMA ${r.toFixed(1)}% — ${r >= cut ? "high" : "low"} risk (cut-off ${cut}% for ${pre ? "premenopausal" : "postmenopausal"} women, ${v.assay === "abbott" ? "Abbott" : "Roche"} assay)`, tone: r >= cut ? "bad" : "ok" }; },
+  ca125: v => { if (v.base <= 0) return { text: "Pre-treatment CA125 must be above 0.", tone: "bad" }; const ch = (v.now - v.base) / v.base * 100, eligible = v.base >= 2 * v.uln;
+    const resp = ch <= -50 && eligible; return { text: `${ch <= 0 ? "Fall" : "Rise"} of ${Math.abs(ch).toFixed(0)}% — ${!eligible ? "pre-treatment value is under 2 × the upper limit of normal, so GCIG CA125 response cannot be assessed" : resp ? "meets the 50% fall for GCIG CA125 response if confirmed and maintained for 28 days or more" : "does not meet the 50% fall for GCIG CA125 response"}`, tone: !eligible ? "warn" : resp ? "ok" : "" }; },
+  sedlis: v => { const s = v.size, pos = v.lvsi === "pos";
+    const meets = pos ? (v.depth === "deep" || (v.depth === "middle" && s >= 2) || (v.depth === "sup" && s >= 5)) : ((v.depth === "middle" || v.depth === "deep") && s >= 4);
+    return { text: meets ? "Meets the Sedlis intermediate-risk criteria: adjuvant radiotherapy to be considered (observation is an alternative) — MDT decision" : "Does not meet the Sedlis criteria", tone: meets ? "warn" : "ok" }; },
+  gtn: v => { const tot = ["age", "preg", "interval", "hcg", "size", "site", "nmet", "chemo"].reduce((a, k) => a + Number(v[k] || 0), 0);
+    return { text: `Score ${tot} — ${tot >= 13 ? "ultra-high risk (13 or more)" : tot >= 7 ? "high risk (7 or more)" : "low risk (0–6)"}. Report as FIGO stage:score.`, tone: tot >= 7 ? "bad" : "ok" }; }
 };
+// @end
 function bindCalcs() {
+  const q = $("#calcq");
+  if (q) q.oninput = () => { const s = q.value.trim().toLowerCase(); let shown = 0;
+    app.querySelectorAll(".calc-group").forEach(g => { let n = 0; g.querySelectorAll(".calc").forEach(c => { const hit = !s || c.textContent.toLowerCase().includes(s); c.hidden = !hit; n += hit; }); g.hidden = !n; shown += n; });
+    $("#calc-none").hidden = shown > 0; };
   app.querySelectorAll("[data-calc]").forEach(f => {
     f.onsubmit = e => e.preventDefault();
-    f.oninput = () => {
-      const id = f.dataset.calc, out = $("#" + id + "-out"), v = {}; let err = "";
+    const run = () => {
+      const id = f.dataset.calc, out = $("#" + id + "-out"), copy = f.querySelector(".calc-copy"), v = {}; let err = "";
       f.querySelectorAll("input,select").forEach(i => {
         if (i.tagName === "SELECT") { v[i.name] = i.value; return; }
         if (i.value === "") { err = err || "Enter all values."; return; }
@@ -1077,9 +1159,16 @@ function bindCalcs() {
         if (!isFinite(n) || n < +i.min || n > +i.max) err = `${i.labels[0].firstChild.textContent.trim()} must be between ${i.min} and ${i.max}.`;
         v[i.name] = n;
       });
-      out.className = "result" + (err && err !== "Enter all values." ? " err" : "");
-      out.textContent = err || CALC[id](v);
+      const r = err ? { text: err, tone: err === "Enter all values." ? "" : "bad" } : (r0 => typeof r0 === "string" ? { text: r0, tone: "" } : r0)(CALC[id](v));
+      out.className = "result" + (r.tone ? " " + (r.tone === "bad" && err ? "err" : r.tone) : "");
+      out.textContent = r.text;
+      if (copy) copy.hidden = !!err;
     };
+    f.oninput = run; f.onchange = run;
+    if ([...f.querySelectorAll("input")].length === 0) run(); // all-choice calculators (e.g. GTN score) show a result straight away
+    const cp = f.querySelector(".calc-copy");
+    if (cp) cp.onclick = async () => { const txt = CALCS[f.dataset.calc].title + ": " + $("#" + f.dataset.calc + "-out").textContent + " (DR ARVEEN calculator, calculation support only)";
+      try { await navigator.clipboard.writeText(txt); cp.textContent = "Copied"; setTimeout(() => cp.textContent = "Copy", 1500); } catch { cp.textContent = "Copy failed"; } };
   });
 }
 
@@ -1387,7 +1476,7 @@ function pageExtras(base, arg) {
   const pe = state.pageEdits?.[base];
   if (pe && (pe.image?.url || pe.intro)) out.push(`<div class="page-extra">${photo(pe.image)}${pe.intro ? `<p class="prose page-intro">${fmt(pe.intro)}</p>` : ""}</div>`);
   const coll = { g: "guidelines", d: "diseases", s: "staging", p: "protocols", dr: "drugs", t: "trials", algorithms: "algorithms" }[base];
-  const rec = coll && (base === "algorithms" ? (byId(D.algorithms || [], algoId) || (D.algorithms || [])[0]) : byId(D[coll] || [], arg));
+  const rec = coll && (base === "algorithms" ? byId(D.algorithms || [], algoId) : byId(D[coll] || [], arg));
   const img = rec && rec[IMG_FIELD(coll)];
   if (img?.url && !app.innerHTML.includes(img.url)) out.push(photo(img));
   if (isEditor() && !["cms", "review", "adminws", "accounts", "security", "login", "register", "reset"].includes(base)) {
@@ -1812,8 +1901,10 @@ function render() {
   app.querySelectorAll("[data-td]").forEach(b => b.onclick = () => { state.filters.trialDisease = b.dataset.td; render(); });
   app.querySelectorAll("[data-saud]").forEach(b => b.onclick = () => { state.filters.saud = b.dataset.saud; render(); });
   app.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => { let s = store.get("subs", []); s = s.includes(b.dataset.sub) ? s.filter(x => x !== b.dataset.sub) : [...s, b.dataset.sub]; store.set("subs", s); b.setAttribute("aria-pressed", s.includes(b.dataset.sub)); });
-  app.querySelectorAll("[data-step]").forEach(b => b.onclick = () => { algoPath = algoPath.slice(0, +b.dataset.step + 1).concat(b.dataset.to); render(); });
+  const toLast = () => requestAnimationFrame(() => { const l = $("#algo-last"); if (l) { l.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); l.querySelector("button, a")?.focus({ preventScroll: true }); } });
+  app.querySelectorAll("[data-step]").forEach(b => b.onclick = () => { algoPath = algoPath.slice(0, +b.dataset.step + 1).concat(b.dataset.to); render(); toLast(); });
   const ar = $("#algoreset"); if (ar) ar.onclick = () => { algoPath = []; render(); };
+  const ab = $("#algoback"); if (ab) ab.onclick = () => { algoPath = algoPath.slice(0, -1); render(); toLast(); };
   app.querySelectorAll("[data-algo]").forEach(b => b.onclick = () => { algoId = b.dataset.algo; algoPath = []; history.replaceState(null, "", "?id=" + encodeURIComponent(algoId)); render(); });
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
   const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
