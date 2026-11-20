@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Picture upload test</title><meta name="robots" content="noindex"></head>
+<body>
+<!-- L4: serve the repository locally and open /tests/upload.browser.html. Checks that non-pictures are refused by
+     their content (not their name) and that pictures are redrawn, which removes hidden metadata such as GPS. -->
+<pre id="out">Running…</pre>
+<script>
+(async () => {
+  const src = await (await fetch("../assets/app.js")).text();
+  const block = src.match(/\/\/ @test:cleanPic[^\n]*\n([\s\S]*?)\/\/ @end/)[1];
+  const { cleanPic } = new Function(block + "\nreturn { cleanPic };")();
+  const r = [];
+  const expectReject = async (label, file) => { try { await cleanPic(file); r.push("FAIL " + label); } catch (e) { r.push("PASS " + label + " (" + e.message + ")"); } };
+  await expectReject("HTML renamed to .jpg is refused", new File(["<html><script>alert(1)<\/script></html>"], "photo.jpg", { type: "image/jpeg" }));
+  await expectReject("SVG is refused", new File(['<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)<\/script></svg>'], "a.png", { type: "image/png" }));
+  await expectReject("Empty file is refused", new File([], "a.webp", { type: "image/webp" }));
+  // A real JPEG with a fake EXIF/GPS block inserted after the start marker
+  const c = document.createElement("canvas"); c.width = 3000; c.height = 1000; const g = c.getContext("2d"); g.fillStyle = "#0e5e6f"; g.fillRect(0, 0, 3000, 1000);
+  const jpg = new Uint8Array(await (await new Promise(res => c.toBlob(res, "image/jpeg", 0.9))).arrayBuffer());
+  const marker = new TextEncoder().encode("Exif\0\0GPSLatitude 3.1390 N SECRET-LOCATION");
+  const app1 = new Uint8Array([0xFF, 0xE1, 0, marker.length + 2, ...marker]);
+  const withExif = new Uint8Array([...jpg.slice(0, 2), ...app1, ...jpg.slice(2)]);
+  const out = await cleanPic(new File([withExif], "clinic.jpg", { type: "image/jpeg" }));
+  const text = new TextDecoder("latin1").decode(new Uint8Array(await out.blob.arrayBuffer()));
+  r.push((text.includes("SECRET-LOCATION") ? "FAIL" : "PASS") + " hidden location data removed");
+  const bmp = await createImageBitmap(out.blob);
+  r.push((bmp.width === 2400 && bmp.height === 800 ? "PASS" : "FAIL") + ` large picture resized to ${bmp.width}×${bmp.height}`);
+  r.push((out.type === "image/jpeg" ? "PASS" : "FAIL") + " type kept as JPEG");
+  const fails = r.filter(x => x.startsWith("FAIL")).length;
+  document.getElementById("out").textContent = (fails ? fails + " FAILED" : "ALL PASSED") + "\n\n" + r.join("\n");
+  document.title = fails ? "FAILED" : "ALL PASSED";
+})();
+</script>
+</body></html>

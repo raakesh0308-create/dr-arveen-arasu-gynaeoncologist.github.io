@@ -1629,7 +1629,8 @@ function bindTool() {
 V.tracker = () => {
   const rows = store.get("fx", []);
   return `<div class="patient detail"><span class="eyebrow">Shared decision-making</span><h1>Side-effect tracker</h1>
-  <div class="no-print"><button class="btn" type="button" data-print>Print my entries</button></div>
+  <div class="no-print toc"><button class="btn" type="button" data-print>Print my entries</button>${rows.length ? `<button class="btn" type="button" id="fx-clear">Delete all entries from this device</button>` : ""}</div>
+  <p class="muted no-print" style="font-size:.86rem">Your entries are kept only in this browser on this device. On a shared or family computer, delete them when you have finished.</p>
   <p class="banner info">Record how you feel so you can describe changes accurately to your team. This does not assess how serious a symptom is. If you are worried, contact your treating team. In an emergency call 999.</p>
   <form class="calc" id="fxf"><div class="fields">
     <label for="fx-date">Date<input id="fx-date" type="text" value="${new Date().toISOString().slice(0, 10)}"></label>
@@ -1641,6 +1642,7 @@ V.tracker = () => {
 function bindTracker() {
   const f = $("#fxf"); if (!f) return;
   f.onsubmit = e => { e.preventDefault(); if (!$("#fx-sym").value.trim()) { $("#fx-sym").focus(); return; } const r = store.get("fx", []); r.unshift({ d: $("#fx-date").value, s: $("#fx-sym").value, v: $("#fx-sev").value, n: $("#fx-note").value }); store.set("fx", r); render(); };
+  const fc = $("#fx-clear"); if (fc) fc.onclick = () => { if (confirm("Delete all your side-effect entries from this device? This cannot be undone.")) { store.set("fx", []); render(); } };
   app.querySelectorAll("[data-fxdel]").forEach(b => b.onclick = () => { const r = store.get("fx", []); r.splice(+b.dataset.fxdel, 1); store.set("fx", r); render(); });
 }
 V.glossary = () => `<div class="patient detail"><span class="eyebrow">Medical glossary</span><h1>Medical words explained</h1>${transBanner()}
@@ -2132,11 +2134,32 @@ const imgSlot = (img, legend = "Picture") => `<fieldset><legend>${esc(legend)}</
     <label>Credit or caption (optional)<input type="text" id="img-credit" value="${esc(img?.credit || "")}"></label>
     <div class="toc"><button class="btn" type="button" id="img-remove">Remove picture</button></div>
     <p class="muted" style="font-size:.84rem">Only upload pictures you own or have permission to use. Get written consent from anyone identifiable, and never show patient information. Clinical images must be fully de-identified.</p></div></div></fieldset>`;
+/* L4: check the real file type from its first bytes (not the name), then redraw the picture on a canvas. Redrawing
+   removes hidden metadata such as GPS location and camera details, and limits the size to 2400 px. */
+// @test:cleanPic
+async function sniffImage(file) {
+  const b = new Uint8Array(await file.slice(0, 12).arrayBuffer()), s = (i, j) => String.fromCharCode(...b.slice(i, j));
+  if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return "image/jpeg";
+  if (b[0] === 0x89 && s(1, 4) === "PNG") return "image/png";
+  if (s(0, 4) === "RIFF" && s(8, 12) === "WEBP") return "image/webp";
+  return null;
+}
+async function cleanPic(file) {
+  const type = await sniffImage(file);
+  if (!type) throw new Error("That file isn't a JPEG, PNG or WebP picture.");
+  if (file.size > 15 * 1024 * 1024) throw new Error("That picture is over 15 MB. Choose a smaller one.");
+  const bmp = await createImageBitmap(file), k = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height); bmp.close?.();
+  const blob = await new Promise((res, rej) => c.toBlob(x => x ? res(x) : rej(new Error("The picture couldn't be processed.")), type, 0.88));
+  return { blob, type: blob.type || type };
+}
+// @end
 async function uploadPic(file, folder) {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Choose a JPEG, PNG or WebP picture.");
-  if (file.size > 3 * 1024 * 1024) throw new Error("That picture is over 3 MB. Resize it and try again.");
-  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${file.type.split("/")[1].replace("jpeg", "jpg")}`;
-  const { error } = await sb.storage.from("site-images").upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+  const { blob, type } = await cleanPic(file);
+  if (blob.size > 3 * 1024 * 1024) throw new Error("That picture is still over 3 MB after resizing. Use a smaller or simpler picture.");
+  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${type.split("/")[1].replace("jpeg", "jpg")}`;
+  const { error } = await sb.storage.from("site-images").upload(path, blob, { cacheControl: "3600", upsert: false, contentType: type });
   if (error) throw new Error("The picture couldn't be uploaded: " + error.message);
   return sb.storage.from("site-images").getPublicUrl(path).data.publicUrl;
 }
