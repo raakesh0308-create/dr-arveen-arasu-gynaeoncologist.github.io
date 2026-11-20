@@ -1,8 +1,104 @@
-# DR ARVEEN — Security audit (Phases 1–2: findings only)
+# DR ARVEEN — Security audit and hardening report
 
-Audit date: 2026-11-19 · Branch: `security-hardening` · Scope: this repository (`dr-arveen-site`) and the Supabase SQL it contains.
+Audit date: 2026-11-19 · Fixes: 2026-11-19/20 · Branch: `security-hardening` · Scope: this repository (`dr-arveen-site`) and the Supabase SQL it contains.
 Method: code reading plus local checks only. No scans, attacks or load tests were run against the live site or the live Supabase project.
-No code has been changed yet. Phase 3 starts only after your approval.
+
+---
+
+## Phase 4 — Final status (read this first)
+
+### Decisions recorded
+- **M4: draft patient leaflets stay public.** This was the owner's decision on 2026-11-19, so it is an accepted risk. Each page shows its review status.
+- **Professional content stays editable by editors and admins.** H3 was therefore fixed with database rules that apply to every website account, instead of by removing editor access.
+
+### What was fixed
+Each fix is a separate commit on `security-hardening`.
+
+| Finding | Status | What changed | Proof |
+|---|---|---|---|
+| **H1** Staff powers without two-step | ⏳ **Needs you** | The rule is ready in `upgrade-7-staff-2fa.sql`. Every staff account must set up two-step sign-in first, then you run it. | SQL test 14 warns until it's on |
+| **H2** Unsafe `next` after sign-in | ✅ Fixed (`54823a6`) | One strict helper accepts only `page.html?…#…` on this site | `tests/safe-next.test.mjs`: 18 attack strings refused |
+| **H3** Forged sign-offs and dose verification | ✅ Fixed in code (`74173d4`); **you must run the SQL** | `upgrade-10-hardening.sql`: database triggers refuse any change to status, reviewer, review dates, dose status or HTML from any website account, in both `site_edits` and `pro_content`. The browser also strips them. | SQL tests 5–10; `tests/clean-edit.test.mjs`; browser check that a forged "PHARMACIST VERIFIED" is ignored |
+| **M1** Stored script through editor content | ✅ Fixed (`9158be2`, plus the id rule in `74173d4`) | Note HTML passes an allow-list cleaner; record ids are limited to safe characters (database and browser); labels escaped | `tests/clean-html.browser.html`: 14 attack cases; `tests/safe-id.test.mjs`; all 6 note chapters, 24 tables and 76 sections still render |
+| **M2** No CSP, no integrity check on CDN script | ✅ Fixed (`70fa339`) | CSP meta tag on all 49 pages; SRI sha384 on supabase-js, checked against jsDelivr's published hash; no inline scripts; strict referrer policy. The deploy now fails if any of this is missing. | `tools/check.mjs`; pages load with no console errors |
+| **M3** No audit of professional content | ✅ Fixed in code (`74173d4`); **run the SQL** | `pro_content_audit` stores who changed what, with the previous version | SQL test 11 |
+| **M4** Draft patient content public | ➖ Accepted | Owner decision | — |
+| **M5** Report and sign-up flooding | ✅ Reports fixed in code (`72e05bc`); **run the SQL**. ⏳ Sign-up CAPTCHA needs you | Limits of 5 reports per hour per address and 100 per hour in total; only a salted fingerprint of the address is stored | SQL test 15 |
+| **M6** Clickjacking | ✅ Fixed (`8e7a495`) | Pages hide themselves and the app refuses to run inside another site's frame | `tests/frame.browser.html` (sandboxed attacker frame) |
+| **M7** Old content in Git history | ⏳ Needs you | Decide whether to create a fresh repository | — |
+| **L1** Self-declared "Pharmacist" | ⏳ Process | Admins verify profession and registration before approving | — |
+| **L2** Weak server password policy | ⏳ Needs you | Supabase dashboard setting (checklist below) | — |
+| **L3** Staff names on public rows; browser-chosen scope | ✅ Fixed in code (`74173d4`); **run the SQL** | Anonymous visitors can read only public columns; the database sets the scope | SQL tests 5 and 13 |
+| **L4** Picture metadata, type by name | ✅ Fixed (`45814b0`) | Type checked from the file's first bytes; pictures redrawn, which removes GPS and camera data; maximum 2400 px | `tests/upload.browser.html` |
+| **L5** Old library; Actions pinned by tag | ✅ Actions pinned to SHAs (`de058e0`). ⏳ Library update open | supabase-js stays at 2.45.4 with SRI. The current release is 2.119.2; updating it needs its own regression test. | — |
+| **L6** Backup contains personal data | ➖ Unchanged | The warning is shown; keep the file encrypted (checklist) | — |
+| **L7** Health notes on shared devices | ✅ Fixed (`45814b0`) | "Delete all entries from this device" on the tracker, plus a shared-device note; planning guides already had a clear button | — |
+| **L8** Fonts, free-text reviewer name, no idle timeout, single admin | ➖ Open (low) | See the L8 section below | — |
+
+### Tests now in the project
+There were none before.
+
+| Test | How to run | Result |
+|---|---|---|
+| Node tests (`tests/*.test.mjs`): next-address check, edit filter, id rule | `npm test` (also runs `tools/check.mjs`) | **8/8 pass**; also run automatically on every deploy |
+| Browser tests: `tests/clean-html.browser.html`, `tests/frame.browser.html`, `tests/upload.browser.html` | Serve the folder locally and open each page | **All pass** |
+| Database tests: `supabase/tests/security-tests.sql` (15 checks, including "reader A cannot read reader B's workspace", "a reader cannot make themselves admin", "an editor cannot forge a pharmacist verification") | Paste into the Supabase SQL editor and run. Everything is rolled back afterwards. | **Not yet run.** There is no local PostgreSQL here. Run it after the upgrades. |
+
+**Dependency audit:** there are no npm runtime dependencies, so `npm audit` has nothing to check. The only third-party code is supabase-js 2.45.4 (pinned and integrity-checked), the pinned GitHub Actions, and Google Fonts CSS.
+
+### What you need to do, in order
+1. **Run the SQL.** In Supabase, open SQL Editor → New query, paste the whole of `supabase/update-all-now.sql` and click Run. It now includes upgrades 9, 10 and 11 and is safe to run again.
+2. **Run the tests.** Paste `supabase/tests/security-tests.sql` and click Run. Expect "ALL SECURITY TESTS PASSED" plus a warning on test 14 until step 4 is done. If any line says FAIL, stop and send it to me.
+3. **Merge and deploy.** Merge the branch `security-hardening` into `main`; GitHub Pages deploys it. Then open the site, sign in and check one page.
+4. **Turn on two-step sign-in.** Every editor, reviewer and admin sets it up (account menu → Two-step sign-in). Then run `supabase/upgrade-7-staff-2fa.sql` and re-run the tests: test 14 should now say PASS.
+
+### Checklist outside the code (for the owner)
+
+**Supabase dashboard**
+- [ ] Authentication → Attack Protection: turn on **CAPTCHA** (Cloudflare Turnstile or hCaptcha) for sign-up and password reset. The site will then need the small widget change; ask me.
+- [ ] Authentication → Providers → Email: minimum password length **10 or more**, require letters and digits, enable **leaked-password protection** if your plan has it, and keep **Confirm email** on.
+- [ ] Authentication → Rate limits: check that the email-sending and sign-in limits are at their defaults or lower.
+- [ ] Authentication → Sessions / JWT: set the **access token expiry to 15–30 minutes** and keep **refresh-token rotation** on.
+- [ ] Authentication → URL configuration: the allowed redirect URLs should list only your site's address.
+- [ ] Project settings: keep the **service_role / secret key** out of every file, email and chat. Rotate it if it was ever shared.
+- [ ] Database → Backups: confirm daily backups exist for your plan. **Test a restore** once, into a new project, and write down how.
+- [ ] Logs: look at Auth logs (failed sign-ins) and the audit tables weekly, or set up a log drain. Consider an email alert when anyone becomes `admin` or `reviewer`.
+
+**Accounts and people**
+- [ ] Two-step sign-in for every staff account, then run upgrade 7 (step 4 above).
+- [ ] Keep the number of admins small (two at most), and remove access promptly when someone leaves.
+- [ ] Before approving, verify each professional's registration (MMC, NSR, or the Pharmacy Board for pharmacists), especially anyone listed as "Pharmacist" (L1).
+- [ ] Short staff briefing:
+  - phishing (never sign in from an emailed link you weren't expecting);
+  - only upload pictures you have consent for, with no patient information;
+  - editing doesn't sign anything off.
+- [ ] Store the admin backup file (`dr-arveen-backup-*.json`) only in encrypted storage, and delete old copies.
+
+**GitHub and hosting**
+- [ ] Turn on **two-factor authentication** on the GitHub account; it can change the whole site.
+- [ ] Repository → Settings → Branches: protect `main` (require the deploy checks to pass; no force-push).
+- [ ] Decide on **M7**: if the early professional content must disappear from public history, create a fresh repository from the current files (I can guide you).
+- [ ] Optional, recommended: put the site behind **Cloudflare** (or move to Cloudflare Pages or Netlify). That adds real security headers (HSTS, frame-ancestors, X-Content-Type-Options, Permissions-Policy), a firewall and bot protection.
+- [ ] HTTPS is automatic on `github.io`. If you add a custom domain, tick **Enforce HTTPS** in GitHub Pages settings.
+
+**Privacy and governance (flags, not legal advice)**
+- [ ] Confirm your obligations under Malaysia's **PDPA 2010** (as amended in 2024) with a qualified adviser: possibly a data protection officer, breach notification, and data portability.
+- [ ] Write down **how long** you keep rejected or suspended accounts, old problem reports and audit logs, and how someone asks for their data to be exported or deleted. Put this in `privacy.html`.
+- [ ] Write a one-page **incident response plan**:
+  - who decides;
+  - how to lock accounts (Supabase → suspend, rotate keys);
+  - how to restore from backup;
+  - who to notify, and within what time.
+
+### Still open in the code (recommended next)
+- Update supabase-js to the current 2.x release (2.119.2) with a new integrity hash, after a regression check of sign-in, two-step, the editor and the review queue.
+- Self-host the Google Fonts (privacy: no visitor IP addresses sent to Google).
+- Show the signed-in reviewer's account name instead of a free-text reviewer name (L8).
+- CAPTCHA widget on the register and reset pages, once you have turned it on in Supabase.
+
+---
+
+*The original Phase 1–2 findings follow, unchanged, for the record.*
 
 > **Note on the template.** The audit request was written for a school site (students, teachers, grades).
 > DR ARVEEN has no students or grades. Each check was applied to this site's own equivalents:
