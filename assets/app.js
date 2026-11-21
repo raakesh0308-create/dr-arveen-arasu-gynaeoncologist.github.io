@@ -428,7 +428,7 @@ const loginForm = () => `<form class="calc authbox" id="loginf"><h2>Sign in</h2>
   <label for="li-email">Email<input id="li-email" type="email" autocomplete="email" required></label>
   <label for="li-pass">Password<input id="li-pass" type="password" autocomplete="current-password" required></label>
   <p class="result err" role="alert" id="autherr" hidden></p>
-  <div class="toc"><button class="btn primary" type="submit">Sign in</button><a class="btn" href="register.html">Request an account</a><a class="btn" href="reset-password.html">Forgot password</a></div></form>`;
+  <div class="captcha-box" data-captcha></div><div class="toc"><button class="btn primary" type="submit">Sign in</button><a class="btn" href="register.html">Request an account</a><a class="btn" href="reset-password.html">Forgot password</a></div></form>`;
 function gateView() {
   if (!sb) return `<h1>Healthcare professionals</h1>${notConfigured()}`;
   if (!state.user) return `<span class="eyebrow">Healthcare professionals</span><h1>Sign in to continue</h1>${loginForm()}<p class="muted">Patients and caregivers don't need an account: <a href="patients.html">go to the Patient Education Centre</a>.</p>`;
@@ -437,37 +437,59 @@ function gateView() {
   if (st === "rejected" || st === "suspended") return `<span class="eyebrow">Account</span><h1>Access not available</h1><p class="prose">This account doesn't have access to the professional pages. Contact the DR ARVEEN team if you think this is a mistake.</p>`;
   return `<h1>Professional content isn't loaded yet</h1><p class="banner">Your account is approved, but the professional content hasn't been added to the database. The site owner needs to run the content import (see SUPABASE-SETUP.md).</p>`;
 }
+/* CAPTCHA (Cloudflare Turnstile): with CAPTCHA protection on in Supabase, sign-in, sign-up and password reset need a
+   token. The script loads only on pages with one of these forms. Without a site key in config.js, forms work as before. */
+let tsLoad = null;
+function loadTurnstile() { if (!tsLoad) tsLoad = new Promise((ok, no) => { const s = document.createElement("script"); s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"; s.async = true; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); return tsLoad; }
+function captcha(form) {
+  const st = { token: null, id: null }, el = form && form.querySelector("[data-captcha]");
+  if (!el || !CFG.turnstileSiteKey) return { needed: false, get: () => undefined, reset() {} };
+  loadTurnstile().then(() => { st.id = window.turnstile.render(el, { sitekey: CFG.turnstileSiteKey, theme: isDark() ? "dark" : "light",
+    callback: t => { st.token = t; }, "expired-callback": () => { st.token = null; }, "error-callback": () => { st.token = null; } }); })
+    .catch(() => { el.textContent = "The security check couldn't load. Check your connection and reload the page."; });
+  return { needed: true, get: () => st.token || undefined, reset() { st.token = null; try { if (st.id !== null) window.turnstile.reset(st.id); } catch {} } };
+}
+const CAPTCHA_MSG = "Please complete the security check above the button.";
 function bindAuth() {
   const lf = $("#loginf");
+  const lc = captcha(lf);
   if (lf) lf.onsubmit = async e => {
     e.preventDefault();
-    const { error } = await sb.auth.signInWithPassword({ email: $("#li-email").value.trim(), password: $("#li-pass").value });
-    if (error) return authErr(error.message === "Email not confirmed" ? "Confirm your email first: open the link we sent you." : "That email and password don't match an account.");
+    if (lc.needed && !lc.get()) return authErr(CAPTCHA_MSG);
+    const { error } = await sb.auth.signInWithPassword({ email: $("#li-email").value.trim(), password: $("#li-pass").value, options: { captchaToken: lc.get() } });
+    lc.reset();
+    if (error) return authErr(/captcha/i.test(error.message) ? "The security check failed or expired. Please try again." :error.message === "Email not confirmed" ? "Confirm your email first: open the link we sent you." : "That email and password don't match an account.");
     location.href = PAGE === "login" ? safeNext(PARAMS.get("next"), "professional.html") : location.href;
   };
   const rf = $("#regf");
+  const rc = captcha(rf);
   if (rf) rf.onsubmit = async e => {
     e.preventDefault();
     const v = id => $("#" + id).value.trim();
-    if ($("#rg-pass").value.length < 8) return authErr("Use a password of at least 8 characters.");
+    if ($("#rg-pass").value.length < 10 || !/[a-z]/.test($("#rg-pass").value) || !/[A-Z]/.test($("#rg-pass").value) || !/\d/.test($("#rg-pass").value)) return authErr("Use a password of at least 10 characters with upper- and lower-case letters and a number.");
     if (!$("#rg-agree").checked) return authErr("Tick the confirmation box to continue.");
-    const { error } = await sb.auth.signUp({ email: v("rg-email"), password: $("#rg-pass").value, options: {
+    if (rc.needed && !rc.get()) return authErr(CAPTCHA_MSG);
+    const tok = rc.get(); rc.reset();
+    const { error } = await sb.auth.signUp({ email: v("rg-email"), password: $("#rg-pass").value, options: { captchaToken: tok,
       emailRedirectTo: siteBase() + "login.html",
       data: { full_name: v("rg-name"), profession: v("rg-prof"), registration_body: v("rg-body"), registration_number: v("rg-num"), institution: v("rg-inst") } } });
     if (error) return authErr(error.message);
     rf.hidden = true; authOk("Request received. Check your email and open the confirmation link. An administrator will then verify your registration and approve your account.");
   };
   const pf = $("#resetf");
+  const pc = captcha(pf);
   if (pf) pf.onsubmit = async e => {
     e.preventDefault();
-    const { error } = await sb.auth.resetPasswordForEmail($("#rs-email").value.trim(), { redirectTo: siteBase() + "reset-password.html" });
+    if (pc.needed && !pc.get()) return authErr(CAPTCHA_MSG);
+    const tok = pc.get(); pc.reset();
+    const { error } = await sb.auth.resetPasswordForEmail($("#rs-email").value.trim(), { redirectTo: siteBase() + "reset-password.html", captchaToken: tok });
     if (error) return authErr(error.message);
     authOk("If that email has an account, a reset link is on its way.");
   };
   const nf = $("#newpassf");
   if (nf) nf.onsubmit = async e => {
     e.preventDefault();
-    if ($("#np-pass").value.length < 8) return authErr("Use a password of at least 8 characters.");
+    if ($("#np-pass").value.length < 10 || !/[a-z]/.test($("#np-pass").value) || !/[A-Z]/.test($("#np-pass").value) || !/\d/.test($("#np-pass").value)) return authErr("Use a password of at least 10 characters with upper- and lower-case letters and a number.");
     const { error } = await sb.auth.updateUser({ password: $("#np-pass").value });
     if (error) return authErr(error.message);
     nf.hidden = true; authOk(`Password updated. <a href="professional.html">Continue</a>`);
@@ -1887,18 +1909,18 @@ V.register = () => !sb ? `<h1>Request an account</h1>${notConfigured()}` : `<spa
   <form class="calc authbox" id="regf">
     <label for="rg-name">Full name<input id="rg-name" type="text" autocomplete="name" required></label>
     <label for="rg-email">Work email<input id="rg-email" type="email" autocomplete="email" required></label>
-    <label for="rg-pass">Password (at least 8 characters)<input id="rg-pass" type="password" autocomplete="new-password" required></label>
+    <label for="rg-pass">Password (at least 10 characters, with upper- and lower-case letters and a number)<input id="rg-pass" type="password" autocomplete="new-password" required></label>
     <label for="rg-prof">Profession<select id="rg-prof"><option>Doctor</option><option>Pharmacist</option><option>Nurse</option><option>Medical trainee</option><option>Other healthcare professional</option></select></label>
     <label for="rg-body">Registering body<select id="rg-body"><option>Malaysian Medical Council (MMC)</option><option>Pharmacy Board Malaysia</option><option>Malaysia Nursing Board</option><option>Other</option></select></label>
     <label for="rg-num">Registration number<input id="rg-num" type="text" required></label>
     <label for="rg-inst">Hospital or institution<input id="rg-inst" type="text" required></label>
     <label class="check" for="rg-agree"><input id="rg-agree" type="checkbox"> I confirm I am a registered healthcare professional, and I agree that DR ARVEEN stores these details to verify my registration, as described on the <a href="governance.html#privacy">governance page</a>.</label>
     <p class="result err" role="alert" id="autherr" hidden></p>
-    <div class="toc"><button class="btn primary" type="submit">Request account</button><a class="btn" href="login.html">I already have an account</a></div>
+    <div class="captcha-box" data-captcha></div><div class="toc"><button class="btn primary" type="submit">Request account</button><a class="btn" href="login.html">I already have an account</a></div>
   </form><p class="banner info" id="authok" role="status" hidden></p>`;
 V.reset = () => !sb ? `<h1>Reset password</h1>${notConfigured()}` : `<span class="eyebrow">Account</span><h1>Reset your password</h1>
-  ${state.user ? `<form class="calc authbox" id="newpassf"><label for="np-pass">New password (at least 8 characters)<input id="np-pass" type="password" autocomplete="new-password" required></label><p class="result err" role="alert" id="autherr" hidden></p><div><button class="btn primary" type="submit">Save new password</button></div></form>`
-  : `<form class="calc authbox" id="resetf"><label for="rs-email">Email<input id="rs-email" type="email" autocomplete="email" required></label><p class="result err" role="alert" id="autherr" hidden></p><div><button class="btn primary" type="submit">Send reset link</button></div></form>`}
+  ${state.user ? `<form class="calc authbox" id="newpassf"><label for="np-pass">New password (at least 10 characters, with upper- and lower-case letters and a number)<input id="np-pass" type="password" autocomplete="new-password" required></label><p class="result err" role="alert" id="autherr" hidden></p><div><button class="btn primary" type="submit">Save new password</button></div></form>`
+  : `<form class="calc authbox" id="resetf"><label for="rs-email">Email<input id="rs-email" type="email" autocomplete="email" required></label><p class="result err" role="alert" id="autherr" hidden></p><div class="captcha-box" data-captcha></div><div><button class="btn primary" type="submit">Send reset link</button></div></form>`}
   <p class="banner info" id="authok" role="status" hidden></p>`;
 V.accounts = () => `<span class="eyebrow">Administration</span><h1>Account approvals</h1>
   <p class="prose muted">Before approving, check the registration number on the relevant public register (MMC, Pharmacy Board or Nursing Board) and that the name matches. Every change is recorded in the account audit log.</p>

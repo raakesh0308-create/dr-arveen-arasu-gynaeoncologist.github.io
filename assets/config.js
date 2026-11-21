@@ -7,5 +7,7 @@
  */
 window.ARVEEN_CONFIG = {
   supabaseUrl: "https://dtjbjrieveqbzyatmimn.supabase.co",
-  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0amJqcmlldmVxYnp5YXRtaW1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwODAwNzUsImV4cCI6MjEwODY1NjA3NX0.OdJ-vF41O3fqZ8QNdU7Fbe36g6m99_T-A-aU2GxjiJQ"
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0amJqcmlldmVxYnp5YXRtaW1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwODAwNzUsImV4cCI6MjEwODY1NjA3NX0.OdJ-vF41O3fqZ8QNdU7Fbe36g6m99_T-A-aU2GxjiJQ",
+  // Cloudflare Turnstile CAPTCHA site key (public by design; the secret key stays in Supabase only)
+  turnstileSiteKey: "0x4AAAAAAGLSLz3veMNV2zBC"
 };

@@ -790,3 +790,7 @@ mark { background: var(--teal-soft); color: inherit; border-radius: 3px; padding
 .search-dis { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9rem }
 .search-dis select { width: auto }
 .sg-fix { padding: 6px 12px; font-size: .84rem; color: var(--muted); border-bottom: 1px solid var(--line) }
+
+/* CAPTCHA box */
+.captcha-box { min-height: 65px; margin: 6px 0 10px }
+
