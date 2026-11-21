@@ -126,7 +126,7 @@ const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"],
 /* Each route name maps to its own HTML file; records use ?id= */
 const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", adminws: "admin-workspace.html", security: "two-step.html", tool: "patient-tool.html", portfolio: "dr-arveen.html", guide: "guide.html", notes: "textbook-notes.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
-  algorithms: "algorithms.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
+  algorithms: "algorithms.html", visuals: "tables.html", calculators: "calculators.html", compare: "evidence.html", updates: "updates.html", education: "education.html", workspace: "workspace.html",
   admin: "editorial.html", about: "about.html", search: "search.html", pt: "patients.html", ptcancers: "patient-cancers.html", ptd: "patient-cancer.html",
   leaflets: "leaflets.html", l: "leaflet.html", articles: "articles.html", a: "article.html", sdm: "decision-making.html", tracker: "tracker.html", glossary: "glossary.html" };
 const PAGE_BY_FILE = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [f, k]));
@@ -197,7 +197,7 @@ function renderShell() {
 renderShell();
 /* Professional menu grouped so the bar stays short; patient menu stays flat */
 const NAV_PRO_GROUPS = [["home", "Home"],
-  { label: "Reference", items: [["notes", "Textbook notes"], ["guidelines", "Guidelines"], ["updates", "↳ Guideline updates"], ["recs", "↳ Recommendations"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
+  { label: "Reference", items: [["notes", "Textbook notes"], ["guidelines", "Guidelines"], ["updates", "↳ Guideline updates"], ["recs", "↳ Recommendations"], ["visuals", "↳ Tables & flowcharts"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
   { label: "Tools", items: [["calculators", "Calculators"], ["algorithms", "Clinical pathways"], ["education", "Education"], ["compare", "Evidence and comparisons"], ["sdm", "Shared decisions"]] },
   ["portfolio", "Dr Arveen"], ["pt", "Patients"], ["guide", "Help"]];
 /* Account menu (top right): personal and admin pages, shown only to the roles that can use them */
@@ -723,6 +723,7 @@ function index() {
   D.drugs.forEach(d => add("pro", "Drug monograph", d.id, "dr." + d.id, d.name, [d.cls, d.moa, d.ae, (d.cancers || []).map(dname).join(" ")].join(" "), d.cls, "NOT VERIFIED", "", (d.cancers || [])[0]));
   D.trials.forEach(t => add("pro", "Clinical trial", t.id, "t." + t.id, t.name, [t.reg, t.population, t.intervention, t.comparator, dname(t.disease)].join(" "), `${t.reg} · Phase ${t.phase}`, "NOT VERIFIED", "", t.disease));
   (D.algorithms || []).forEach(a => add("pro", "Clinical pathway", a.id, "algorithms." + a.id, a.title, a.entry + " " + Object.values(a.nodes).map(n => n.q || n.end).join(" "), `${algoDis(a)} · ${a.source}`, a.status, "", a.disease));
+  (D.visuals || []).forEach(v => add("pro", "Table", v.id, "visuals", v.title, [v.source, ...v.columns, ...v.rows.flat(), v.note || ""].join(" "), v.source, v.status, "", v.disease, `${url("visuals")}#vt-${v.id}`));
   Object.entries(CALCS).forEach(([id, c]) => add("pro", "Calculator", "calc-" + id, "calculators", c.title, c.formula + " " + c.limits, "Calculator", "NOT VERIFIED", "", "", `${url("calculators")}#calc-${id}`));
   (D.literature || []).forEach(x => add("pro", "Research library", x.id, x.place === "education" ? "education" : "compare", x.title, [x.summary, ...(x.findings || []), x.topic, x.citation, x.authors].join(" "), x.citation, x.status, "", x.disease));
   (D.notes?.chapters || []).forEach(c => add("pro", "Textbook notes", c.id, "notes", `Ch ${c.n} — ${c.title}`, String(c.html || "").replace(/<[^>]+>/g, " "), "Berek & Novak's notes", c.status || "NOT VERIFIED", "", c.disease, `${url("notes")}#nb-${c.id}`));
@@ -999,6 +1000,7 @@ V.g = id => {
   <section class="section"><h2>Malaysian applicability</h2><p class="prose">${myLabel(g.malaysia)} No Malaysian MOH guidance, NPRA registration or local availability data has been linked to this record.</p></section>
   <section class="section"><h2>Important limitations</h2><p class="prose">${esc(g.limitations)}</p></section>
   <section class="section"><h2>Version history</h2>${g.history.length ? `<div class="list">${g.history.map(h => `<div class="row"><span class="row-t mono">${esc(h.v)}</span><span class="row-m">${esc(h.note)}</span></div>`).join("")}</div>` : `<p class="muted">No versions recorded.</p>`}</section>
+  ${(D.visuals || []).filter(v => v.guideline === g.id).length ? `<section class="section"><h2>Tables from this guideline</h2>${(D.visuals || []).filter(v => v.guideline === g.id).map(v => vTable(v)).join("")}</section>` : ""}
   ${noteBox(g.id)}</article>`;
 };
 
@@ -1023,6 +1025,7 @@ function diseaseHub(d) {
     ${row("Recommendations", recs.length, `${url("recs")}#dg-${key}`, phases.length ? `<a href="${url("recs")}#dg-${key}" class="hubplain">${phases.join(" · ")}</a>` : "")}
     ${row("Staging", st.length, `${url("staging")}#dg-${key}`, st.map(s => `<a href="${url(`s.${s.id}`)}">${esc(s.authority)} ${esc(s.version)}</a>`).join(" · "))}
     ${row("Clinical pathways", paths.length, url("algorithms"), paths.map(a => `<a href="${url("algorithms")}?id=${encodeURIComponent(a.id)}">${esc(a.title.split(":")[0])}</a>`).join(" · "))}
+    ${(() => { const vs = (D.visuals || []).filter(v => mine(v.disease)); return vs.length ? row("Tables", vs.length, `${url("visuals")}#vg-${key}`, vs.map(v => `<a href="${url("visuals")}#vt-${esc(v.id)}">${esc(v.title.split(":")[1]?.trim() || v.title)}</a>`).join(" · ")) : ""; })()}
     ${row("Key trials", tr.length, `${url("trials")}#dg-${key}`, more(tr.map(t => `<a href="${url(`t.${t.id}`)}" title="${esc(t.outcome ? headline(t) : t.intervention + " vs " + t.comparator)}">${esc(t.name)}</a>`), 6, `${url("trials")}#dg-${key}`))}
     ${row("Treatment protocols", pr.length, `${url("protocols")}#dg-${key}`, pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join(" · "))}
     ${row("Drugs", dr.length, `${url("drugs")}#dg-${key}`, more(dr.map(x => `<a href="${url(`dr.${x.id}`)}">${esc(x.name)}</a>`), 6, `${url("drugs")}#dg-${key}`))}
@@ -1145,6 +1148,7 @@ V.t = id => {
 };
 
 let algoPath = [], algoId = new URLSearchParams(location.search).get("id");
+if (new URLSearchParams(location.search).get("view") === "flow") store.set("algoView", "flow"); // links from Tables & flowcharts open the flowchart
 const refLink = id => {
   const r = byId(D.recommendations, id); if (r) return `<a href="${url(`g.${r.guideline}`)}#${esc(id)}">${esc(id)}</a> <span class="muted">(${esc(r.grade)}, ${esc(r.strength)})</span>`;
   if (byId(D.trials, id)) return `<a href="${url(`t.${id}`)}">${esc(byId(D.trials, id).name)}</a>`;
@@ -1175,6 +1179,28 @@ function algoFlow(a) {
   <div class="flow-key" aria-hidden="true"><span class="fbox f-q">Question</span><span class="fbox f-action">Investigation</span><span class="fbox f-escalate">Referral</span><span class="fbox f-info">Outcome</span><span class="fbox f-missing">Missing information</span></div>
   <div class="algo-actions no-print"><button class="btn" data-print>Print this flowchart</button></div>`;
 }
+/* Tables & flowcharts: DR ARVEEN's own abridged guideline tables (visuals collection) and every pathway as a flowchart. */
+function vTable(v, opts = {}) {
+  const g = byId(D.guidelines, v.guideline), paths = (v.pathways || []).map(p => byId(D.algorithms || [], p)).filter(Boolean);
+  return `<section class="vt" id="vt-${esc(v.id)}"><${opts.h || "h3"}>${esc(v.title)}</${opts.h || "h3"}>
+    <p class="vt-src">${listPill(v.status)} Source: <a href="${url(`g.${v.guideline}`)}">${esc(g ? orgs(g) + " " + (g.version || "") : v.guideline)}</a> · ${esc(v.source)} · abridged by DR ARVEEN</p>
+    <div class="tablewrap"><table class="vtable"><thead><tr>${v.columns.map(c => `<th scope="col">${esc(c)}</th>`).join("")}</tr></thead>
+    <tbody>${v.rows.map(r => `<tr>${r.map((c, i) => i === 0 ? `<th scope="row">${esc(c)}</th>` : `<td>${String(c).split(" · ").map(esc).join("<br>")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    ${v.note ? `<p class="vt-note">${fmt(v.note)}</p>` : ""}
+    ${paths.length ? `<p class="vt-links">${paths.map(a => `<a class="btn" href="${url("algorithms")}?id=${encodeURIComponent(a.id)}&view=flow">Flowchart: ${esc(a.title.split(":")[0])} →</a>`).join(" ")}</p>` : ""}</section>`;
+}
+V.visuals = () => {
+  const vis = D.visuals || [], algos = D.algorithms || [];
+  const keys = [...new Set([...vis.map(v => v.disease), ...algos.map(a => a.disease)])].sort((a, b) => DIS_ORDER(a) - DIS_ORDER(b));
+  const lab = k => k === "all" ? "All cancers" : dname(k);
+  return `<div class="section-h"><div><span class="eyebrow">Reference</span><h1>Tables &amp; flowcharts</h1></div><div class="toc"><a class="btn" href="${url("algorithms")}">Clinical pathways</a><a class="btn" href="${url("staging")}">Staging</a></div></div>
+  <p class="prose muted">Key tables from the guidelines, re-drawn and abridged by DR ARVEEN with the source table cited, and every clinical pathway as a flowchart. Check the original before clinical use; all items are NOT VERIFIED until reviewed.</p>
+  <nav class="chips" aria-label="Jump to cancer">${keys.map(k => `<a class="chip" href="#vg-${esc(k)}">${esc(lab(k))}</a>`).join("")}</nav>
+  ${keys.map(k => { const vs = vis.filter(v => v.disease === k), as = algos.filter(a => a.disease === k);
+    return `<section class="section vgroup" id="vg-${esc(k)}"><h2>${esc(lab(k))}</h2>
+      ${as.length ? `<div class="vflows">${as.map(a => `<a class="tile vflow" href="${url("algorithms")}?id=${encodeURIComponent(a.id)}&view=flow"><span class="eyebrow">Flowchart</span><b>${esc(a.title)}</b><span class="muted">${Object.keys(a.nodes).length} steps · ${esc(a.source)}</span></a>`).join("")}</div>` : ""}
+      ${vs.map(v => vTable(v)).join("")}</section>`; }).join("")}`;
+};
 /* Pathway library (no ?id=) and pathway runner (?id=A-…). */
 const algoDis = a => a.disease === "all" ? "All cancers" : dname(a.disease);
 function algoLibrary() {

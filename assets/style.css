@@ -826,3 +826,19 @@ mark { background: var(--teal-soft); color: inherit; border-radius: 3px; padding
 .flow-key { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 }
 .flow-key .fbox { width: auto; padding: 3px 9px; font-size: .74rem }
 @media print { .flow-wrap { overflow: visible; border: 0; background: none } .flow { transform-origin: top left } }
+
+/* Tables & flowcharts */
+.vgroup > h2 { border-bottom: 1px solid var(--line); padding-bottom: 6px }
+.vflows { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin: 10px 0 18px }
+.vflow { display: grid; gap: 4px; border-left: 4px solid var(--teal) }
+.vt { margin: 18px 0 26px; scroll-margin-top: 16px }
+.vt h3 { margin: 0 0 4px }
+.vt-src { font-size: .82rem; color: var(--muted); margin: 0 0 8px }
+.vtable { width: 100%; border-collapse: collapse; font-size: .9rem }
+.vtable th, .vtable td { border: 1px solid var(--line); padding: 8px 10px; vertical-align: top; text-align: left }
+.vtable thead th { background: var(--teal); color: var(--on-accent); font-weight: 600 }
+.vtable tbody th { background: var(--teal-soft); font-weight: 700; white-space: nowrap }
+.vtable tbody tr:nth-child(even) td { background: var(--bg) }
+.vt-note { font-size: .84rem; color: var(--muted); margin: 8px 0 }
+.vt-links { margin: 8px 0 0 }
+.vt:target { outline: 3px solid var(--teal); outline-offset: 6px; border-radius: 6px }

@@ -14,7 +14,7 @@ const fail = msg => problems.push(msg);
 if (fs.existsSync(path.join(root, "assets", "data.js"))) fail("assets/data.js exists: professional content must stay in dr-arveen-content, not the public site.");
 if (fs.existsSync(path.join(root, "seed.sql"))) fail("seed.sql is in the site folder: it contains professional content.");
 const pub = read("assets/patient-data.js");
-for (const key of ["guidelines", "recommendations", "protocols", "drugs", "trials", "staging"]) {
+for (const key of ["guidelines", "recommendations", "protocols", "drugs", "trials", "staging", "visuals", "algorithms", "literature", "notes"]) {
   if (new RegExp(`"${key}"\\s*:`).test(pub)) fail(`assets/patient-data.js contains the professional collection "${key}".`);
 }
 
@@ -32,7 +32,7 @@ const files = [...app.matchAll(/:\s*"([a-z0-9-]+\.html)"/g)].map(m => m[1]);
 for (const f of new Set(files)) if (!fs.existsSync(path.join(root, f))) fail(`app.js links to ${f}, which doesn't exist.`);
 
 // 4. Every HTML page loads the shared scripts and has a title, language and description.
-for (const f of fs.readdirSync(root).filter(f => f.endsWith(".html"))) {
+for (const f of fs.readdirSync(root).filter(f => f.endsWith(".html") && !f.includes(".local."))) {
   const h = read(f);
   if (!/<html lang="[a-z-]+">/.test(h)) fail(`${f}: missing <html lang>.`);
   if (!/<title>[^<]+<\/title>/.test(h)) fail(`${f}: missing <title>.`);
