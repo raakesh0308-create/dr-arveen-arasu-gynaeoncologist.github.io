@@ -782,3 +782,11 @@ textarea.mono { font-family: ui-monospace, Consolas, monospace; font-size: .82re
 .brand-title .bt-full { font-size: clamp(1.15rem, 2.3vw, 1.6rem); font-weight: 600; line-height: 1.3; color: var(--muted); max-width: 34ch; text-wrap: balance }
 .brand-title .bt-line { display: inline }
 @media (min-width: 700px) { .brand-title .bt-line { display: block; white-space: nowrap } }
+
+/* Search: highlighted matches, filters, typo notice */
+mark { background: var(--teal-soft); color: inherit; border-radius: 3px; padding: 0 .1em }
+.search-filters { display: grid; gap: 8px; margin: 10px 0 4px }
+.search-filters .chips { margin: 0 }
+.search-dis { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9rem }
+.search-dis select { width: auto }
+.sg-fix { padding: 6px 12px; font-size: .84rem; color: var(--muted); border-bottom: 1px solid var(--line) }

@@ -555,50 +555,161 @@ document.addEventListener("input", e => {
   const n = pstore.get("notes", {}); n[t.dataset.note] = t.value; pstore.set("notes", n);
 });
 
-/* ---------- search ---------- */
-const SYN = { uterine: ["endometrial", "womb", "uterus"], endometrial: ["uterine", "womb"], womb: ["endometrial", "uterine"], ovary: ["ovarian"], ovarian: ["ovary", "tubal", "peritoneal"], cervix: ["cervical"], cervical: ["cervix"],
-  chemo: ["chemotherapy", "carboplatin", "paclitaxel", "cisplatin"], carbo: ["carboplatin"], taxol: ["paclitaxel"], gtn: ["trophoblastic", "gtn"], molar: ["trophoblastic"], sln: ["sentinel"], sentinel: ["sln"],
-  "pd-1": ["pembrolizumab", "dostarlimab", "immunotherapy"], immunotherapy: ["pembrolizumab", "dostarlimab", "pd-1"], parp: ["olaparib", "niraparib"], brca: ["brca1", "brca2", "olaparib"], brca1: ["brca"], brca2: ["brca"],
-  mmr: ["msi", "mmrd", "dmmr"], dmmr: ["mmr"], radiotherapy: ["radiation", "brachytherapy", "chemoradiotherapy"], rt: ["radiotherapy"], hysterectomy: ["surgery"], staging: ["figo", "stage"], figo: ["staging", "stage"] };
+/* ---------- search ----------
+   Query → normalise (case, accents, hyphens) → expand phrases and abbreviations (English, clinical shorthand, Malay)
+   → each term must match (short terms as whole words only) → unknown words are corrected to the nearest word in
+   the index (typo tolerance) → ranked: exact ID, title phrase, title words, whole-word body matches, current over superseded. */
+// @test:searchcore
+const SEARCH_PHRASES = [
+  // multi-word synonyms, applied to the whole query first
+  ["pap smear", "cytology"], ["sentinel node", "sentinel"], ["sentinel lymph node", "sentinel"], ["lymph node", "node"],
+  ["radical hysterectomy", "radical hysterectomy"], ["primary debulking", "primary cytoreductive"], ["interval debulking", "interval cytoreductive"],
+  ["fertility sparing", "fertility-sparing"], ["fertility preservation", "fertility"], ["borderline tumour", "borderline"], ["borderline tumor", "borderline"],
+  ["molar pregnancy", "molar trophoblastic"], ["germ cell", "germ cell"], ["clear cell", "clear-cell"], ["blood clot", "thromboembolism"],
+  ["barah serviks", "cervical"], ["kanser serviks", "cervical"], ["kanser pangkal rahim", "cervical"], ["kanser rahim", "endometrial uterine"],
+  ["kanser ovari", "ovarian"], ["kanser faraj", "vaginal"], ["kanser vulva", "vulvar"], ["ujian pap", "cytology"]
+];
+const SYN = {
+  // organs and cancers (incl. Malay)
+  uterine: ["endometrial", "womb", "uterus"], uterus: ["uterine", "endometrial"], endometrial: ["uterine", "womb", "endometrium"], endometrium: ["endometrial"], womb: ["endometrial", "uterine"],
+  ovary: ["ovarian"], ovarian: ["ovary", "tubal", "peritoneal", "tubo-ovarian"], ovaries: ["ovarian"], cervix: ["cervical"], cervical: ["cervix"], vulva: ["vulvar"], vulval: ["vulvar"], vulvar: ["vulva"], vagina: ["vaginal"], vaginal: ["vagina"],
+  rahim: ["uterine", "endometrial", "womb"], serviks: ["cervical"], ovari: ["ovarian"], faraj: ["vaginal"], barah: ["cancer"], kanser: ["cancer"], tumor: ["tumour"], tumour: ["tumor"],
+  kemoterapi: ["chemotherapy"], radioterapi: ["radiotherapy"], pembedahan: ["surgery"], saringan: ["screening"], ubat: ["drug"], hamil: ["pregnancy"], kehamilan: ["pregnancy"], kesuburan: ["fertility"],
+  gtn: ["trophoblastic"], gtd: ["trophoblastic"], molar: ["trophoblastic", "mole"], choriocarcinoma: ["trophoblastic"], sarcoma: ["sarcomas", "leiomyosarcoma"], lms: ["leiomyosarcoma"], ess: ["stromal"],
+  // treatments and drugs
+  chemo: ["chemotherapy", "carboplatin", "paclitaxel", "cisplatin"], chemotherapy: ["chemo"], carbo: ["carboplatin"], taxol: ["paclitaxel"], cis: ["cisplatin"], pld: ["liposomal doxorubicin", "pegylated"], caelyx: ["liposomal doxorubicin"],
+  bev: ["bevacizumab"], avastin: ["bevacizumab"], keytruda: ["pembrolizumab"], pembro: ["pembrolizumab"], dostar: ["dostarlimab"], lynparza: ["olaparib"], zejula: ["niraparib"],
+  "pd-1": ["pembrolizumab", "dostarlimab", "immunotherapy", "checkpoint"], pd1: ["pembrolizumab", "dostarlimab", "immunotherapy"], immunotherapy: ["pembrolizumab", "dostarlimab", "checkpoint"], ici: ["checkpoint", "immunotherapy"],
+  parp: ["olaparib", "niraparib", "rucaparib"], parpi: ["parp", "olaparib", "niraparib"], adc: ["antibody-drug"], hipec: ["hyperthermic"],
+  radiotherapy: ["radiation", "brachytherapy", "chemoradiotherapy"], radiation: ["radiotherapy"], rt: ["radiotherapy"], ebrt: ["external beam"], bt: ["brachytherapy"], igabt: ["brachytherapy"], igbt: ["brachytherapy"],
+  crt: ["chemoradiotherapy", "chemoradiation"], ctrt: ["chemoradiotherapy"], ccrt: ["chemoradiotherapy"], chemoradiation: ["chemoradiotherapy"], nact: ["neoadjuvant"], neoadjuvant: ["nact"],
+  pds: ["primary cytoreductive", "primary debulking"], ids: ["interval cytoreductive", "interval debulking"], debulking: ["cytoreductive", "cytoreduction"], cytoreduction: ["cytoreductive", "debulking"],
+  rh: ["radical hysterectomy"], tah: ["hysterectomy"], hysterectomy: ["surgery"], bso: ["salpingo-oophorectomy"], rrso: ["risk-reducing", "salpingo-oophorectomy"], trachelectomy: ["fertility-sparing"], cone: ["conisation", "conization"], conisation: ["conization", "cone"], conization: ["conisation"], leep: ["conisation", "loop"], lletz: ["conisation", "loop"],
+  sln: ["sentinel"], slnb: ["sentinel"], sentinel: ["sln"], lnd: ["lymphadenectomy"], lymphadenectomy: ["lymph node", "lnd"], ifl: ["inguinofemoral"], eras: ["enhanced recovery"], vte: ["thromboembolism", "thromboprophylaxis"], dvt: ["thromboembolism"], lmwh: ["heparin"], hrt: ["hormone replacement"],
+  // pathology and biomarkers
+  lvsi: ["lymphovascular"], hgsc: ["high-grade serous"], lgsc: ["low-grade serous"], ccc: ["clear-cell", "clear cell"], stic: ["serous tubal intraepithelial"], bot: ["borderline"], mogct: ["germ cell"], gct: ["germ cell", "granulosa"], scst: ["sex cord"],
+  brca: ["brca1", "brca2"], brca1: ["brca"], brca2: ["brca"], hrd: ["homologous recombination", "genomic instability"], gis: ["genomic instability"], mmr: ["mismatch repair", "msi", "dmmr"], dmmr: ["mmr", "mismatch repair"], msi: ["microsatellite", "mmr"], lynch: ["mmr", "mismatch repair"],
+  pole: ["pole"], p53: ["p53abn", "tp53"], tcga: ["molecular classification"], her2: ["her2"], hpv: ["papillomavirus"], cin: ["intraepithelial"], ais: ["adenocarcinoma in situ"],
+  // tests, staging, scores
+  ca125: ["ca-125", "ca 125"], "ca-125": ["ca125"], he4: ["he4"], rmi: ["risk of malignancy"], roma: ["risk of ovarian malignancy"], afp: ["alpha-fetoprotein"], hcg: ["chorionic gonadotropin", "hcg"],
+  pet: ["pet-ct"], petct: ["pet-ct"], mri: ["magnetic resonance"], ct: ["computed tomography", "ct"], us: ["ultrasound"], tvs: ["transvaginal"], iota: ["adnex"],
+  staging: ["figo", "stage"], figo: ["staging", "stage"], tnm: ["staging"], stage: ["staging", "figo"], icr: ["iccr"], ecog: ["performance status"], bsa: ["body surface"], crcl: ["creatinine clearance"], egfr: ["kidney", "creatinine"], auc: ["calvert", "carboplatin"],
+  recurrence: ["recurrent", "relapse"], recurrent: ["recurrence", "relapse"], relapse: ["recurrence", "recurrent"], metastatic: ["metastases", "advanced"], pregnancy: ["pregnant"], pregnant: ["pregnancy"], fertility: ["fertility-sparing"],
+  mdt: ["multidisciplinary"], esgo: ["esgo"], nice: ["nice"], esmo: ["esmo"]
+};
+const normQ = s => String(s ?? "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[‐-―−]/g, "-").replace(/[“”"']/g, "").replace(/\s+/g, " ").trim();
+// expand a query into terms; each term carries its alternatives
+function expandQuery(q) {
+  let s = normQ(q); const extra = [];
+  for (const [p, rep] of SEARCH_PHRASES) if (s.includes(p)) { s = s.replace(p, " " + p.replace(/\s+/g, "_") + " "); extra.push([p.replace(/\s+/g, "_"), rep]); }
+  return s.split(/[\s,;/]+/).filter(t => t && !/^(the|and|of|for|in|with|a|an|to|on|or|vs|dan|untuk|yang)$/.test(t)).map(t => {
+    const ph = extra.find(([k]) => k === t);
+    if (ph) return { raw: ph[0].replace(/_/g, " "), alts: [ph[0].replace(/_/g, " "), ...ph[1].split(" ")] };
+    const base = t.replace(/[^\p{L}\p{N}-]/gu, ""); if (!base) return null;
+    return { raw: base, alts: [...new Set([base, base.replace(/-/g, ""), ...(SYN[base] || [])])] };
+  }).filter(Boolean);
+}
+// short alternatives (3 letters or fewer, e.g. "rt", "ct", "pds") only match whole words
+const altRe = a => new RegExp((a.length <= 3 ? "(^|[^\\p{L}\\p{N}-])" : "") + a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + (a.length <= 3 ? "($|[^\\p{L}\\p{N}-])" : ""), "u");
+function editDistance(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j), prev2 = null;
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i]; let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (prev2 && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) cur[j] = Math.min(cur[j], prev2[j - 2] + 1);
+      best = Math.min(best, cur[j]);
+    }
+    if (best > max) return max + 1;
+    prev2 = prev; prev = cur;
+  }
+  return prev[b.length];
+}
+// nearest vocabulary word for a misspelt term (1 edit for 4–6 letters, 2 for 7+); prefers frequent words
+function nearestWord(term, vocab) {
+  if (term.length < 4 || /\d/.test(term)) return null;
+  const max = term.length >= 7 ? 2 : 1; let best = null, bd = max + 1, bf = 0;
+  for (const [w, f] of vocab) {
+    if (w[0] !== term[0] && w[1] !== term[1]) continue;
+    const d = editDistance(term, w, max);
+    if (d < bd || (d === bd && f > bf)) { best = w; bd = d; bf = f; }
+  }
+  return bd <= max ? best : null;
+}
+// @end
+let IDX = [], VOCAB = new Map();
+function buildVocab() {
+  VOCAB = new Map();
+  for (const it of IDX) for (const w of it.text.match(/[\p{L}][\p{L}\p{N}-]{3,}/gu) || []) VOCAB.set(w, (VOCAB.get(w) || 0) + 1);
+}
+function search(q, opts = {}) {
+  const terms = expandQuery(q); const out = []; out.corrections = [];
+  if (!terms.length) return out;
+  const nq = normQ(q), idq = nq.toUpperCase(); let nqFix = nq;
+  // typo tolerance: a term that matches nothing anywhere is replaced by the nearest indexed word
+  for (const t of terms) {
+    const res = t.alts.map(altRe);
+    t.res = res;
+    if (!IDX.some(it => res.some(r => r.test(it.text)))) {
+      const fix = nearestWord(t.raw, VOCAB);
+      if (fix) { out.corrections.push([t.raw, fix]); nqFix = nqFix.replace(t.raw, fix); t.alts = [fix, ...(SYN[fix] || [])]; t.res = t.alts.map(altRe); }
+    }
+  }
+  for (const it of IDX) {
+    if (opts.aud && it.aud !== opts.aud) continue;
+    let score = 0; const tl = it.title.toLowerCase();
+    for (const t of terms) {
+      if (!t.res.some(r => r.test(it.text))) { score = -1; break; }
+      score += t.res.some(r => r.test(tl)) ? 4 : 1;
+      if (t.res[0].test(tl)) score += 1; // the word itself, not only a synonym, is in the title
+    }
+    if (score < 0) continue;
+    if (String(it.id).toUpperCase() === idq) score += 50;           // exact record ID, e.g. R-CX-E09
+    if (tl === nq || tl === nqFix) score += 12;                      // title is exactly the query (e.g. the drug page)
+    if (nqFix.length > 3 && tl.includes(nqFix)) score += 8;               // whole query in the title
+    else if (nqFix.length > 3 && it.text.includes(nqFix)) score += 3;
+    if (it.warn) score -= 3;                                         // superseded versions sink
+    score += ({ Guideline: 1.5, "Clinical pathway": 1.2, Calculator: 1.2, "Staging system": 1, "Drug monograph": 1, "Treatment protocol": 1 }[it.type] || 0);
+    out.push({ ...it, score });
+  }
+  out.sort((a, b) => b.score - a.score);
+  return out;
+}
+// highlight the matched words in a title (after escaping, never inside an HTML entity)
+function hlTitle(title, q) {
+  let s = esc(title);
+  const words = [...new Set(expandQuery(q).flatMap(t => t.alts))].filter(w => w.length >= 3 && !/^(amp|quot|lt|gt|39)$/.test(w)).sort((a, b) => b.length - a.length);
+  for (const w of words) s = s.replace(new RegExp(`(^|[^&#\\w])(${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "giu"), "$1<mark>$2</mark>");
+  return s;
+}
+
 function index() {
   const I = [];
-  const add = (aud, type, id, route, title, text, meta, status, warn) => I.push({ aud, type, id, route, title, text: (title + " " + text).toLowerCase(), meta, status, warn });
+  const add = (aud, type, id, route, title, text, meta, status, warn, dis, href) => I.push({ aud, type, id, route, href, title, text: normQ(title + " " + text + " " + id), meta, status, warn, dis: dis || "" });
   if (!state.proLoaded) {
-    D.diseases.forEach(d => add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient + " " + (d.patientSections || []).flat(2).join(" "), "About this cancer", "DRAFT"));
+    D.diseases.forEach(d => add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient + " " + (d.patientSections || []).flat(2).join(" "), "About this cancer", "DRAFT", "", d.id));
     D.leaflets.forEach(l => add("pt", "Information leaflet", l.id, "l." + l.id, l.title, l.audience + " " + (l.sections || []).flat(2).join(" "), l.version, l.approval));
     D.glossary.forEach(([t, d]) => add("pt", "Glossary", t, "glossary", t, d, d, "DRAFT")); (D.articles || []).forEach(a => add("pt", "Article", a.id, "a." + a.id, a.title, a.summary + " " + a.category + " " + a.sections.flat(2).join(" "), a.category, a.status));
     return I;
   }
-  D.guidelines.forEach(g => add("pro", "Guideline", g.id, "g." + g.id, g.title, [orgs(g), dname(g.disease), g.domain.join(" "), g.summary, g.version].join(" "), `${orgs(g)} · ${g.version || "version not recorded"} · ${dname(g.disease)}`, g.status, g.superseded === "superseded" ? "Superseded guidance" : ""));
-  D.recommendations.forEach(r => add("pro", "Recommendation", r.id, "g." + r.guideline, r.text, [r.stage, r.biomarker, r.setting, dname(r.disease)].join(" "), `${r.id} · ${dname(r.disease)} · ${r.stage}`, r.status));
-  D.diseases.forEach(d => { add("pro", "Disease reference", d.id, "d." + d.id, d.name, d.short, "Disease page", "NOT VERIFIED"); add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient + " " + (d.patientSections || []).flat(2).join(" "), "About this cancer", "DRAFT"); });
-  D.staging.forEach(s => add("pro", "Staging system", s.id, "s." + s.id, `${s.name} (${s.authority} ${s.version})`, JSON.stringify(s.stages) + " " + s.notes + " " + dname(s.cancer), `${s.authority} ${s.version}`, "NOT VERIFIED", s.superseded ? "Superseded staging version" : ""));
-  D.protocols.forEach(p => add("pro", "Treatment protocol", p.id, "p." + p.id, p.name, [p.indication, p.biomarker, p.modality, p.components.map(c => c.drug).join(" ")].join(" "), `${dname(p.disease)} · ${p.line}`, p.status));
-  D.drugs.forEach(d => add("pro", "Drug monograph", d.id, "dr." + d.id, d.name, [d.cls, d.moa, d.ae].join(" "), d.cls, "NOT VERIFIED"));
-  D.trials.forEach(t => add("pro", "Clinical trial", t.id, "t." + t.id, t.name, [t.reg, t.population, t.intervention, t.comparator, dname(t.disease)].join(" "), `${t.reg} · Phase ${t.phase}`, "NOT VERIFIED"));
-  D.leaflets.forEach(l => add("pt", "Information leaflet", l.id, "l." + l.id, l.title, l.audience + " " + (l.sections || []).flat(2).join(" "), l.version, l.approval));
+  D.guidelines.forEach(g => add("pro", "Guideline", g.id, "g." + g.id, g.title, [orgs(g), dname(g.disease), (g.domain || []).join(" "), g.summary, g.version, g.citation || ""].join(" "), `${orgs(g)} · ${g.version || "version not recorded"} · ${g.disease === "all" ? "All cancers" : dname(g.disease)}`, g.status, g.superseded === "superseded" ? "Superseded guidance" : "", g.disease));
+  D.recommendations.forEach(r => add("pro", "Recommendation", r.id, "g." + r.guideline, r.text, [r.stage, r.biomarker, r.setting, r.location, r.guideline, dname(r.disease)].join(" "), `${r.id} · ${r.disease === "all" ? "All cancers" : dname(r.disease)} · ${r.stage}`, r.status, "", r.disease, `${url("g." + r.guideline)}#${encodeURIComponent(r.id)}`));
+  D.diseases.forEach(d => { add("pro", "Disease reference", d.id, "d." + d.id, d.name, d.short, "Disease page", "NOT VERIFIED", "", d.id); add("pt", "Patient information", d.id, "ptd." + d.id, d.name, d.patient + " " + (d.patientSections || []).flat(2).join(" "), "About this cancer", "DRAFT"); });
+  D.staging.forEach(s => add("pro", "Staging system", s.id, "s." + s.id, `${s.name} (${s.authority} ${s.version})`, JSON.stringify(s.stages) + " " + s.notes + " " + dname(s.cancer), `${s.authority} ${s.version}`, "NOT VERIFIED", s.superseded ? "Superseded staging version" : "", s.cancer));
+  D.protocols.forEach(p => add("pro", "Treatment protocol", p.id, "p." + p.id, p.name, [p.indication, p.biomarker, p.modality, p.components.map(c => c.drug).join(" ")].join(" "), `${dname(p.disease)} · ${p.line}`, p.status, "", p.disease));
+  D.drugs.forEach(d => add("pro", "Drug monograph", d.id, "dr." + d.id, d.name, [d.cls, d.moa, d.ae, (d.cancers || []).map(dname).join(" ")].join(" "), d.cls, "NOT VERIFIED", "", (d.cancers || [])[0]));
+  D.trials.forEach(t => add("pro", "Clinical trial", t.id, "t." + t.id, t.name, [t.reg, t.population, t.intervention, t.comparator, dname(t.disease)].join(" "), `${t.reg} · Phase ${t.phase}`, "NOT VERIFIED", "", t.disease));
+  (D.algorithms || []).forEach(a => add("pro", "Clinical pathway", a.id, "algorithms." + a.id, a.title, a.entry + " " + Object.values(a.nodes).map(n => n.q || n.end).join(" "), `${algoDis(a)} · ${a.source}`, a.status, "", a.disease));
+  Object.entries(CALCS).forEach(([id, c]) => add("pro", "Calculator", "calc-" + id, "calculators", c.title, c.formula + " " + c.limits, "Calculator", "NOT VERIFIED", "", "", `${url("calculators")}#calc-${id}`));
+  (D.literature || []).forEach(x => add("pro", "Research library", x.id, x.place === "education" ? "education" : "compare", x.title, [x.summary, ...(x.findings || []), x.topic, x.citation, x.authors].join(" "), x.citation, x.status, "", x.disease));
+  (D.notes?.chapters || []).forEach(c => add("pro", "Textbook notes", c.id, "notes", `Ch ${c.n} — ${c.title}`, String(c.html || "").replace(/<[^>]+>/g, " "), "Berek & Novak's notes", c.status || "NOT VERIFIED", "", c.disease, `${url("notes")}#nb-${c.id}`));
+  D.leaflets.forEach(l => add("pt", "Information leaflet", l.id, "l." + l.id, l.title, l.audience + " " + (l.sections || []).flat(2).join(" "), l.version, l.approval, "", l.disease));
   D.glossary.forEach(([t, d]) => add("pt", "Glossary", t, "glossary", t, d, d, "DRAFT")); (D.articles || []).forEach(a => add("pt", "Article", a.id, "a." + a.id, a.title, a.summary + " " + a.category + " " + a.sections.flat(2).join(" "), a.category, a.status));
   return I;
 }
-let IDX = [];
-function search(q) {
-  const terms = q.toLowerCase().split(/[\s,]+/).filter(Boolean);
-  if (!terms.length) return [];
-  const phrase = q.toLowerCase().replace(/^"|"$/g, "");
-  return IDX.map(it => {
-    let score = 0;
-    for (const t of terms) {
-      const alts = [t, ...(SYN[t] || [])];
-      const hit = alts.some(a => it.text.includes(a));
-      if (!hit) return null;
-      score += it.title.toLowerCase().includes(t) ? 3 : 1;
-    }
-    if (it.text.includes(phrase)) score += 2;
-    return { ...it, score };
-  }).filter(Boolean).sort((a, b) => b.score - a.score);
-}
-function resultRow(r) {
-  return `<a class="row" href="${url(`${r.route}`)}"><span class="row-t">${esc(r.title)} ${listPill(r.status)} ${r.warn ? `<span class="pill bad">${esc(r.warn)}</span>` : ""}</span>
+function resultRow(r, q) {
+  return `<a class="row" href="${esc(r.href || url(`${r.route}`))}"><span class="row-t">${q ? hlTitle(r.title.length > 220 ? r.title.slice(0, 218) + "…" : r.title, q) : esc(r.title)} ${listPill(r.status)} ${r.warn ? `<span class="pill bad">${esc(r.warn)}</span>` : ""}</span>
     <span class="row-m"><span class="eyebrow">${esc(r.type)}</span><span>${esc(r.meta)}</span></span></a>`;
 }
 
@@ -1739,12 +1850,21 @@ V.glossary = () => `<div class="patient detail"><span class="eyebrow">Medical gl
   <div class="list" id="gl">${D.glossary.map(([t, d]) => `<div class="row" data-term="${esc((t + " " + d).toLowerCase())}"><span class="row-t">${esc(t)}</span><span>${esc(d)}</span></div>`).join("")}</div></div>`;
 
 V.search = () => {
-  const res = search(state.q);
-  const aud = state.filters.saud || "all";
+  const all = search(state.q);
+  const aud = state.filters.saud || "all", stype = state.filters.stype || "", sdis = state.filters.sdis || "";
+  const types = [...new Set(all.map(r => r.type))], dises = [...new Set(all.map(r => r.dis).filter(d => d && d !== "all"))].sort((a, b) => DIS_ORDER(a) - DIS_ORDER(b));
+  const res = all.filter(r => (!stype || r.type === stype) && (!sdis || r.dis === sdis || r.dis === "all"));
   const pro = res.filter(r => r.aud === "pro"), pt = res.filter(r => r.aud === "pt");
-  const block = (t, l) => l.length ? `<section class="section"><h2>${t} <span class="muted" style="font-size:.9rem">${l.length}</span></h2><div class="list">${l.map(resultRow).join("")}</div></section>` : "";
+  const MAX = 60;
+  const block = (t, l) => l.length ? `<section class="section"><h2>${t} <span class="muted" style="font-size:.9rem">${l.length}</span></h2><div class="list">${l.slice(0, MAX).map(r => resultRow(r, hq)).join("")}</div>${l.length > MAX ? `<p class="muted">Showing the best ${MAX} of ${l.length}. Narrow by type or cancer above, or add a word.</p>` : ""}</section>` : "";
+  const fix = all.corrections || []; const hq = [state.q, ...fix.map(f => f[1])].join(" ");
   return `<span class="eyebrow">Search</span><h1>Results for “${esc(state.q)}”</h1>
-  <div class="chips">${[["all", "All audiences"], ["pro", "Professional clinical"], ["pt", "Patient education"]].map(([k, t]) => `<button class="chip" data-saud="${k}" aria-pressed="${aud === k}">${t}</button>`).join("")}</div>
+  ${fix.length ? `<p class="banner info">Showing results for ${fix.map(([a, b]) => `<b>${esc(b)}</b> (you typed “${esc(a)}”)`).join(", ")}.</p>` : ""}
+  <div class="search-filters">
+    <div class="chips" role="group" aria-label="Audience">${[["all", "All audiences"], ["pro", "Professional clinical"], ["pt", "Patient education"]].map(([k, t]) => `<button class="chip" data-saud="${k}" aria-pressed="${aud === k}">${t}</button>`).join("")}</div>
+    ${types.length > 1 ? `<div class="chips" role="group" aria-label="Type"><button class="chip" data-stype="" aria-pressed="${!stype}">All types</button>${types.map(ty => `<button class="chip" data-stype="${esc(ty)}" aria-pressed="${stype === ty}">${esc(ty)} <span class="muted">${all.filter(r => r.type === ty).length}</span></button>`).join("")}</div>` : ""}
+    ${dises.length > 1 ? `<label class="search-dis">Cancer <select id="sdis"><option value="">All cancers</option>${dises.map(d => `<option value="${esc(d)}" ${sdis === d ? "selected" : ""}>${esc(dname(d))}</option>`).join("")}</select></label>` : ""}
+  </div>
   ${!state.proLoaded ? `<p class="banner info">Showing patient education results. <a href="login.html?next=${encodeURIComponent("search.html?q=" + state.q)}">Sign in</a> as an approved healthcare professional to search guidelines, staging, protocols, drugs and trials.</p>` : ""}
   ${!res.length ? `<p class="muted">No results. Try a disease name, a drug, an organisation (ESGO, FIGO) or a stage such as IIIC.</p>` : ""}
   ${aud !== "pt" ? block("Professional clinical results", pro) : ""}${aud !== "pro" ? block("Patient education results", pt) : ""}`;
@@ -1863,10 +1983,11 @@ function bindSuggest() {
   const close = () => { box.hidden = true; q.setAttribute("aria-expanded", "false"); };
   q.addEventListener("input", () => { clearTimeout(sugTimer); sugTimer = setTimeout(() => {
     const term = q.value.trim(); if (term.length < 2 || !IDX.length) return close();
-    const hits = search(term).slice(0, 40), groups = {};
+    const found = search(term), hits = found.slice(0, 40), groups = {};
     for (const h of hits) { (groups[h.type] = groups[h.type] || []).length < 3 && groups[h.type].push(h); }
     const keys = Object.keys(groups).slice(0, 5);
-    box.innerHTML = keys.length ? keys.map(k => `<div class="sg-h">${esc(k)}</div>${groups[k].map(h => `<a role="option" href="${url(h.route)}">${esc(h.title.length > 90 ? h.title.slice(0, 88) + "…" : h.title)}<span class="muted">${esc(h.meta || "")}</span></a>`).join("")}`).join("") + `<a class="sg-all" href="search.html?q=${encodeURIComponent(term)}">See all ${hits.length >= 40 ? "40+" : hits.length} results →</a>`
+    const fix = found.corrections?.length ? `<div class="sg-fix">Showing results for ${found.corrections.map(([, b]) => `<b>${esc(b)}</b>`).join(", ")}</div>` : "";
+    box.innerHTML = keys.length ? fix + keys.map(k => `<div class="sg-h">${esc(k)}</div>${groups[k].map(h => `<a role="option" href="${esc(h.href || url(h.route))}">${hlTitle(h.title.length > 90 ? h.title.slice(0, 88) + "…" : h.title, [term, ...(found.corrections || []).map(f => f[1])].join(" "))}<span class="muted">${esc(h.meta || "")}</span></a>`).join("")}`).join("") + `<a class="sg-all" href="search.html?q=${encodeURIComponent(term)}">See all ${found.length > 40 ? found.length : hits.length} results →</a>`
       : `<div class="sg-h">No matches</div><a class="sg-all" href="search.html?q=${encodeURIComponent(term)}">Search anyway →</a>`;
     box.hidden = false; q.setAttribute("aria-expanded", "true");
   }, 120); });
@@ -1900,6 +2021,8 @@ function render() {
   app.querySelectorAll("[data-recmode]").forEach(b => b.onclick = () => { state.filters.recMode = b.dataset.recmode; store.set("recMode", b.dataset.recmode); render(); });
   app.querySelectorAll("[data-td]").forEach(b => b.onclick = () => { state.filters.trialDisease = b.dataset.td; render(); });
   app.querySelectorAll("[data-saud]").forEach(b => b.onclick = () => { state.filters.saud = b.dataset.saud; render(); });
+  app.querySelectorAll("[data-stype]").forEach(b => b.onclick = () => { state.filters.stype = b.dataset.stype; render(); });
+  const sd = $("#sdis"); if (sd) sd.onchange = () => { state.filters.sdis = sd.value; render(); };
   app.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => { let s = store.get("subs", []); s = s.includes(b.dataset.sub) ? s.filter(x => x !== b.dataset.sub) : [...s, b.dataset.sub]; store.set("subs", s); b.setAttribute("aria-pressed", s.includes(b.dataset.sub)); });
   const toLast = () => requestAnimationFrame(() => { const l = $("#algo-last"); if (l) { l.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); l.querySelector("button, a")?.focus({ preventScroll: true }); } });
   app.querySelectorAll("[data-step]").forEach(b => b.onclick = () => { algoPath = algoPath.slice(0, +b.dataset.step + 1).concat(b.dataset.to); render(); toLast(); });
@@ -2478,7 +2601,7 @@ async function boot() {
   renderNav();
   app.innerHTML = `<div class="skeleton" role="status" aria-label="Loading"><span class="sk sk-eyebrow"></span><span class="sk sk-h1"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span><div class="sk-grid"><span class="sk sk-card"></span><span class="sk sk-card"></span><span class="sk sk-card"></span></div></div>`;
   try { await loadSession(); await loadPatientItems(); if (approved() && (GATED || PAGE === "search" || PAGE === "workspace")) await loadPro(); } catch (e) { console.error(e); }
-  IDX = index(); bindSuggest();
+  IDX = index(); buildVocab(); bindSuggest();
   // Staff tools need a session verified with the authenticator app: send them to the two-step page first.
   if (STAFF_PAGES.includes(PAGE) && state.proLoaded && needsMfa()) {
     location.replace(`two-step.html?need=1&next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}`); return;
