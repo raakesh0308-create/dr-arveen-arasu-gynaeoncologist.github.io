@@ -100,6 +100,7 @@ const MY = {
   "intl-not-verified": ["International recommendation; Malaysian implementation not verified", "warn"],
   "regulatory": ["Regulatory status not verified", "warn"],
   "availability": ["Availability or reimbursement requires confirmation", "warn"],
+  "regional-adaptation": ["Asian regional adaptation endorsed by a Malaysian society; local access and funding vary", "teal"],
   "offlabel": ["Off-label use", "bad"], "investigational": ["Investigational treatment", "bad"],
   "institution": ["Institution-specific protocol", "teal"], "not-verified": ["Not verified", "warn"]
 };
