@@ -797,7 +797,15 @@ mark { background: var(--teal-soft); color: inherit; border-radius: 3px; padding
 
 /* Pathway flowchart (generated from pathway data) */
 .algo-views { margin: 12px 0 6px }
-.flow-wrap { overflow-x: auto; padding: 8px 4px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg) }
+.flow-wrap { overflow: auto; max-height: 78vh; padding: 8px 4px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); cursor: grab; overscroll-behavior: contain }
+.flow-wrap.dragging { cursor: grabbing; user-select: none }
+.flow-wrap.dragging * { cursor: grabbing }
+.flow-wrap.full { position: fixed; inset: 0; padding-top: 64px; z-index: 60; max-height: none; border-radius: 0; margin: 0 }
+body.flow-full { overflow: hidden }
+body.flow-full .flow-tools { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 61; background: var(--surface); padding: 6px 8px; border-radius: var(--r); box-shadow: var(--shadow-2) }
+.flow-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px }
+.flow-tools .btn { padding: 4px 12px; min-width: 36px }
+.flow-zl { min-width: 46px; text-align: center; font-size: .85rem; font-variant-numeric: tabular-nums; color: var(--muted) }
 .flow { display: inline-block; min-width: 100% }
 .flow ul { display: flex; justify-content: center; position: relative; padding: 18px 0 0; margin: 0 }
 .flow li { list-style: none; position: relative; padding: 18px 6px 0; display: flex; flex-direction: column; align-items: center; text-align: center }
@@ -839,6 +847,42 @@ mark { background: var(--teal-soft); color: inherit; border-radius: 3px; padding
 .vtable thead th { background: var(--teal); color: var(--on-accent); font-weight: 600 }
 .vtable tbody th { background: var(--teal-soft); font-weight: 700; white-space: nowrap }
 .vtable tbody tr:nth-child(even) td { background: var(--bg) }
+/* FIGO-style staging table */
+.stable { width: 100%; border-collapse: collapse; font-size: .92rem }
+.stable thead th { background: var(--teal); color: var(--on-accent); text-align: left; padding: 9px 12px; font-weight: 600 }
+.stable th, .stable td { border-bottom: 1px solid var(--line); padding: 8px 12px; vertical-align: top; text-align: left }
+.stable tbody th { width: 110px; white-space: nowrap }
+.stable .st-code { font-family: var(--f-display); font-weight: 700; color: var(--teal) }
+.stable tr.st-d0 th, .stable tr.st-d0 td { background: var(--teal-soft); font-weight: 700; border-top: 2px solid var(--teal) }
+.stable tr.st-d0 .st-code { font-size: 1.15rem }
+.stable tr.st-d1 th { padding-left: 26px }
+.stable tr.st-d2 th { padding-left: 44px }
+.stable tr.st-d2 th, .stable tr.st-d2 td { font-size: .88rem; color: var(--fg) }
+.stable tr.st-d2 .st-code { font-weight: 600 }
+.stable tr[hidden] { display: none }
+/* Risk-coloured cells (guideline-style matrices) */
+:root { --t-low: #cfe8c4; --t-int: #fbe8a6; --t-hint: #f9c9a0; --t-high: #f2b0aa; --t-unc: #cbd3da; --t-na: transparent; --t-fg: #14232b }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --t-low: #2e5a2a; --t-int: #5e5320; --t-hint: #6b4124; --t-high: #6e2f2b; --t-unc: #3c4650; --t-fg: #f1f4f6 } }
+:root[data-theme="dark"] { --t-low: #2e5a2a; --t-int: #5e5320; --t-hint: #6b4124; --t-high: #6e2f2b; --t-unc: #3c4650; --t-fg: #f1f4f6 }
+.vtable .tone-low, .vtable tbody tr:nth-child(even) td.tone-low, .vt-key .tone-low { background: var(--t-low); color: var(--t-fg) }
+.vtable .tone-int, .vtable tbody tr:nth-child(even) td.tone-int, .vt-key .tone-int { background: var(--t-int); color: var(--t-fg) }
+.vtable .tone-hint, .vtable tbody tr:nth-child(even) td.tone-hint, .vt-key .tone-hint { background: var(--t-hint); color: var(--t-fg) }
+.vtable .tone-high, .vtable tbody tr:nth-child(even) td.tone-high, .vt-key .tone-high { background: var(--t-high); color: var(--t-fg) }
+.vtable .tone-unc, .vtable tbody tr:nth-child(even) td.tone-unc, .vt-key .tone-unc { background: var(--t-unc); color: var(--t-fg) }
+.vtable .tone-na, .vtable tbody tr:nth-child(even) td.tone-na { background: var(--surface); color: var(--muted); font-style: italic }
+.vt-key .tone-na { background: var(--surface); border: 1px solid var(--line) }
+.vtable td.vt-split { padding: 0 }
+.vt-split > div { padding: 6px 10px; font-size: .84rem }
+.vt-split > div + div { border-top: 1px solid var(--line) }
+.vtable tr.vt-group th { background: var(--teal-soft); color: var(--fg); font-weight: 700; letter-spacing: .01em; text-transform: none; white-space: normal; padding: 6px 10px }
+.vtable tbody th .vt-code { display: block; font-family: var(--f-display); font-size: 1rem; color: var(--teal) }
+.vtable tbody th .vt-desc { display: block; font-weight: 400; font-size: .82rem; color: var(--muted); white-space: normal; min-width: 16ch }
+.vt-matrix tbody th { white-space: normal; min-width: 180px; background: var(--surface) }
+.vt-matrix td { font-size: .84rem; font-weight: 600; min-width: 110px }
+.vt-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .82rem; margin: 6px 0 8px }
+.vt-key { display: inline-flex; align-items: center; gap: 6px }
+.vt-key i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0, 0, 0, .12) }
+@media print { .vtable [class^="tone-"], .vt-key i { -webkit-print-color-adjust: exact; print-color-adjust: exact } }
 .vt-note { font-size: .84rem; color: var(--muted); margin: 8px 0 }
 .vt-links { margin: 8px 0 0 }
 .vt:target { outline: 3px solid var(--teal); outline-offset: 6px; border-radius: 6px }

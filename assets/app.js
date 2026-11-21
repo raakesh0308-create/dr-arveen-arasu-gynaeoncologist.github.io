@@ -1069,6 +1069,13 @@ V.staging = () => `<span class="eyebrow">Staging module</span><h1>Staging system
   <p class="banner info">Definitions are <b>ARVEEN educational paraphrases</b> of the FIGO criteria, not the published text, and are NOT VERIFIED. Formal staging is kept separate from treatment recommendations. Do not mix criteria between versions.</p>
   ${byDisease(D.staging, s => s.cancer, its => `<div class="list">${its.map(s => `<a class="row" href="${url(`s.${s.id}`)}"><span class="row-t">${esc(s.name)} <span class="mono">${esc(s.authority)} ${esc(s.version)}</span> ${s.superseded ? '<span class="pill bad">Superseded</span>' : ""} ${listPill(s.status || "NOT VERIFIED")}</span><span class="row-m">${s.stages.length ? s.stages.length + " main stages" : "criteria not entered"}</span></a>`).join("")}</div>`)}
   <p><a class="btn" href="${url(`education`)}">Practise with staging exercises →</a></p>`;
+/* FIGO-style staging table: main stages as banded rows, sub-stages indented underneath. */
+function stageTable(list) {
+  const rows = [], walk = (xs, d, anc) => xs.forEach(x => { rows.push({ ...x, d0: x.d, depth: d, anc }); if (x.sub) walk(x.sub, d + 1, [...anc, x.s]); });
+  walk(list, 0, []);
+  return `<div class="tablewrap"><table class="stable"><caption class="sr-only">Stage definitions</caption><thead><tr><th scope="col">Stage</th><th scope="col">Description</th></tr></thead><tbody>
+    ${rows.map(r => `<tr class="st-d${Math.min(r.depth, 2)}" data-s="${esc(r.s)}" data-anc="${esc(r.anc.join("|"))}"><th scope="row"><span class="st-code">${esc(r.s)}</span></th><td>${esc(r.d0)}</td></tr>`).join("")}</tbody></table></div>`;
+}
 function stageTree(list) {
   return list.map(x => x.sub ? `<details class="stage" open><summary><span class="code">${esc(x.s)}</span><span>${esc(x.d)}</span></summary><div class="kids">${stageTree(x.sub)}</div></details>`
     : `<div class="stage leaf"><div class="sum"><span class="code">${esc(x.s)}</span><span>${esc(x.d)}</span></div></div>`).join("");
@@ -1081,7 +1088,8 @@ V.s = id => {
     <div class="actions">${bmBtn("Staging", s.id, s.name + " " + s.version)}<input type="text" id="sfilter" placeholder="Filter stages, e.g. IIIC or node" aria-label="Filter stages" style="max-width:280px"></div></div>
   ${s.superseded ? `<p class="banner bad">Superseded by <a href="${url(`s.${s.supersededBy}`)}">${esc(byId(D.staging, s.supersededBy).name)} ${esc(byId(D.staging, s.supersededBy).version)}</a>. Use only to interpret older reports.</p>` : ""}
   <p class="prose">${esc(s.notes)}</p>
-  ${s.stages.length ? `<div class="list" id="stree">${stageTree(s.stages)}</div>` : `<p class="muted">Criteria not entered.</p>`}
+  ${s.stages.length ? `<div id="stree">${stageTable(s.stages)}</div>` : `<p class="muted">Criteria not entered.</p>`}
+  ${(D.visuals || []).filter(v => v.disease === s.cancer && /stag|risk group/i.test(v.title) && !/superseded/i.test(v.title)).map(v => vTable(v, { h: "h2" })).join("")}
   ${s.sourceCheck ? `<p class="banner slim">${esc(s.sourceCheck)}</p>` : ""}
   <p class="muted" style="font-size:.84rem">Source: ${s.citation ? esc(s.citation) : `${esc(s.authority)} ${esc(s.version)} staging publication (citation to be recorded by reviewer)`}. Any staging assignment requires clinician verification.</p></article>`;
 };
@@ -1161,6 +1169,34 @@ const refLink = id => {
    figure). Questions are white, actions orange, referrals purple, outcomes blue, missing information amber.
    A step reached by more than one route is drawn once; later arrows point to it by name. */
 let algoView = store.get("algoView", "steps");
+/* Flowchart viewer: drag to pan, zoom buttons / Ctrl+wheel / +- keys, double-click to centre a box, full screen. */
+function flowPanZoom(fw) {
+  const fl = fw.querySelector(".flow"), zl = $(".flow-zl"); let z = 1;
+  const centreOn = (el, smooth) => { const w = fw.getBoundingClientRect(), r = el.getBoundingClientRect();
+    fw.scrollTo({ left: fw.scrollLeft + r.left - w.left + r.width / 2 - fw.clientWidth / 2, top: fw.scrollTop + r.top - w.top - 24, behavior: smooth ? "smooth" : "auto" }); };
+  const setZ = (nz, cx, cy) => { nz = Math.min(2, Math.max(.2,Math.round(nz * 100) / 100)); if (nz === z) return;
+    const w = fw.getBoundingClientRect(); cx ??= fw.clientWidth / 2; cy ??= fw.clientHeight / 2;
+    const px = (fw.scrollLeft + cx) / z, py = (fw.scrollTop + cy) / z; z = nz; fl.style.zoom = z;
+    fw.scrollLeft = px * z - cx; fw.scrollTop = py * z - cy; if (zl) zl.textContent = Math.round(z * 100) + "%"; };
+  const fit = () => { setZ(Math.min(1, (fw.clientWidth - 8) / (fw.scrollWidth / z))); fw.scrollLeft = 0; };
+  document.querySelectorAll("[data-fz]").forEach(b => b.onclick = () => { const v = b.dataset.fz;
+    if (v === "fit") return fit(); if (v === "0") { setZ(1); return centreOn(fl.querySelector(".fbox"), true); }
+    if (v === "full") { const on = fw.classList.toggle("full"); b.setAttribute("aria-pressed", on); b.textContent = on ? "Exit full screen" : "Full screen"; document.body.classList.toggle("flow-full", on); return fw.focus(); }
+    setZ(z + (+v) * .15); });
+  let drag = null;
+  fw.addEventListener("pointerdown", e => { if (e.button !== 0 || e.pointerType === "touch" || e.target.closest("a,button")) return;
+    drag = { x: e.clientX, y: e.clientY, l: fw.scrollLeft, t: fw.scrollTop, moved: false }; fw.setPointerCapture(e.pointerId); });
+  fw.addEventListener("pointermove", e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 4) return; drag.moved = true; fw.classList.add("dragging");
+    fw.scrollLeft = drag.l - dx; fw.scrollTop = drag.t - dy; });
+  const end = () => { drag = null; fw.classList.remove("dragging"); };
+  fw.addEventListener("pointerup", end); fw.addEventListener("pointercancel", end);
+  fw.addEventListener("wheel", e => { if (!e.ctrlKey) return; e.preventDefault(); const w = fw.getBoundingClientRect(); setZ(z * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX - w.left, e.clientY - w.top); }, { passive: false });
+  fw.addEventListener("dblclick", e => { const b = e.target.closest(".fbox"); if (b) centreOn(b, true); });
+  fw.addEventListener("keydown", e => { if (e.key === "+" || e.key === "=") { setZ(z + .15); e.preventDefault(); } else if (e.key === "-") { setZ(z - .15); e.preventDefault(); }
+    else if (e.key === "Escape" && fw.classList.contains("full")) document.querySelector('[data-fz="full"]').click(); });
+  requestAnimationFrame(() => { const root = fl.querySelector(".flow > ul > li > .fbox"); if (root) fw.scrollLeft = Math.max(0, root.offsetLeft + root.offsetWidth / 2 - fw.clientWidth / 2); });
+}
 function algoFlow(a) {
   const seen = new Set(), label = { action: "Investigation", escalate: "Referral / escalation", missing: "Missing information", info: "Outcome" };
   const short = s => { const t = String(s); return t.length > 190 ? t.slice(0, 187).replace(/\s+\S*$/, "") + "…" : t; };
@@ -1174,19 +1210,33 @@ function algoFlow(a) {
     if (n.end || depth > 12) return box(k, n);
     return `${box(k, n)}<ul>${n.options.map(([t, to]) => `<li><span class="fedge">${esc(t)}</span>${node(to, depth + 1)}</li>`).join("")}</ul>`;
   };
-  return `<p class="muted no-print" style="font-size:.86rem">The whole pathway at a glance. On a small screen, scroll sideways. Each outcome lists the recommendations it is based on.</p>
-  <div class="flow-wrap" tabindex="0" aria-label="Flowchart of ${esc(a.title)}"><div class="flow"><ul><li>${node("start", 0)}</li></ul></div></div>
+  return `<p class="muted no-print" style="font-size:.86rem">The whole pathway at a glance. Drag with the mouse to move around, use the zoom buttons (or Ctrl + scroll wheel) to enlarge, and double-click a box to centre it. Each outcome lists the recommendations it is based on.</p>
+  <div class="flow-tools no-print" role="toolbar" aria-label="Flowchart view"><button type="button" class="btn" data-fz="-1" aria-label="Zoom out">−</button><span class="flow-zl" aria-live="polite">100%</span><button type="button" class="btn" data-fz="1" aria-label="Zoom in">+</button><button type="button" class="btn" data-fz="fit">Fit to width</button><button type="button" class="btn" data-fz="0">Reset</button><button type="button" class="btn" data-fz="full" aria-pressed="false">Full screen</button></div>
+  <div class="flow-wrap" tabindex="0" aria-label="Flowchart of ${esc(a.title)}. Drag to move; arrow keys scroll; plus and minus keys zoom."><div class="flow"><ul><li>${node("start", 0)}</li></ul></div></div>
   <div class="flow-key" aria-hidden="true"><span class="fbox f-q">Question</span><span class="fbox f-action">Investigation</span><span class="fbox f-escalate">Referral</span><span class="fbox f-info">Outcome</span><span class="fbox f-missing">Missing information</span></div>
   <div class="algo-actions no-print"><button class="btn" data-print>Print this flowchart</button></div>`;
 }
 /* Tables & flowcharts: DR ARVEEN's own abridged guideline tables (visuals collection) and every pathway as a flowchart. */
+/* Table cells: "A · B" = separate lines; "[low] text" = coloured risk cell (low/int/hint/high/unc/na); **bold**.
+   First cell "IA1 · description" shows the stage code above its description. */
+const VT_TONES = new Set(["low", "int", "hint", "high", "unc", "na"]);
+const vInl = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+function vCell(c, i) {
+  const segs = String(c).split(" · ").map(s => { const m = s.match(/^\[([a-z]+)\]\s*(.*)$/s); return m && VT_TONES.has(m[1]) ? { t: m[1], s: m[2] } : { t: "", s }; });
+  if (i === 0) { const [h, ...rest] = segs; const tone = h.t ? ` class="tone-${h.t}"` : "";
+    return `<th scope="row"${tone}>${rest.length ? `<span class="vt-code">${vInl(h.s)}</span><span class="vt-desc">${rest.map(x => vInl(x.s)).join("<br>")}</span>` : vInl(h.s)}</th>`; }
+  const tones = [...new Set(segs.map(x => x.t))];
+  if (tones.length === 1) return `<td${tones[0] ? ` class="tone-${tones[0]}"` : ""}>${segs.map(x => vInl(x.s)).join("<br>")}</td>`;
+  return `<td class="vt-split">${segs.map(x => `<div${x.t ? ` class="tone-${x.t}"` : ""}>${vInl(x.s)}</div>`).join("")}</td>`;
+}
 function vTable(v, opts = {}) {
   const g = byId(D.guidelines, v.guideline), paths = (v.pathways || []).map(p => byId(D.algorithms || [], p)).filter(Boolean);
   return `<section class="vt" id="vt-${esc(v.id)}"><${opts.h || "h3"}>${esc(v.title)}</${opts.h || "h3"}>
     <p class="vt-src">${listPill(v.status)} Source: <a href="${url(`g.${v.guideline}`)}">${esc(g ? orgs(g) + " " + (g.version || "") : v.guideline)}</a> · ${esc(v.source)} · abridged by DR ARVEEN</p>
-    <div class="tablewrap"><table class="vtable"><thead><tr>${v.columns.map(c => `<th scope="col">${esc(c)}</th>`).join("")}</tr></thead>
-    <tbody>${v.rows.map(r => `<tr>${r.map((c, i) => i === 0 ? `<th scope="row">${esc(c)}</th>` : `<td>${String(c).split(" · ").map(esc).join("<br>")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
-    ${v.note ? `<p class="vt-note">${fmt(v.note)}</p>` : ""}
+    ${v.legend ? `<p class="vt-legend">${v.legend.map(([t, l]) => `<span class="vt-key"><i class="tone-${esc(t)}"></i>${esc(l)}</span>`).join("")}</p>` : ""}
+    <div class="tablewrap"><table class="vtable${v.legend ? " vt-matrix" : ""}"><thead><tr>${v.columns.map(c => `<th scope="col">${esc(c)}</th>`).join("")}</tr></thead>
+    <tbody>${v.rows.map(r => Array.isArray(r) ? `<tr>${r.map((c, i) => vCell(c, i)).join("")}</tr>` : `<tr class="vt-group"><th scope="rowgroup" colspan="${v.columns.length}">${vInl(r.group)}</th></tr>`).join("")}</tbody></table></div>
+    ${v.note ? `<p class="vt-note">${fmt(v.note).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")}</p>` : ""}
     ${paths.length ? `<p class="vt-links">${paths.map(a => `<a class="btn" href="${url("algorithms")}?id=${encodeURIComponent(a.id)}&view=flow">Flowchart: ${esc(a.title.split(":")[0])} →</a>`).join(" ")}</p>` : ""}</section>`;
 }
 V.visuals = () => {
@@ -2099,11 +2149,13 @@ function render() {
   app.querySelectorAll("[data-step]").forEach(b => b.onclick = () => { algoPath = algoPath.slice(0, +b.dataset.step + 1).concat(b.dataset.to); render(); toLast(); });
   const ar = $("#algoreset"); if (ar) ar.onclick = () => { algoPath = []; render(); };
   app.querySelectorAll("[data-algoview]").forEach(b => b.onclick = () => { algoView = b.dataset.algoview; store.set("algoView", algoView); render(); });
-  const fw = $(".flow-wrap"); if (fw) requestAnimationFrame(() => { const root = fw.querySelector(".flow > ul > li > .fbox"); if (root) fw.scrollLeft = Math.max(0, root.offsetLeft + root.offsetWidth / 2 - fw.clientWidth / 2); });
+  const fw = $(".flow-wrap"); if (fw) flowPanZoom(fw);
   const ab = $("#algoback"); if (ab) ab.onclick = () => { algoPath = algoPath.slice(0, -1); render(); toLast(); };
   app.querySelectorAll("[data-algo]").forEach(b => b.onclick = () => { algoId = b.dataset.algo; algoPath = []; history.replaceState(null, "", "?id=" + encodeURIComponent(algoId)); render(); });
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
-  const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.toLowerCase(); $("#stree").querySelectorAll(".stage").forEach(s => { s.hidden = q && !s.textContent.toLowerCase().includes(q); }); };
+  const sf = $("#sfilter"); if (sf) sf.oninput = () => { const q = sf.value.trim().toLowerCase(), rows = [...$("#stree").querySelectorAll("tr[data-s]")];
+    const hit = new Set(rows.filter(r => !q || r.textContent.toLowerCase().includes(q)).flatMap(r => [r.dataset.s, ...r.dataset.anc.split("|").filter(Boolean)]));
+    rows.forEach(r => { r.hidden = !!q && !hit.has(r.dataset.s); }); };
   const gq = $("#gq"); if (gq) gq.oninput = () => app.querySelectorAll("[data-term]").forEach(r => r.hidden = !r.dataset.term.includes(gq.value.toLowerCase()));
   bindFilters(); bindCalcs(); bindQuiz(); bindGen(); bindSdm(); bindTracker(); bindAuth(); bindCms(); bindReview(); bindNotes(); bindAdminWs(); bindWorkspace(); bindSecurity(); bindTool(); bindCarousel();
 }
