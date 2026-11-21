@@ -1153,6 +1153,28 @@ const refLink = id => {
   const l = (D.literature || []).find(x => x.id === id); if (l) return `<a href="https://doi.org/${esc(l.doi)}" target="_blank" rel="noopener">${esc(l.authors.split(",")[0])} ${esc(l.citation.match(/20\d\d/)?.[0] || "")} ↗</a>`;
   return esc(id);
 };
+/* Flowchart view: the pathway's own decision tree drawn as boxes and arrows (generated from our data, not a copied
+   figure). Questions are white, actions orange, referrals purple, outcomes blue, missing information amber.
+   A step reached by more than one route is drawn once; later arrows point to it by name. */
+let algoView = store.get("algoView", "steps");
+function algoFlow(a) {
+  const seen = new Set(), label = { action: "Investigation", escalate: "Referral / escalation", missing: "Missing information", info: "Outcome" };
+  const short = s => { const t = String(s); return t.length > 190 ? t.slice(0, 187).replace(/\s+\S*$/, "") + "…" : t; };
+  const box = (k, n) => n.end
+    ? `<div class="fbox f-${esc(n.kind || "info")}" id="fl-${esc(k)}"><span class="fk">${label[n.kind] || "Outcome"}</span>${esc(short(n.end))}${n.refs?.length ? `<span class="fref">${n.refs.slice(0, 4).map(refLink).join(" · ")}${n.refs.length > 4 ? ` +${n.refs.length - 4}` : ""}</span>` : ""}${n.calc && CALCS[n.calc] ? `<a class="fcalc" href="${url("calculators")}#calc-${esc(n.calc)}">${esc(CALCS[n.calc].title)} ↗</a>` : ""}</div>`
+    : `<div class="fbox f-q" id="fl-${esc(k)}">${esc(short(n.q))}${n.calc && CALCS[n.calc] ? `<a class="fcalc" href="${url("calculators")}#calc-${esc(n.calc)}">${esc(CALCS[n.calc].title)} ↗</a>` : ""}</div>`;
+  const node = (k, depth) => {
+    const n = a.nodes[k]; if (!n) return "";
+    if (seen.has(k)) return `<div class="fbox f-link"><a href="#fl-${esc(k)}">→ continues at: ${esc(short(n.q || n.end).slice(0, 70))}…</a></div>`;
+    seen.add(k);
+    if (n.end || depth > 12) return box(k, n);
+    return `${box(k, n)}<ul>${n.options.map(([t, to]) => `<li><span class="fedge">${esc(t)}</span>${node(to, depth + 1)}</li>`).join("")}</ul>`;
+  };
+  return `<p class="muted no-print" style="font-size:.86rem">The whole pathway at a glance. On a small screen, scroll sideways. Each outcome lists the recommendations it is based on.</p>
+  <div class="flow-wrap" tabindex="0" aria-label="Flowchart of ${esc(a.title)}"><div class="flow"><ul><li>${node("start", 0)}</li></ul></div></div>
+  <div class="flow-key" aria-hidden="true"><span class="fbox f-q">Question</span><span class="fbox f-action">Investigation</span><span class="fbox f-escalate">Referral</span><span class="fbox f-info">Outcome</span><span class="fbox f-missing">Missing information</span></div>
+  <div class="algo-actions no-print"><button class="btn" data-print>Print this flowchart</button></div>`;
+}
 /* Pathway library (no ?id=) and pathway runner (?id=A-…). */
 const algoDis = a => a.disease === "all" ? "All cancers" : dname(a.disease);
 function algoLibrary() {
@@ -1186,8 +1208,9 @@ V.algorithms = () => {
   ${a.sourceNote ? `<p class="muted" style="font-size:.86rem">${esc(a.sourceNote)}</p>` : ""}
   <p class="banner info">Educational pathway. Where information is missing it says so instead of forcing a conclusion. It does not select treatment: the MDT decides.</p>
   <p class="prose"><b>Entry criteria:</b> ${esc(a.entry)}</p>
-  <p class="algo-progress" aria-live="polite">${done ? `<b>Finished</b> after ${qn} question${qn === 1 ? "" : "s"}.` : `Question ${qn}. Choose an answer to continue.`}</p>
-  <div class="algo" aria-live="polite">${steps}<div class="algo-actions">${algoPath.length > 1 ? `<button class="btn" id="algoback">← Back one step</button>` : ""}<button class="btn" id="algoreset">Start again</button>${algoPath.length > 1 ? `<button class="btn" data-print>Print this pathway</button>` : ""}</div></div>
+  <div class="chips algo-views no-print" role="group" aria-label="View"><button class="chip" data-algoview="steps" aria-pressed="${algoView !== "flow"}">Step by step</button><button class="chip" data-algoview="flow" aria-pressed="${algoView === "flow"}">Flowchart</button></div>
+  ${algoView === "flow" ? algoFlow(a) : `<p class="algo-progress" aria-live="polite">${done ? `<b>Finished</b> after ${qn} question${qn === 1 ? "" : "s"}.` : `Question ${qn}. Choose an answer to continue.`}</p>
+  <div class="algo" aria-live="polite">${steps}<div class="algo-actions">${algoPath.length > 1 ? `<button class="btn" id="algoback">← Back one step</button>` : ""}<button class="btn" id="algoreset">Start again</button>${algoPath.length > 1 ? `<button class="btn" data-print>Print this pathway</button>` : ""}</div></div>`}
   ${others.length ? `<section class="section no-print"><h2>Related pathways</h2><div class="chips">${others.map(x => `<a class="chip" href="${url("algorithms")}?id=${encodeURIComponent(x.id)}">${esc(x.title.split(":")[0])}</a>`).join("")}</div></section>` : ""}
   <p class="print-only muted">Printed ${new Date().toISOString().slice(0, 10)} from DR ARVEEN. Educational pathway, NOT VERIFIED unless stated above. The MDT decides treatment.</p>`;
 };
@@ -2049,6 +2072,8 @@ function render() {
   const toLast = () => requestAnimationFrame(() => { const l = $("#algo-last"); if (l) { l.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); l.querySelector("button, a")?.focus({ preventScroll: true }); } });
   app.querySelectorAll("[data-step]").forEach(b => b.onclick = () => { algoPath = algoPath.slice(0, +b.dataset.step + 1).concat(b.dataset.to); render(); toLast(); });
   const ar = $("#algoreset"); if (ar) ar.onclick = () => { algoPath = []; render(); };
+  app.querySelectorAll("[data-algoview]").forEach(b => b.onclick = () => { algoView = b.dataset.algoview; store.set("algoView", algoView); render(); });
+  const fw = $(".flow-wrap"); if (fw) requestAnimationFrame(() => { const root = fw.querySelector(".flow > ul > li > .fbox"); if (root) fw.scrollLeft = Math.max(0, root.offsetLeft + root.offsetWidth / 2 - fw.clientWidth / 2); });
   const ab = $("#algoback"); if (ab) ab.onclick = () => { algoPath = algoPath.slice(0, -1); render(); toLast(); };
   app.querySelectorAll("[data-algo]").forEach(b => b.onclick = () => { algoId = b.dataset.algo; algoPath = []; history.replaceState(null, "", "?id=" + encodeURIComponent(algoId)); render(); });
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };
