@@ -693,7 +693,7 @@ function bindCarousel() {
 V.home = () => `${carousel("pro")}
   <section class="hero hero-pro">
     <span class="eyebrow">Gynaecological oncology reference · Malaysia</span>
-    <h1>DR ARVEEN — Evidence-Based Gynaecological Oncology.</h1>
+    <h1 class="brand-title"><span class="bt-name">DR ARVEEN</span><span class="bt-full"><span class="bt-line">Advanced Reference and Verified Evidence Network</span> <span class="bt-line">for Gynaecological Oncology</span></span></h1>
     <p>Find clinical guidelines, staging criteria, treatment protocols, clinical trial evidence, and patient education resources in one integrated platform.</p>
     <form class="bigsearch" id="hs"><input id="hq" type="search" aria-label="Search" placeholder="Search a cancer, guideline, treatment, biomarker, drug, or clinical question."><button>Search</button></form>
     <div class="chips">${["Ovarian cancer", "FIGO 2023 endometrial staging", "Recurrent cervical cancer", "Carboplatin and paclitaxel", "Sentinel lymph node", "BRCA1 and BRCA2", "Endometrial molecular classification"].map(s => `<button class="chip" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>
@@ -1753,7 +1753,7 @@ const notFound = () => `<h1>Record not found</h1><p><a href="index.html">Return 
 
 /* ---------- views: welcome, accounts, governance ---------- */
 V.welcome = () => `<section class="hero hero-welcome"><span class="eyebrow">Gynaecological oncology · Malaysia</span>
-  <h1>DR ARVEEN — Evidence-Based Gynaecological Oncology.</h1>
+  <h1 class="brand-title"><span class="bt-name">DR ARVEEN</span><span class="bt-full"><span class="bt-line">Advanced Reference and Verified Evidence Network</span> <span class="bt-line">for Gynaecological Oncology</span></span></h1>
   <p>Clinical guidelines, staging, treatment protocols and trial evidence for healthcare professionals, and clear, reliable information for patients and the people who care for them.</p></section>
   <div class="cols">
     <a class="tile entry" href="professional.html"><span class="eyebrow">For healthcare professionals</span><b>Clinical reference</b><span>Guidelines, recommendations, FIGO staging, protocols, drug monographs, trials, calculators and education. Sign-in required: accounts are approved after we verify your professional registration.</span><span class="btn primary">${state.user ? "Open the clinical reference" : "Sign in"}</span></a>

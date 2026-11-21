@@ -775,3 +775,10 @@ textarea.mono { font-family: ui-monospace, Consolas, monospace; font-size: .82re
 .step-calc { margin: 6px 0 }
 .step-calc .btn { font-size: .84rem }
 @media print { .calc-copy, .calc-tools, .step-calc, .algo-actions { display: none } }
+
+/* Brand title: name on its own line, full name in two balanced lines */
+.hero h1.brand-title { max-width: none; display: grid; gap: .35em; line-height: 1.1 }
+.brand-title .bt-name { font-size: clamp(2.2rem, 5.2vw, 3.4rem); letter-spacing: .01em }
+.brand-title .bt-full { font-size: clamp(1.15rem, 2.3vw, 1.6rem); font-weight: 600; line-height: 1.3; color: var(--muted); max-width: 34ch; text-wrap: balance }
+.brand-title .bt-line { display: inline }
+@media (min-width: 700px) { .brand-title .bt-line { display: block; white-space: nowrap } }
