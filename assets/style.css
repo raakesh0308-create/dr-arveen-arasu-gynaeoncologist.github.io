@@ -929,3 +929,9 @@ mark.hl-y { background: #fff176 } mark.hl-g { background: #b9f6ca } mark.hl-p { 
 .hl-sw.hl-y { background: #fff176 } .hl-sw.hl-g { background: #b9f6ca } .hl-sw.hl-p { background: #ffcdd2 } .hl-sw.hl-b { background: #b3e5fc }
 .hl-pop button:not(.hl-sw) { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: .82rem }
 @media print { .mn-fab, .hl-pop { display: none !important } mark.uhl { -webkit-print-color-adjust: exact; print-color-adjust: exact } }
+.mn-card { position: relative }
+.mn-layer .mn-card { position: absolute }
+.mn-bubble { position: absolute; z-index: 20; display: flex; align-items: center; gap: 3px; padding: 5px 6px; background: #fff; border: 1px solid #d8cfaa; border-radius: 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, .2); white-space: nowrap }
+.mn-sep { width: 1px; height: 18px; background: #e0d6b0; margin: 0 2px }
+.mn-sw[aria-pressed="true"], .mn-b[aria-pressed="true"] { box-shadow: 0 0 0 2px #0d5c63; border-color: #0d5c63 }
+.mn-bubble { flex-wrap: wrap; max-width: min(320px, calc(100vw - 24px)); white-space: normal }

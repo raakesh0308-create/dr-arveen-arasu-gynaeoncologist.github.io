@@ -2224,6 +2224,60 @@ function mnClose(card) {
   const tmp = document.createElement("div"); tmp.innerHTML = mnCard(k, card.querySelector(".mn-open").getAttribute("aria-label").replace(/^(Edit|Add) my note on /, ""), html);
   const n = tmp.firstElementChild; n._head = head; card.replaceWith(n); mnLayout();
 }
+/* Remove note highlighting properly: split any highlighted wrapper around the selection so no colour shows through. */
+const mnBg = el => { const v = el.style?.backgroundColor; return v && v !== "transparent" && v !== "initial" && v !== "inherit"; };
+function mnUnhighlight(ed) {
+  const sel = getSelection(); if (!sel.rangeCount || !ed.contains(sel.anchorNode)) return;
+  if (sel.isCollapsed) { let el = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+    while (el && el !== ed) { if (mnBg(el)) el.style.backgroundColor = ""; el = el.parentElement; } }
+  else {
+    const SENT = "rgb(1, 2, 3)"; document.execCommand("hiliteColor", false, SENT);
+    for (const s of [...ed.querySelectorAll("span")].filter(x => x.style.backgroundColor === SENT)) {
+      let a = s.parentElement;
+      while (a && a !== ed) { const up = a.parentElement;
+        if (mnBg(a)) {
+          const before = document.createRange(); before.setStart(a, 0); before.setEndBefore(s);
+          const after = document.createRange(); after.setStartAfter(s); after.setEnd(a, a.childNodes.length);
+          const fb = before.extractContents(), fa = after.extractContents();
+          if (fb.textContent) { const c = a.cloneNode(false); c.append(fb); a.before(c); }
+          if (fa.textContent) { const c = a.cloneNode(false); c.append(fa); a.after(c); }
+          a.style.backgroundColor = "";
+        }
+        a = up; }
+      s.querySelectorAll("span").forEach(x => { if (mnBg(x)) x.style.backgroundColor = ""; });
+      s.style.backgroundColor = "";
+    }
+  }
+  ed.querySelectorAll("span").forEach(x => { if (!x.getAttribute("style")) x.replaceWith(...x.childNodes); });
+}
+/* Floating colour bar when text is selected in a note, and current pen/highlighter shown as pressed. */
+const mnRgb = h => { const n = parseInt(h.slice(1), 16); return `rgb(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255})`; };
+function mnState(ed) {
+  const sel = getSelection(); let el = sel.anchorNode && (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement);
+  if (!el || !ed.contains(el)) return {}; const color = getComputedStyle(el).color; let bg = "";
+  for (let x = el; x && x !== ed; x = x.parentElement) { const b = getComputedStyle(x).backgroundColor; if (b && b !== "rgba(0, 0, 0, 0)" && b !== "transparent") { bg = b; break; } }
+  return { color, bg };
+}
+function mnBubble() {
+  const sel = getSelection(), ed = sel.anchorNode && (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement)?.closest(".mn-ed");
+  document.querySelectorAll(".mn-bubble").forEach(b => { if (!ed || !b.closest(".mn-card").contains(ed)) b.remove(); });
+  if (!ed) return;
+  const card = ed.closest(".mn-card"), st = mnState(ed);
+  card.querySelectorAll("[data-pen]").forEach(b => b.setAttribute("aria-pressed", mnRgb(b.dataset.pen) === st.color));
+  card.querySelectorAll("[data-hil]").forEach(b => b.setAttribute("aria-pressed", b.dataset.hil === "transparent" ? !st.bg : mnRgb(b.dataset.hil) === st.bg));
+  let bub = card.querySelector(".mn-bubble");
+  if (sel.isCollapsed || !sel.rangeCount) { bub?.remove(); return; }
+  if (!bub) { card.insertAdjacentHTML("beforeend", `<div class="mn-bubble" role="toolbar" aria-label="Colour for selected text">
+      ${MN_PENS.map(([c, n]) => `<button type="button" class="mn-sw" data-pen="${c}" title="${n} pen" aria-label="${n} pen"><i style="background:${c}"></i></button>`).join("")}<span class="mn-sep"></span>
+      ${MN_HIL.map(([c, n]) => `<button type="button" class="mn-sw hl" data-hil="${c}" title="${n} highlighter" aria-label="${n} highlighter"><i style="background:${c}"></i></button>`).join("")}<button type="button" class="mn-b" data-hil="transparent" title="Remove highlight" aria-label="Remove highlight">⌫</button><span class="mn-sep"></span>
+      <button type="button" class="mn-b" data-cmd="bold" aria-label="Bold"><b>B</b></button><button type="button" class="mn-b" data-cmd="italic" aria-label="Italic"><i>I</i></button><button type="button" class="mn-b" data-cmd="underline" aria-label="Underline"><u>U</u></button></div>`); bub = card.querySelector(".mn-bubble");
+    bub.querySelectorAll("[data-pen]").forEach(b => b.setAttribute("aria-pressed", mnRgb(b.dataset.pen) === st.color));
+    bub.querySelectorAll("[data-hil]").forEach(b => b.setAttribute("aria-pressed", b.dataset.hil === "transparent" ? !st.bg : mnRgb(b.dataset.hil) === st.bg)); }
+  const r = sel.getRangeAt(0).getBoundingClientRect(), c = card.getBoundingClientRect();
+  const left = Math.max(0, Math.min(r.left - c.left, c.width - bub.offsetWidth)), top = r.top - c.top - bub.offsetHeight - 8;
+  bub.style.left = left + "px"; bub.style.top = (top < -c.top + 4 ? r.bottom - c.top + 8 : top) + "px";
+}
+document.addEventListener("selectionchange", () => { if (document.querySelector(".mn-card.editing")) setTimeout(mnBubble, 0); });
 function mnTable(ed, op, card) {
   const sel = getSelection(), cell = sel.anchorNode && (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement)?.closest("td,th");
   if (op === "ins") { const r = Math.min(10, Math.max(1, +card.querySelector("[data-trows]").value || 3)), c = Math.min(8, Math.max(1, +card.querySelector("[data-tcols]").value || 2));
@@ -2237,18 +2291,19 @@ function mnTable(ed, op, card) {
   if (op === "delrow") { if (tbl.rows.length > 1) tr.remove(); else tbl.remove(); }
   ed.dispatchEvent(new Event("input"));
 }
-document.addEventListener("mousedown", e => { if (e.target.closest(".mn-tools button, .hl-pop button")) e.preventDefault(); });
+document.addEventListener("mousedown", e => { if (e.target.closest(".mn-tools button, .mn-bubble, .hl-pop button")) e.preventDefault(); });
 document.addEventListener("click", e => {
   const card = e.target.closest(".mn-card"); if (!card) return;
   if (e.target.closest(".mn-open") || (e.target.closest(".mn-prev") && !card.classList.contains("editing"))) return card.classList.contains("editing") ? mnClose(card) : mnEdit(card);
   const ed = card.querySelector(".mn-ed"); if (!ed) return; const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.pen) document.execCommand("foreColor", false, b.dataset.pen);
+  else if (b.dataset.hil === "transparent") mnUnhighlight(ed);
   else if (b.dataset.hil) document.execCommand("hiliteColor", false, b.dataset.hil);
   else if (b.dataset.cmd) document.execCommand(b.dataset.cmd);
   else if (b.dataset.tbl) mnTable(ed, b.dataset.tbl, card);
   else if ("mnclear" in b.dataset) { if (confirm("Delete this note?")) { ed.innerHTML = "<div><br></div>"; mnClose(card); } return; }
   else if ("mndone" in b.dataset) return mnClose(card);
-  ed.dispatchEvent(new Event("input")); ed.focus();
+  ed.dispatchEvent(new Event("input")); ed.focus(); setTimeout(mnBubble, 0);
 });
 /* Highlights: stored as exact text + which occurrence on the page, re-applied after each render. */
 function hlTextNodes() {
