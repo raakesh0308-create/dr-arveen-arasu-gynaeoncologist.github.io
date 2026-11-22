@@ -67,7 +67,7 @@ let state = { aud: store.get("aud", "pro"), q: "", lang: store.get("lang", "en")
 /* ---------- personal workspace (bookmarks, recently viewed, private notes), sandboxed per account ----------
    Signed in: kept under the account (Supabase table user_workspace, readable only by its owner), with a
    per-account cache in this browser that is wiped on sign-out. Signed out (patients): kept in this browser only. */
-const WS_KEYS = ["bm", "recent", "notes"];
+const WS_KEYS = ["bm", "recent", "notes", "mnotes"];
 let wsTimer = null;
 const wsKey = k => state.user ? `u.${state.user.id}.${k}` : k;
 const pstore = {
@@ -76,7 +76,7 @@ const pstore = {
 };
 async function wsPush() {
   if (!sb || !state.user || state.wsCloud === false) return;
-  const data = Object.fromEntries(WS_KEYS.map(k => [k, store.get(wsKey(k), k === "notes" ? {} : [])]));
+  const data = Object.fromEntries(WS_KEYS.map(k => [k, store.get(wsKey(k), k === "notes" || k === "mnotes" ? {} : [])]));
   const { error } = await sb.from("user_workspace").upsert({ user_id: state.user.id, data, updated_at: new Date().toISOString() });
   if (error) state.wsCloud = false;
 }
@@ -2124,6 +2124,177 @@ function bindSuggest() {
 }
 
 /* ---------- router ---------- */
+/* ---------- Margin notes and highlights (healthcare side, approved signed-in users) ----------
+   Each page heading (h1/h2) gets a private note card in the right margin (inline on narrow screens),
+   with pen colours, highlighter, lists and tables. Selected page text can be highlighted in four colours.
+   Saved per account in the personal workspace ("mnotes"), visible only to the owner. */
+const MN_PENS = [["#14232b", "Black"], ["#1f5fbf", "Blue"], ["#c62828", "Red"], ["#2e7d32", "Green"], ["#7b1fa2", "Purple"], ["#ef6c00", "Orange"]];
+const MN_HIL = [["#fff176", "Yellow"], ["#b9f6ca", "Green"], ["#ffcdd2", "Pink"], ["#b3e5fc", "Blue"]];
+const HL_C = { y: "Yellow", g: "Green", p: "Pink", b: "Blue" };
+const mnAllowed = () => !!state.user && approved() && !PT_PAGES.includes(PAGE) && !["login", "register", "reset", "cms", "welcome"].includes(PAGE);
+const mnKey = () => PAGE + (PARAMS.get("id") ? "?" + PARAMS.get("id") : "");
+const mnAll = () => pstore.get("mnotes", {});
+const mnPage = () => mnAll()[mnKey()] || { notes: {}, hl: [] };
+const mnSave = pg => { const a = mnAll(); if (!Object.keys(pg.notes).length && !pg.hl.length) delete a[mnKey()]; else a[mnKey()] = pg; pstore.set("mnotes", a); };
+let mnOn = store.get("mnOn", false);
+const MN_TAGS = new Set(["b", "strong", "i", "em", "u", "s", "br", "div", "p", "span", "ul", "ol", "li", "table", "thead", "tbody", "tr", "td", "th", "font"]);
+const MN_COLOR = /^(#[0-9a-f]{3,8}|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(,\s*[\d.]+\s*)?\)|transparent|initial|inherit)$/i;
+function cleanNote(html) {
+  const t = document.createElement("template"); t.innerHTML = String(html ?? "");
+  const walk = node => { for (const el of [...node.children]) {
+    const tag = el.tagName.toLowerCase(); walk(el);
+    if (!MN_TAGS.has(tag)) { el.replaceWith(...el.childNodes); continue; }
+    const css = []; for (const p of ["color", "background-color"]) { const v = el.style?.getPropertyValue(p)?.trim(); if (v && MN_COLOR.test(v)) css.push(`${p}: ${v}`); }
+    const fc = tag === "font" ? el.getAttribute("color") : null;
+    for (const a of [...el.attributes]) el.removeAttribute(a.name);
+    if (css.length) el.setAttribute("style", css.join("; "));
+    if (fc && MN_COLOR.test(fc)) el.setAttribute("color", fc);
+    if (tag === "table") el.className = "mn-t";
+  } };
+  walk(t.content); return t.innerHTML;
+}
+const mnSlug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "section";
+function mnHeads() {
+  const seen = {};
+  return [...app.querySelectorAll("h1, h2")].filter(h => !h.closest(".mn-layer, .mn-card, .flow-wrap, .suggest, nav, header, footer") && h.offsetParent !== null)
+    .map(h => { let k = mnSlug(h.textContent); seen[k] = (seen[k] || 0) + 1; if (seen[k] > 1) k += "-" + seen[k]; return { h, k }; });
+}
+function mnCard(k, title, html) {
+  const has = !!html.replace(/<[^>]*>|&nbsp;|\s/g, "");
+  return `<div class="mn-card${has ? " has" : ""}" data-mn="${esc(k)}"><button type="button" class="mn-open" aria-expanded="false" aria-label="${has ? "Edit" : "Add"} my note on ${esc(title)}">${has ? "✎ My note" : "＋ Note"}</button>
+    <div class="mn-prev" aria-hidden="${has ? "false" : "true"}">${has ? cleanNote(html) : ""}</div></div>`;
+}
+function mnToolbar() {
+  return `<div class="mn-tools" role="toolbar" aria-label="Note formatting">
+    <span class="mn-grp" aria-label="Pen colour">${MN_PENS.map(([c, n]) => `<button type="button" class="mn-sw" data-pen="${c}" title="${n} pen" aria-label="${n} pen"><i style="background:${c}"></i></button>`).join("")}</span>
+    <span class="mn-grp" aria-label="Highlighter">${MN_HIL.map(([c, n]) => `<button type="button" class="mn-sw hl" data-hil="${c}" title="${n} highlighter" aria-label="${n} highlighter"><i style="background:${c}"></i></button>`).join("")}<button type="button" class="mn-b" data-hil="transparent" title="Remove highlight" aria-label="Remove highlight">⌫</button></span>
+    <span class="mn-grp"><button type="button" class="mn-b" data-cmd="bold" title="Bold" aria-label="Bold"><b>B</b></button><button type="button" class="mn-b" data-cmd="italic" title="Italic" aria-label="Italic"><i>I</i></button><button type="button" class="mn-b" data-cmd="underline" title="Underline" aria-label="Underline"><u>U</u></button><button type="button" class="mn-b" data-cmd="strikeThrough" title="Strike through" aria-label="Strike through"><s>S</s></button></span>
+    <span class="mn-grp"><button type="button" class="mn-b" data-cmd="insertUnorderedList" title="Bullet list" aria-label="Bullet list">•≡</button><button type="button" class="mn-b" data-cmd="insertOrderedList" title="Numbered list" aria-label="Numbered list">1≡</button></span>
+    <span class="mn-grp"><label class="mn-tbl" title="Insert table">⊞ <input type="number" min="1" max="10" value="3" data-trows aria-label="Table rows">×<input type="number" min="1" max="8" value="2" data-tcols aria-label="Table columns"></label><button type="button" class="mn-b" data-tbl="ins" title="Insert table">Table</button><button type="button" class="mn-b" data-tbl="row" title="Add row below">+Row</button><button type="button" class="mn-b" data-tbl="col" title="Add column">+Col</button><button type="button" class="mn-b" data-tbl="delrow" title="Delete row">−Row</button></span>
+    <span class="mn-grp"><button type="button" class="mn-b" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">Tx</button><button type="button" class="mn-b" data-mnclear title="Delete this note">Delete</button><button type="button" class="mn-b mn-done" data-mndone>Done</button></span></div>`;
+}
+function mnLayout() {
+  const layer = app.querySelector(".mn-layer"); if (!layer) return;
+  const top0 = app.getBoundingClientRect().top; let floor = 0;
+  for (const c of layer.querySelectorAll(".mn-card")) {
+    const h = c._head; if (!h) continue;
+    const want = h.getBoundingClientRect().top - top0, t = Math.max(want, floor);
+    c.style.top = t + "px"; floor = t + c.offsetHeight + 8;
+  }
+}
+let mnRO = null;
+function annotate() {
+  document.body.classList.toggle("mn-on", mnAllowed() && mnOn);
+  let fab = $("#mn-fab");
+  if (!mnAllowed()) { fab?.remove(); return; }
+  if (!fab) { document.body.insertAdjacentHTML("beforeend", `<button type="button" id="mn-fab" class="mn-fab no-print" aria-pressed="false"></button>`); fab = $("#mn-fab");
+    fab.onclick = () => { mnOn = !mnOn; store.set("mnOn", mnOn); annotate(); }; }
+  fab.setAttribute("aria-pressed", mnOn); fab.textContent = mnOn ? "✎ Notes & highlights: on" : "✎ Notes & highlights";
+  fab.title = "Your private notes and highlights on this page (only you can see them)";
+  const pg = mnPage();
+  hlApply(pg.hl);
+  app.querySelectorAll(".mn-layer, .mn-card").forEach(x => x.remove());
+  if (!mnOn) return;
+  const wide = matchMedia("(min-width: 1280px)").matches, heads = mnHeads();
+  if (wide) {
+    app.insertAdjacentHTML("beforeend", `<div class="mn-layer no-print" aria-label="My notes on this page">${heads.map(({ h, k }) => mnCard(k, h.textContent.trim(), pg.notes[k] || "")).join("")}</div>`);
+    const cards = app.querySelectorAll(".mn-layer .mn-card"); heads.forEach(({ h }, i) => { cards[i]._head = h; });
+    mnLayout(); mnRO?.disconnect(); mnRO = new ResizeObserver(() => requestAnimationFrame(mnLayout)); mnRO.observe(app);
+  } else heads.forEach(({ h, k }) => { const anchor = getComputedStyle(h.parentElement).display.includes("flex") || getComputedStyle(h.parentElement).display.includes("grid") ? h.parentElement : h;
+    anchor.insertAdjacentHTML("afterend", mnCard(k, h.textContent.trim(), pg.notes[k] || "")); });
+}
+function mnEdit(card) {
+  app.querySelectorAll(".mn-card.editing").forEach(c => { if (c !== card) mnClose(c); });
+  const k = card.dataset.mn, html = mnPage().notes[k] || "";
+  card.classList.add("editing"); card.querySelector(".mn-open").setAttribute("aria-expanded", "true");
+  card.insertAdjacentHTML("beforeend", `${mnToolbar()}<div class="mn-ed" contenteditable="true" role="textbox" aria-multiline="true" aria-label="My note" spellcheck="true">${cleanNote(html) || "<div><br></div>"}</div><p class="mn-hint">Saved automatically · only you can see this</p>`);
+  const ed = card.querySelector(".mn-ed"); ed.focus();
+  try { document.execCommand("styleWithCSS", false, true); document.execCommand("defaultParagraphSeparator", false, "div"); } catch {}
+  let t; ed.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => mnStore(card), 500); mnLayout(); });
+  ed.addEventListener("keydown", e => { if (e.key === "Tab") { const td = getSelection().anchorNode?.parentElement?.closest("td,th"); if (td) { e.preventDefault(); const cells = [...td.closest("table").querySelectorAll("td,th")], n = cells[cells.indexOf(td) + (e.shiftKey ? -1 : 1)]; if (n) { const r = document.createRange(); r.selectNodeContents(n); r.collapse(true); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } } } if (e.key === "Escape") mnClose(card); });
+  mnLayout();
+}
+function mnStore(card) {
+  const ed = card.querySelector(".mn-ed"); if (!ed) return;
+  const pg = mnPage(), html = cleanNote(ed.innerHTML), empty = !html.replace(/<[^>]*>|&nbsp;|\s/g, "") && !/<table/i.test(html);
+  if (empty) delete pg.notes[card.dataset.mn]; else pg.notes[card.dataset.mn] = html; mnSave(pg);
+}
+function mnClose(card) {
+  mnStore(card); const k = card.dataset.mn, head = card._head, html = mnPage().notes[k] || "";
+  const tmp = document.createElement("div"); tmp.innerHTML = mnCard(k, card.querySelector(".mn-open").getAttribute("aria-label").replace(/^(Edit|Add) my note on /, ""), html);
+  const n = tmp.firstElementChild; n._head = head; card.replaceWith(n); mnLayout();
+}
+function mnTable(ed, op, card) {
+  const sel = getSelection(), cell = sel.anchorNode && (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement)?.closest("td,th");
+  if (op === "ins") { const r = Math.min(10, Math.max(1, +card.querySelector("[data-trows]").value || 3)), c = Math.min(8, Math.max(1, +card.querySelector("[data-tcols]").value || 2));
+    document.execCommand("insertHTML", false, `<table class="mn-t" data-new="1"><tbody>${`<tr>${"<td><br></td>".repeat(c)}</tr>`.repeat(r)}</tbody></table><div><br></div>`);
+    const nt = ed.querySelector("table[data-new]"); if (nt) { nt.removeAttribute("data-new"); const rr = document.createRange(); rr.selectNodeContents(nt.querySelector("td")); rr.collapse(true); sel.removeAllRanges(); sel.addRange(rr); }
+    return; }
+  if (!cell || !ed.contains(cell)) return;
+  const tr = cell.parentElement, tbl = tr.closest("table");
+  if (op === "row") { const n = tr.cloneNode(true); n.querySelectorAll("td,th").forEach(x => x.innerHTML = "<br>"); tr.after(n); }
+  if (op === "col") { const i = [...tr.children].indexOf(cell); tbl.querySelectorAll("tr").forEach(r => { const x = document.createElement("td"); x.innerHTML = "<br>"; (r.children[i] || r.lastElementChild).after(x); }); }
+  if (op === "delrow") { if (tbl.rows.length > 1) tr.remove(); else tbl.remove(); }
+  ed.dispatchEvent(new Event("input"));
+}
+document.addEventListener("mousedown", e => { if (e.target.closest(".mn-tools button, .hl-pop button")) e.preventDefault(); });
+document.addEventListener("click", e => {
+  const card = e.target.closest(".mn-card"); if (!card) return;
+  if (e.target.closest(".mn-open") || (e.target.closest(".mn-prev") && !card.classList.contains("editing"))) return card.classList.contains("editing") ? mnClose(card) : mnEdit(card);
+  const ed = card.querySelector(".mn-ed"); if (!ed) return; const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.pen) document.execCommand("foreColor", false, b.dataset.pen);
+  else if (b.dataset.hil) document.execCommand("hiliteColor", false, b.dataset.hil);
+  else if (b.dataset.cmd) document.execCommand(b.dataset.cmd);
+  else if (b.dataset.tbl) mnTable(ed, b.dataset.tbl, card);
+  else if ("mnclear" in b.dataset) { if (confirm("Delete this note?")) { ed.innerHTML = "<div><br></div>"; mnClose(card); } return; }
+  else if ("mndone" in b.dataset) return mnClose(card);
+  ed.dispatchEvent(new Event("input")); ed.focus();
+});
+/* Highlights: stored as exact text + which occurrence on the page, re-applied after each render. */
+function hlTextNodes() {
+  const out = [], w = document.createTreeWalker(app, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest(".mn-layer, .mn-card, .hl-pop, script, style, textarea, select, button, input, .flow-tools") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  let n, pos = 0; while ((n = w.nextNode())) { out.push({ n, s: pos }); pos += n.data.length; } return out;
+}
+function hlApply(list) {
+  app.querySelectorAll("mark.uhl").forEach(m => m.replaceWith(...m.childNodes)); app.normalize();
+  for (const h of list || []) {
+    const nodes = hlTextNodes(), full = nodes.map(x => x.n.data).join("");
+    let at = -1; for (let i = 0; i <= h.o; i++) { at = full.indexOf(h.t, at + 1); if (at < 0) break; } if (at < 0) continue;
+    const end = at + h.t.length;
+    for (const { n, s } of nodes) { const e = s + n.data.length; if (e <= at || s >= end) continue;
+      const a = Math.max(at, s) - s, b = Math.min(end, e) - s; if (b <= a || !n.data.slice(a, b).trim()) continue;
+      const r = document.createRange(); r.setStart(n, a); r.setEnd(n, b);
+      const m = document.createElement("mark"); m.className = `uhl hl-${h.c}`; m.dataset.hl = h.id; m.title = "Your highlight (click to remove)";
+      try { r.surroundContents(m); } catch {} }
+  }
+}
+function hlPop(x, y, html) { $(".hl-pop")?.remove(); document.body.insertAdjacentHTML("beforeend", `<div class="hl-pop no-print" role="toolbar" aria-label="Highlight" style="left:${Math.round(x)}px;top:${Math.round(y)}px">${html}</div>`); }
+document.addEventListener("mouseup", e => {
+  if (e.target.closest(".hl-pop")) return;
+  setTimeout(() => {
+    if (!mnAllowed() || !mnOn) return $(".hl-pop")?.remove();
+    const s = getSelection(), mk = e.target.closest?.("mark.uhl");
+    if (mk && s.isCollapsed) { const r = mk.getBoundingClientRect(); return hlPop(r.left + scrollX, r.bottom + scrollY + 6, `<button type="button" data-hldel="${esc(mk.dataset.hl)}">Remove highlight</button>`); }
+    if (s.isCollapsed || !s.rangeCount) return $(".hl-pop")?.remove();
+    const rg = s.getRangeAt(0); if (!app.contains(rg.commonAncestorContainer) || (rg.commonAncestorContainer.nodeType === 1 ? rg.commonAncestorContainer : rg.commonAncestorContainer.parentElement).closest(".mn-card, .mn-layer, input, textarea, .flow-wrap")) return $(".hl-pop")?.remove();
+    const t = s.toString(); if (!t.trim() || t.length > 2000) return;
+    const b = rg.getBoundingClientRect();
+    hlPop(b.left + scrollX, b.bottom + scrollY + 6, Object.entries(HL_C).map(([c, n]) => `<button type="button" class="hl-sw hl-${c}" data-hlc="${c}" aria-label="Highlight ${n}" title="${n}"></button>`).join(""));
+  }, 0);
+});
+document.addEventListener("click", e => {
+  const b = e.target.closest(".hl-pop button"); if (!b) return;
+  const pg = mnPage();
+  if (b.dataset.hldel) { pg.hl = pg.hl.filter(h => h.id !== b.dataset.hldel); mnSave(pg); hlApply(pg.hl); $(".hl-pop").remove(); mnLayout(); return; }
+  const s = getSelection(); if (!s.rangeCount) return; const rg = s.getRangeAt(0), t = s.toString();
+  const nodes = hlTextNodes(), full = nodes.map(x => x.n.data).join(""), sn = nodes.find(x => x.n === rg.startContainer);
+  let start = sn ? sn.s + rg.startOffset : full.indexOf(t); if (start < 0) return;
+  const txt = full.slice(start, start + t.length) === t ? t : full.substr(start, t.length);
+  let o = 0, i = -1; while ((i = full.indexOf(txt, i + 1)) >= 0 && i < start) o++;
+  pg.hl.push({ id: Date.now().toString(36), t: txt, o, c: b.dataset.hlc }); mnSave(pg); s.removeAllRanges(); hlApply(pg.hl); $(".hl-pop").remove(); mnLayout();
+});
+window.addEventListener("resize", () => { clearTimeout(window._mnr); window._mnr = setTimeout(() => { if (mnOn && mnAllowed() && !app.querySelector(".mn-card.editing")) annotate(); }, 250); });
+
 function render() {
   const base = PAGE, arg = PARAMS.get("id") || "";
   renderNav();
@@ -2151,6 +2322,7 @@ function render() {
   const ar = $("#algoreset"); if (ar) ar.onclick = () => { algoPath = []; render(); };
   app.querySelectorAll("[data-algoview]").forEach(b => b.onclick = () => { algoView = b.dataset.algoview; store.set("algoView", algoView); render(); });
   const fw = $(".flow-wrap"); if (fw) flowPanZoom(fw);
+  annotate();
   const ab = $("#algoback"); if (ab) ab.onclick = () => { algoPath = algoPath.slice(0, -1); render(); toLast(); };
   app.querySelectorAll("[data-algo]").forEach(b => b.onclick = () => { algoId = b.dataset.algo; algoPath = []; history.replaceState(null, "", "?id=" + encodeURIComponent(algoId)); render(); });
   const cq = $("#cmpq"); if (cq) cq.onchange = () => { state.filters.cmp = cq.value; render(); };

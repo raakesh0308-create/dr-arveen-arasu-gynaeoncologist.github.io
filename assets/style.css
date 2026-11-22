@@ -886,3 +886,46 @@ body.flow-full .flow-tools { position: fixed; top: 8px; left: 50%; transform: tr
 .vt-note { font-size: .84rem; color: var(--muted); margin: 8px 0 }
 .vt-links { margin: 8px 0 0 }
 .vt:target { outline: 3px solid var(--teal); outline-offset: 6px; border-radius: 6px }
+
+/* ---------- Margin notes and highlights (signed-in healthcare users) ---------- */
+.mn-fab { position: fixed; right: 18px; bottom: 18px; z-index: 50; border: 0; border-radius: 999px; padding: 10px 16px; font: 600 .86rem/1 var(--f-body, inherit); background: var(--navy, #12343b); color: #fff; box-shadow: var(--shadow-2); cursor: pointer }
+.mn-fab[aria-pressed="true"] { background: #b8860b }
+.mn-fab:focus-visible { outline: 3px solid var(--focus, #ffbf47); outline-offset: 2px }
+@media (min-width: 1280px) {
+  body.mn-on main { max-width: 1640px; padding-right: 368px; position: relative }
+  .mn-layer { position: absolute; top: 0; right: 16px; width: 336px; height: 0 }
+  .mn-layer .mn-card { position: absolute; left: 0; right: 0 }
+}
+.mn-card { --paper: #fffdf4; --ink: #14232b; background: var(--paper); color: var(--ink); border: 1px solid #e8dfb8; border-left: 4px solid #d9b44a; border-radius: 8px; padding: 6px 8px; font-size: .86rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); transition: top .15s }
+main > .mn-card, .mn-card:not(.mn-layer .mn-card) { margin: 6px 0 10px }
+.mn-card:not(.has):not(.editing) { background: transparent; border-style: dashed; box-shadow: none; padding: 2px 6px; width: max-content; border-color: var(--line) }
+.mn-open { background: none; border: 0; padding: 2px 0; font: 600 .8rem/1.3 inherit; color: #8a6d12; cursor: pointer }
+.mn-card:not(.has):not(.editing) .mn-open { color: var(--muted) }
+.mn-prev { max-height: 160px; overflow: hidden; cursor: pointer; mask-image: linear-gradient(#000 75%, transparent); -webkit-mask-image: linear-gradient(#000 75%, transparent) }
+.mn-prev:empty { display: none }
+.mn-card.editing { z-index: 5; box-shadow: 0 6px 20px rgba(0, 0, 0, .18) }
+.mn-card.editing .mn-prev { display: none }
+.mn-tools { display: flex; flex-wrap: wrap; gap: 4px 8px; padding: 6px 0; border-bottom: 1px solid #eadfb8; margin-bottom: 6px }
+.mn-grp { display: inline-flex; gap: 3px; align-items: center }
+.mn-sw, .mn-b { border: 1px solid #d8cfaa; background: #fff; color: #14232b; border-radius: 5px; min-width: 26px; height: 26px; padding: 0 5px; cursor: pointer; font-size: .78rem; line-height: 1 }
+.mn-sw i { display: block; width: 14px; height: 14px; border-radius: 50%; margin: auto }
+.mn-sw.hl i { border-radius: 2px; width: 16px; height: 10px }
+.mn-sw:hover, .mn-b:hover { border-color: #8a6d12 }
+.mn-done { background: #0d5c63; color: #fff; border-color: #0d5c63 }
+.mn-tbl { display: inline-flex; align-items: center; gap: 2px; font-size: .78rem; color: #14232b }
+.mn-tbl input { width: 34px; height: 24px; padding: 0 2px; font-size: .78rem; border: 1px solid #d8cfaa; border-radius: 4px; background: #fff; color: #14232b }
+.mn-ed { min-height: 90px; max-height: 60vh; overflow: auto; outline: none; padding: 4px 2px; line-height: 1.45; color: #14232b }
+.mn-ed:focus { box-shadow: inset 0 0 0 2px #e8d48a; border-radius: 4px }
+.mn-hint { margin: 4px 0 0; font-size: .72rem; color: #7a6a3a }
+.mn-card ul, .mn-card ol { margin: 4px 0; padding-left: 20px }
+table.mn-t { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: .82rem; background: #fff }
+table.mn-t td, table.mn-t th { border: 1px solid #cbbf92; padding: 3px 5px; min-width: 30px; vertical-align: top }
+mark.uhl { color: inherit; border-radius: 2px; padding: 0 1px; cursor: pointer; -webkit-box-decoration-break: clone; box-decoration-break: clone }
+mark.hl-y { background: #fff176 } mark.hl-g { background: #b9f6ca } mark.hl-p { background: #ffcdd2 } mark.hl-b { background: #b3e5fc }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) mark.uhl { color: #14232b } }
+:root[data-theme="dark"] mark.uhl { color: #14232b }
+.hl-pop { position: absolute; z-index: 70; display: flex; gap: 5px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-2) }
+.hl-sw { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); cursor: pointer }
+.hl-sw.hl-y { background: #fff176 } .hl-sw.hl-g { background: #b9f6ca } .hl-sw.hl-p { background: #ffcdd2 } .hl-sw.hl-b { background: #b3e5fc }
+.hl-pop button:not(.hl-sw) { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: .82rem }
+@media print { .mn-fab, .hl-pop { display: none !important } mark.uhl { -webkit-print-color-adjust: exact; print-color-adjust: exact } }
