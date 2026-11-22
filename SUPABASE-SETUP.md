@@ -134,7 +134,7 @@ After that, editor, reviewer and admin powers only work in a session verified wi
 Run `supabase/upgrade-9-site-edits.sql` once (it is also inside `update-all-now.sql`). Then editors, reviewers and admins can open **Edit content** and change:
 
 - the home page carousels (both sides), including a picture per slide;
-- the Dr Arveen portfolio (details, clinics and profile photo);
+- the DR ARVEEN portfolio (details, clinics and profile photo);
 - a banner picture and short introduction for every page;
 - patient articles, leaflets and cancer pages (as before);
 - any clinical record: guidelines, recommendations, disease reference, staging, protocols, drugs, trials, pathways, research library and textbook note chapters, each with its own picture.

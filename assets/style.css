@@ -599,7 +599,7 @@ details.recgrp.phase > summary b { color: var(--teal) }
 .tool-fields textarea { font: inherit; font-weight: 400 }
 .tool-log .fields { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) }
 
-/* Dr Arveen portfolio */
+/* DR ARVEEN portfolio */
 .pf-hero { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center }
 .pf-photo { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 3px solid var(--teal) }
 .pf-ph { display: grid; place-items: center; background: var(--teal); color: var(--on-accent); font: 700 3rem var(--f-display) }

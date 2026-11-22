@@ -123,7 +123,7 @@ const NAV_PRO = [["home", "Home"], ["guidelines", "Guidelines"], ["diseases", "D
 const NAV_PT = [["pt", "Home"], ["ptcancers", "Your cancer"],
   { label: "Articles & leaflets", items: [["articles", "Articles"], ["leaflets", "Information leaflets"], ["glossary", "Medical glossary"]] },
   { label: "Tools", items: [["sdm", "Prepare for appointments"], ["tool", "Planning guides"], ["tracker", "Side-effect tracker"], ["workspace", "Saved pages"]] },
-  ["portfolio", "Dr Arveen"], ["guide", "Help"]];
+  ["portfolio", "DR ARVEEN"], ["guide", "Help"]];
 /* Each route name maps to its own HTML file; records use ?id= */
 const FILES = { welcome: "index.html", home: "professional.html", login: "login.html", register: "register.html", reset: "reset-password.html", accounts: "accounts.html", cms: "content-editor.html", review: "review-queue.html", adminws: "admin-workspace.html", security: "two-step.html", tool: "patient-tool.html", portfolio: "dr-arveen.html", guide: "guide.html", notes: "textbook-notes.html", governance: "governance.html", privacy: "privacy.html", guidelines: "guidelines.html", recs: "recommendations.html", g: "guideline.html", diseases: "diseases.html", d: "disease.html",
   staging: "staging.html", s: "staging-system.html", protocols: "protocols.html", p: "protocol.html", drugs: "drugs.html", dr: "drug.html", trials: "trials.html", t: "trial.html",
@@ -200,7 +200,7 @@ renderShell();
 const NAV_PRO_GROUPS = [["home", "Home"],
   { label: "Reference", items: [["notes", "Textbook notes"], ["guidelines", "Guidelines"], ["updates", "↳ Guideline updates"], ["recs", "↳ Recommendations"], ["visuals", "↳ Tables & flowcharts"], ["diseases", "Diseases"], ["staging", "Staging"], ["protocols", "Treatment protocols"], ["drugs", "Drug reference"], ["trials", "Clinical trials"]] },
   { label: "Tools", items: [["calculators", "Calculators"], ["algorithms", "Clinical pathways"], ["education", "Education"], ["compare", "Evidence and comparisons"], ["sdm", "Shared decisions"]] },
-  ["portfolio", "Dr Arveen"], ["pt", "Patients"], ["guide", "Help"]];
+  ["portfolio", "DR ARVEEN"], ["pt", "Patients"], ["guide", "Help"]];
 /* Account menu (top right): personal and admin pages, shown only to the roles that can use them */
 const ACCT_PERSONAL = [["workspace", "My Workspace"], ["security", "Two-step sign-in"]];
 const ACCT_ADMIN = [["adminws", "Admin workspace"], ["review", "Review queue"], ["cms", "Edit content"], ["admin", "Editorial dashboard"], ["accounts", "Accounts"]];
@@ -857,7 +857,7 @@ V.home = () => `${carousel("pro")}
   <section class="section"><a class="tile" href="${url(`pt`)}" style="padding:20px"><span class="eyebrow">For patients and caregivers</span><b style="font-size:1.3rem">DR ARVEEN Patient Education Centre</b><span>Clear, reliable information to help patients understand their diagnosis, prepare for treatment, manage side effects, and navigate life during and after gynaecological cancer.</span></a></section>`;
 
 function updatesTable(list) {
-  return `<div class="tablewrap"><table><thead><tr><th>Update</th><th>Organisation</th><th>Version change</th><th>Issuer publication date</th><th>Detected</th><th>ARVEEN verification</th><th>State</th></tr></thead><tbody>
+  return `<div class="tablewrap"><table><thead><tr><th>Update</th><th>Organisation</th><th>Version change</th><th>Issuer publication date</th><th>Detected</th><th>DR ARVEEN verification</th><th>State</th></tr></thead><tbody>
   ${list.map(u => `<tr><td>${u.target ? `<a href="${url(`${u.target.startsWith("G-") ? "g." : "s."}${u.target}`)}">${esc(u.title)}</a>` : esc(u.title)}<div class="muted" style="font-size:.8rem">${esc(u.summary)}</div></td><td>${esc(u.org)}</td><td class="mono">${na(u.prev)} → ${na(u.next)}</td><td>${na(u.pubDate)}</td><td>${na(u.detected)}</td><td>${u.verifiedOn ? esc(u.verifiedOn) : '<span class="na">Not yet verified</span>'}</td><td>${statusPill(u.state)}</td></tr>`).join("")}
   </tbody></table></div>`;
 }
@@ -881,7 +881,7 @@ V.guidelines = () => {
     <label>Verification status<select disabled><option>All records: NOT VERIFIED</option></select></label>
     <button class="btn" id="clearf" type="button">Clear filters</button>
   </aside>
-  <div class="section"><p class="muted">${list.length} of ${D.guidelines.length} records. Original grading frameworks are kept as published; ARVEEN does not map them onto a common scale.</p>
+  <div class="section"><p class="muted">${list.length} of ${D.guidelines.length} records. Original grading frameworks are kept as published; DR ARVEEN does not map them onto a common scale.</p>
   ${byDisease(list, g => g.disease, its => `<div class="list">${its.map(g => `<a class="row" href="${url(`g.${g.id}`)}"><span class="row-t">${esc(g.title)}</span>
     <span class="row-m"><span>${esc(orgs(g))}</span><span>${g.pubDate ? esc(g.pubDate) : "Date not recorded"}</span><span>${D.recommendations.filter(r => r.guideline === g.id).length} recommendations</span><span class="mono">${esc(g.id)}</span></span>
     <span class="row-m">${supPill(g)} ${listPill(g.status)} ${myLabel(g.malaysia)}</span></a>`).join("")}</div>`) || `<div class="row muted">No guidelines match these filters.</div>`}</div></div>`;
@@ -931,7 +931,7 @@ V.recs = () => {
     return `<details class="recgrp phase"><summary><b>${esc(title)}</b> <span class="muted">${ph.length} recommendation${ph.length > 1 ? "s" : ""} · ${esc(hint)}</span></summary>${body}</details>`;
   }).join("");
   return `<div class="section-h"><div><span class="eyebrow">Recommendation-level database</span><h1>Recommendations</h1></div><div class="toc"><a class="btn" href="${url(`guidelines`)}">Guidelines</a><a class="btn" aria-pressed="true" href="${url(`recs`)}">Recommendations</a><a class="btn" href="${url(`updates`)}">Updates</a></div></div>
-  ${seedBanner()}<p class="banner info">Recommendation text below is an <b>ARVEEN paraphrase</b>, not a quotation. Grades and strengths are kept in each guideline's original framework.</p>
+  ${seedBanner()}<p class="banner info">Recommendation text below is a <b>DR ARVEEN paraphrase</b>, not a quotation. Grades and strengths are kept in each guideline's original framework.</p>
   <div class="chips" role="group" aria-label="Arrange recommendations"><span class="muted">Arrange:</span><button class="chip" data-recmode="topic" aria-pressed="${mode === "topic"}">By clinical topic (introduction → treatment → follow-up)</button><button class="chip" data-recmode="guideline" aria-pressed="${mode === "guideline"}">By guideline</button></div>
   ${byDisease(D.recommendations, r => r.disease, mode === "topic" ? byTopic : byGuideline)}`;
 };
@@ -993,9 +993,9 @@ V.g = id => {
   ${g.superseded === "superseded" ? `<p class="banner bad">This guideline is superseded${sup ? ` by <a href="${url(`g.${sup.id}`)}">${esc(sup.title)}</a>` : ""}. It is kept for version history and must not be used as current guidance.</p>` : ""}
   ${g.superseded === "uncertain" ? `<p class="banner">Currency uncertain: a newer edition may exist. Check the issuing organisation before relying on this record.</p>` : ""}
   <section class="section"><h2>Record</h2><div class="kv">
-    ${[["Guideline ID", `<span class="mono">${g.id}</span>`], ["Organisation", esc(orgs(g))], ["Disease", dname(g.disease)], ["Clinical domain", na(g.domain)], ["Document type", na(g.type)], ["Publication date (issuer)", na(g.pubDate)], ["Version", na(g.version)], ["Revision date", na(g.revisionDate)], ["Jurisdiction", na(g.jurisdiction)], ["Patient population", na(g.population)], ["Clinical setting", na(g.setting)], ["Source", `<a href="${esc(g.sourceUrl)}" target="_blank" rel="noopener">${esc(g.sourceUrl)}</a> <span class="muted">(organisation index; record-level link pending)</span>`], ["Full-text access", na(g.access)], ["Evidence-grading framework", na(g.evidenceFramework)], ["Recommendation-grading framework", na(g.recFramework)], ["ARVEEN verification date", g.verifiedOn ? esc(g.verifiedOn) : '<span class="na">Not yet verified</span>'], ["Reviewer", g.reviewer ? esc(g.reviewer) : '<span class="na">Unassigned</span>'], ["Content status", statusPill(g.status)], ...(g.authors ? [["Authors", esc(g.authors)]] : []), ...(g.citations ? [["Published in", g.citations.map(c => esc(c)).join("<br>")]] : []), ...(g.extraction ? [["Extraction", `${esc(g.extraction.on)} · ${esc(g.extraction.by)}`]] : [])].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}
+    ${[["Guideline ID", `<span class="mono">${g.id}</span>`], ["Organisation", esc(orgs(g))], ["Disease", dname(g.disease)], ["Clinical domain", na(g.domain)], ["Document type", na(g.type)], ["Publication date (issuer)", na(g.pubDate)], ["Version", na(g.version)], ["Revision date", na(g.revisionDate)], ["Jurisdiction", na(g.jurisdiction)], ["Patient population", na(g.population)], ["Clinical setting", na(g.setting)], ["Source", `<a href="${esc(g.sourceUrl)}" target="_blank" rel="noopener">${esc(g.sourceUrl)}</a> <span class="muted">(organisation index; record-level link pending)</span>`], ["Full-text access", na(g.access)], ["Evidence-grading framework", na(g.evidenceFramework)], ["Recommendation-grading framework", na(g.recFramework)], ["DR ARVEEN verification date", g.verifiedOn ? esc(g.verifiedOn) : '<span class="na">Not yet verified</span>'], ["Reviewer", g.reviewer ? esc(g.reviewer) : '<span class="na">Unassigned</span>'], ["Content status", statusPill(g.status)], ...(g.authors ? [["Authors", esc(g.authors)]] : []), ...(g.citations ? [["Published in", g.citations.map(c => esc(c)).join("<br>")]] : []), ...(g.extraction ? [["Extraction", `${esc(g.extraction.on)} · ${esc(g.extraction.by)}`]] : [])].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}
   </div></section>
-  <section class="section"><h2>Executive summary</h2><p class="prose"><span class="pill teal">ARVEEN educational summary</span> ${esc(g.summary)}</p></section>
+  <section class="section"><h2>Executive summary</h2><p class="prose"><span class="pill teal">DR ARVEEN educational summary</span> ${esc(g.summary)}</p></section>
   <section class="section"><h2>Recommendations</h2>${recs.length ? recTable(recs) : `<p class="muted">No recommendations have been extracted from this guideline yet.</p>`}</section>
   ${g.extraction?.protocolCandidates?.length ? `<section class="section"><h2>Protocol details found in this guideline</h2><p class="banner bad">Awaiting pharmacist and clinical verification. These are not shown in the protocol library until verified.</p><div class="tablewrap"><table><thead><tr><th>Protocol</th><th>Field</th><th>What the guideline says</th><th>Where</th></tr></thead><tbody>${g.extraction.protocolCandidates.map(c => `<tr><td><a href="${url(`p.${c.protocol}`)}">${esc(c.protocol)}</a></td><td>${esc(c.field)}</td><td>${esc(c.value)}</td><td style="font-size:.82rem">${esc(c.location)}</td></tr>`).join("")}</tbody></table></div></section>` : ""}
   <section class="section"><h2>Malaysian applicability</h2><p class="prose">${myLabel(g.malaysia)} No Malaysian MOH guidance, NPRA registration or local availability data has been linked to this record.</p></section>
@@ -1059,7 +1059,7 @@ V.d = id => {
   return `<article class="detail"><div class="dhead"><div class="dtitle">${badge(d.id, true)}<div><span class="eyebrow">Disease reference</span><h1>${esc(d.name)}</h1></div></div><p class="prose muted">${esc(d.short)}</p>
     <div class="actions"><button class="btn" data-mode="quick" aria-pressed="${mode === "quick"}">Quick reference</button><button class="btn" data-mode="comp" aria-pressed="${mode !== "quick"}">Comprehensive reference</button>${bmBtn("Disease", d.id, d.name)}</div></div>
   ${diseaseHub(d)}
-  ${d.reference ? `<p class="banner"><span class="pill teal">ARVEEN educational summary</span> ${statusPill(d.refReview?.status || "NOT VERIFIED")} ${d.refReview ? `Reviewed by ${esc(d.refReview.reviewer)} on ${esc(d.refReview.verifiedOn)}.` : "Written for education and awaiting clinical review against the cited guidelines."} For doses see the drug and protocol pages. Do not use for prescribing.</p>` : ""}
+  ${d.reference ? `<p class="banner"><span class="pill teal">DR ARVEEN educational summary</span> ${statusPill(d.refReview?.status || "NOT VERIFIED")} ${d.refReview ? `Reviewed by ${esc(d.refReview.reviewer)} on ${esc(d.refReview.verifiedOn)}.` : "Written for education and awaiting clinical review against the cited guidelines."} For doses see the drug and protocol pages. Do not use for prescribing.</p>` : ""}
   ${mode !== "quick" ? `<p class="banner info">Comprehensive reference uses the standard 24-section template.</p>` : ""}
   <div class="list">${secs.map((s, i) => `<div class="row"><span class="row-t">${mode !== "quick" ? `<span class="mono muted">${String(DTEMPLATE.indexOf(s) + 1).padStart(2, "0")}</span>` : ""} ${s}</span>
     ${body(s)}</div>`).join("")}</div>
@@ -1067,7 +1067,7 @@ V.d = id => {
 };
 
 V.staging = () => `<span class="eyebrow">Staging module</span><h1>Staging systems</h1>
-  <p class="banner info">Definitions are <b>ARVEEN educational paraphrases</b> of the FIGO criteria, not the published text, and are NOT VERIFIED. Formal staging is kept separate from treatment recommendations. Do not mix criteria between versions.</p>
+  <p class="banner info">Definitions are <b>DR ARVEEN educational paraphrases</b> of the FIGO criteria, not the published text, and are NOT VERIFIED. Formal staging is kept separate from treatment recommendations. Do not mix criteria between versions.</p>
   ${byDisease(D.staging, s => s.cancer, its => `<div class="list">${its.map(s => `<a class="row" href="${url(`s.${s.id}`)}"><span class="row-t">${esc(s.name)} <span class="mono">${esc(s.authority)} ${esc(s.version)}</span> ${s.superseded ? '<span class="pill bad">Superseded</span>' : ""} ${listPill(s.status || "NOT VERIFIED")}</span><span class="row-m">${s.stages.length ? s.stages.length + " main stages" : "criteria not entered"}</span></a>`).join("")}</div>`)}
   <p><a class="btn" href="${url(`education`)}">Practise with staging exercises →</a></p>`;
 /* FIGO-style staging table: main stages as banded rows, sub-stages indented underneath. */
@@ -1085,7 +1085,7 @@ V.s = id => {
   const s = byId(D.staging, id); if (!s) return notFound();
   recent("Staging", s.id, `${s.authority} ${s.version} ${dname(s.cancer)}`);
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Staging · ${dname(s.cancer)}</span><h1>${esc(s.name)}</h1>
-    <div class="row-m"><span class="mono">${esc(s.authority)} · version ${esc(s.version)}</span> ${statusPill(s.status || "NOT VERIFIED")} <span class="pill teal">ARVEEN educational paraphrase</span></div>
+    <div class="row-m"><span class="mono">${esc(s.authority)} · version ${esc(s.version)}</span> ${statusPill(s.status || "NOT VERIFIED")} <span class="pill teal">DR ARVEEN educational paraphrase</span></div>
     <div class="actions">${bmBtn("Staging", s.id, s.name + " " + s.version)}<input type="text" id="sfilter" placeholder="Filter stages, e.g. IIIC or node" aria-label="Filter stages" style="max-width:280px"></div></div>
   ${s.superseded ? `<p class="banner bad">Superseded by <a href="${url(`s.${s.supersededBy}`)}">${esc(byId(D.staging, s.supersededBy).name)} ${esc(byId(D.staging, s.supersededBy).version)}</a>. Use only to interpret older reports.</p>` : ""}
   <p class="prose">${esc(s.notes)}</p>
@@ -1114,7 +1114,7 @@ V.p = id => {
 };
 
 V.drugs = () => `<span class="eyebrow">Oncology drug reference</span><h1>Drug monographs</h1>
-  <p class="banner info">Monographs are <b>ARVEEN educational summaries</b>, not official product information. Malaysian (NPRA) registration is not verified for any drug.</p>${reviewStrip(false)}
+  <p class="banner info">Monographs are <b>DR ARVEEN educational summaries</b>, not official product information. Malaysian (NPRA) registration is not verified for any drug.</p>${reviewStrip(false)}
   <p class="muted">A drug used for several cancers appears under each of them.</p>
   ${byDisease(D.drugs, d => d.cancers, its => `<div class="list cols-list">${[...its].sort((a, b) => a.name.localeCompare(b.name)).map(d => `<a class="row" href="${url(`dr.${d.id}`)}"><span class="row-t">${esc(d.name)} ${listPill(d.status || "NOT VERIFIED")}${d.doseStatus ? " " + listPill(d.doseStatus) : ""}</span><span class="row-m"><span>${esc(d.cls)}</span></span></a>`).join("")}</div>`)}`;
 /* Drug page: dose and key safety facts first, the rest of the monograph folded underneath */
@@ -1130,8 +1130,8 @@ V.dr = id => {
   recent("Drug", d.id, d.name);
   const W = `<span class="withheld">not entered · verify against product information</span>`;
   const pr = D.protocols.filter(p => p.components.some(c => c.drug === id));
-  return `<article class="detail"><div class="dhead"><span class="eyebrow">Drug monograph</span><h1>${esc(d.name)}</h1><div class="row-m"><span class="pill teal">ARVEEN educational summary</span> ${statusPill(d.status || "NOT VERIFIED")} ${myLabel("regulatory")}</div><div class="actions">${bmBtn("Drug", d.id, d.name)}</div></div>
-  ${drugLayout([["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", d.doses ? `${statusPill(d.doseStatus)}${d.doseReviewer ? ` <span class="muted">by ${esc(d.doseReviewer)}, ${esc(d.doseReviewedOn)}${d.doseNote ? ` — ${esc(d.doseNote)}` : ""}</span>` : ""}<ul class="doses">${d.doses.map(x => `<li><b>${esc(x.indication)}:</b> ${esc(x.dose)} <span class="muted">Source: ${esc(x.source)}</span></li>`).join("")}</ul>` : `<span class="withheld">not entered</span>`], ["Administration", d.admin ? esc(d.admin) : W], ["Contraindications", d.contra ? esc(d.contra) : W], ["Drug interactions", d.interactions ? esc(d.interactions) : W], ["Hepatic considerations", d.hepatic ? esc(d.hepatic) : W], ["Pregnancy and breastfeeding", d.pregnancy ? esc(d.pregnancy) : W], ["Fertility considerations", d.fertility ? esc(d.fertility) : W], ["Monitoring", d.monitoring ? esc(d.monitoring) : W], ["Dose modifications", `<span class="withheld">withheld · per verified protocol only</span>`], ["Patient counselling", d.counselling ? esc(d.counselling) : W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]])}
+  return `<article class="detail"><div class="dhead"><span class="eyebrow">Drug monograph</span><h1>${esc(d.name)}</h1><div class="row-m"><span class="pill teal">DR ARVEEN educational summary</span> ${statusPill(d.status || "NOT VERIFIED")} ${myLabel("regulatory")}</div><div class="actions">${bmBtn("Drug", d.id, d.name)}</div></div>
+  ${drugLayout([["Generic name", esc(d.name)], ["Drug class", esc(d.cls)], ["Mechanism of action", esc(d.moa)], ["Cancer types", d.cancers.map(c => `<a href="${url(`d.${c}`)}">${dname(c)}</a>`).join(", ")], ["Major adverse effects", esc(d.ae)], ["Renal considerations", esc(d.renal)], ["Dose by indication", d.doses ? `${statusPill(d.doseStatus)}${d.doseReviewer ? ` <span class="muted">by ${esc(d.doseReviewer)}, ${esc(d.doseReviewedOn)}${d.doseNote ? ` — ${esc(d.doseNote)}` : ""}</span>` : ""}<ul class="doses">${d.doses.map(x => `<li><b>${esc(x.indication)}:</b> ${esc(x.dose)} <span class="muted">Source: ${esc(x.source)}</span></li>`).join("")}</ul>` : `<span class="withheld">not entered</span>`], ["Administration", d.admin ? esc(d.admin) : W], ["Contraindications", d.contra ? esc(d.contra) : W], ["Drug interactions", d.interactions ? esc(d.interactions) : W], ["Hepatic considerations", d.hepatic ? esc(d.hepatic) : W], ["Pregnancy and breastfeeding", d.pregnancy ? esc(d.pregnancy) : W], ["Fertility considerations", d.fertility ? esc(d.fertility) : W], ["Monitoring", d.monitoring ? esc(d.monitoring) : W], ["Dose modifications", `<span class="withheld">withheld · per verified protocol only</span>`], ["Patient counselling", d.counselling ? esc(d.counselling) : W], ["Product information", '<span class="na">Not linked</span>'], ["Malaysian regulatory status (NPRA)", `<span class="pill warn">${esc(d.npra)}</span>`], ["Used in DR ARVEEN protocols", pr.map(p => `<a href="${url(`p.${p.id}`)}">${esc(p.name)}</a>`).join("<br>") || na(null)]])}
   ${noteBox(d.id)}</article>`;
 };
 
@@ -1150,7 +1150,7 @@ V.t = id => {
   const o = t.outcome || {}; const f = v => v ? esc(v) : N;
   const pmids = String(o.pmid || "").split(/;\s*/).filter(Boolean);
   return `<article class="detail"><div class="dhead"><span class="eyebrow">Clinical trial · ${dname(t.disease)}</span><h1>${esc(t.name)}</h1><div class="row-m"><span class="mono">${esc(t.reg)}</span> ${statusPill(o.status || "NOT VERIFIED")}</div><div class="actions">${bmBtn("Trial", t.id, t.name)}${/^NCT\d{8}$/.test(t.reg) ? `<a class="btn" target="_blank" rel="noopener" href="https://clinicaltrials.gov/study/${t.reg}">Registry record ↗</a>` : ""}</div></div>
-  <div class="kv">${[["Study design", esc(t.design)], ["Phase", esc(t.phase)], ["Population", esc(t.population)], ["Intervention", esc(t.intervention)], ["Comparator", esc(t.comparator)], ["Primary endpoint", esc(t.primary)], ["Patients", f(o.n)], ["Trial regimen (as published, not a protocol)", f(o.regimen)], ["Progression-free / disease-free outcome", f(o.pfs)], ["Overall survival", f(o.os)], ["Other outcomes", o.other ? esc(o.other) : na(null)], ["Major adverse events", f(o.ae)], ["Follow-up", f(o.followUp)], ["Limitations", f(o.limitations)], ["Publication", esc(t.pub)], ["Report type", esc(t.pubType)], ["Source", pmids.length ? pmids.map(p => `<a href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(p)}/" target="_blank" rel="noopener">PubMed ${esc(p)} ↗</a>`).join(" · ") + (o.doi ? ` <span class="mono muted">doi ${esc(o.doi)}</span>` : "") : N], ["Cited by ARVEEN recommendations", recs.map(r => `<a href="${url(`g.${r.guideline}`)}">${r.id}</a>`).join(", ") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
+  <div class="kv">${[["Study design", esc(t.design)], ["Phase", esc(t.phase)], ["Population", esc(t.population)], ["Intervention", esc(t.intervention)], ["Comparator", esc(t.comparator)], ["Primary endpoint", esc(t.primary)], ["Patients", f(o.n)], ["Trial regimen (as published, not a protocol)", f(o.regimen)], ["Progression-free / disease-free outcome", f(o.pfs)], ["Overall survival", f(o.os)], ["Other outcomes", o.other ? esc(o.other) : na(null)], ["Major adverse events", f(o.ae)], ["Follow-up", f(o.followUp)], ["Limitations", f(o.limitations)], ["Publication", esc(t.pub)], ["Report type", esc(t.pubType)], ["Source", pmids.length ? pmids.map(p => `<a href="https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(p)}/" target="_blank" rel="noopener">PubMed ${esc(p)} ↗</a>`).join(" · ") + (o.doi ? ` <span class="mono muted">doi ${esc(o.doi)}</span>` : "") : N], ["Cited by DR ARVEEN recommendations", recs.map(r => `<a href="${url(`g.${r.guideline}`)}">${r.id}</a>`).join(", ") || na(null)]].map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("")}</div>
   ${o.note ? `<p class="banner">${esc(o.note)}</p>` : ""}
   <section class="section"><h2>Evidence appraisal</h2>${o.limitations ? `<p class="prose">Population: ${esc(t.population)}. Comparator: ${esc(t.comparator)}. Main limitation: ${esc(o.limitations)}</p><p class="prose muted">A full appraisal (applicability to current Malaysian practice, risk of bias, interpretation of subgroups) is pending clinical review.</p>` : `<p class="prose na">Not yet written.</p>`}</section>
   ${noteBox(t.id)}</article>`;
@@ -1418,7 +1418,7 @@ V.compare = () => {
   ${litSection("evidence", "Research library", "Recent studies relevant to practice, summarised from the articles. Each summary is NOT VERIFIED until a reviewer checks it against the full paper; read the original before applying any finding.")}`;
 };
 
-// Research library (journal articles summarised by ARVEEN), shown on the Evidence and Education pages.
+// Research library (journal articles summarised by DR ARVEEN), shown on the Evidence and Education pages.
 const litSection = (place, title, intro) => {
   const items = (D.literature || []).filter(x => x.place === place);
   if (!items.length) return "";
@@ -1435,7 +1435,7 @@ const litSection = (place, title, intro) => {
 };
 
 V.updates = () => `<div class="section-h"><div><span class="eyebrow">Guidelines · update intelligence</span><h1>Guideline updates</h1></div><div class="toc"><a class="btn" href="${url(`guidelines`)}">Guidelines</a><a class="btn" href="${url(`recs`)}">Recommendations</a><a class="btn" aria-pressed="true" href="${url(`updates`)}">Updates</a></div></div>
-  <p class="prose muted">The issuing organisation's publication date is shown separately from the date ARVEEN detected and verified the change. Detected changes do not alter approved content until a reviewer decides.</p>
+  <p class="prose muted">The issuing organisation's publication date is shown separately from the date DR ARVEEN detected and verified the change. Detected changes do not alter approved content until a reviewer decides.</p>
   ${updatesTable(D.updates)}
   <section class="section"><h2>Linked content flagged for review</h2><div class="list">${D.updates.map(u => `<div class="row"><span class="row-t">${esc(u.title)} ${statusPill(u.state)}</span><span class="row-m">${u.affected.map(a => `<span>${esc(a)}</span>`).join("")}</span><span class="row-m">Reviewer: <span class="na">Unassigned</span> · Decision: <span class="na">Pending</span> · Clinical significance: ${esc(u.significance)}</span></div>`).join("")}</div></section>
   <section class="section"><h2>Subscribe to updates</h2><p class="muted">Subscriptions need an account and are not active in this prototype. Chosen topics are remembered in this browser only.</p>
@@ -1443,7 +1443,7 @@ V.updates = () => `<div class="section-h"><div><span class="eyebrow">Guidelines 
 
 V.education = () => `<span class="eyebrow">Postgraduate education</span><h1>Staging exercises</h1>
   ${D.notes?.chapters?.length ? `<a class="tile entry" href="${url("notes")}" style="margin:12px 0 18px"><span class="eyebrow">Revision</span><b>Textbook notes: Chapters 37–42</b><span>Searchable chapter notes on uterine, cervical and vaginal, ovarian, vulvar, trophoblastic and breast cancer, with flags where they differ from current guidelines.</span></a>` : ""}
-  <p class="banner info">Educational exercises. They are not a validated clinical decision-support tool. Answers follow the ARVEEN paraphrase of each FIGO version, which is NOT VERIFIED.</p>
+  <p class="banner info">Educational exercises. They are not a validated clinical decision-support tool. Answers follow the DR ARVEEN paraphrase of each FIGO version, which is NOT VERIFIED.</p>
   <div class="cols quiz">${D.quiz.map(q => { const s = byId(D.staging, q.system); return `<div class="calc" data-quiz="${q.id}"><span class="eyebrow">${esc(s.authority)} ${esc(s.version)} · ${dname(s.cancer)}</span><p><b>${esc(q.q)}</b></p>
     <div style="display:grid;gap:6px">${q.options.map((o, i) => `<button class="btn opt" data-qi="${i}">${esc(o)}</button>`).join("")}</div><p class="why muted" role="status" hidden>${esc(q.why)} <a href="${url(`s.${s.id}`)}">Reference: ${esc(s.authority)} ${esc(s.version)}</a></p></div>` }).join("")}</div>
   ${litSection("education", "Reviews, surgical videos and case learning", "Reviews, video articles, images and case reports for teaching. Videos play on the journal website.")}`;
@@ -1631,7 +1631,7 @@ V.admin = () => {
   <section class="section"><h2>Review queue</h2><div class="list">${queue.slice(0, 8).map(q => `<div class="row"><span class="row-t">${esc(q.t)} <span class="pill">${q.k}</span></span>${pipe(q.flow, q.at)}<span class="row-m">Reviewer: <span class="na">Unassigned</span></span></div>`).join("")}</div><p class="muted">${queue.length} items in queue; first 8 shown.</p></section>
   ${contentTracker()}
   <section class="section"><h2>Patient leaflet generator</h2>
-  <p class="prose muted">Builds a draft from approved ARVEEN clinical records using the standard 13-section template. Output stays a draft until editorial, clinical and (if needed) language review are complete.</p>
+  <p class="prose muted">Builds a draft from approved DR ARVEEN clinical records using the standard 13-section template. Output stays a draft until editorial, clinical and (if needed) language review are complete.</p>
   <form class="calc" id="gen"><div class="fields">
     <label for="g-dis">Cancer type<select id="g-dis">${D.diseases.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join("")}</select></label>
     <label for="g-topic">Topic<select id="g-topic"><option>Understanding the diagnosis</option><option>Surgery</option><option>Chemotherapy</option><option>Radiotherapy</option><option>Immunotherapy</option></select></label>
@@ -1666,7 +1666,7 @@ function bindGen() {
 V.about = () => `<article class="detail prose" style="max-width:820px"><span class="eyebrow">About</span><h1>About DR ARVEEN</h1>
   <p>DR ARVEEN (Advanced Reference and Verified Evidence Network for Gynaecological Oncology) is a specialist reference for gynaecological oncology professionals in Malaysia, with a patient education centre built on the same clinical records.</p>
   <h2>How content is labelled</h2>
-  <div class="chips">${["VERIFIED AGAINST SOURCE", "CLINICALLY REVIEWED", "GUIDELINE RECOMMENDATION", "REGULATORY PRODUCT INFORMATION", "ARVEEN EDUCATIONAL SUMMARY", "PATIENT INFORMATION", "INSTITUTION-SPECIFIC PROTOCOL", "OFF-LABEL USE", "INVESTIGATIONAL TREATMENT", "PARTIALLY VERIFIED", "NOT VERIFIED", "SUPERSEDED"].map(statusPill).join(" ")}</div>
+  <div class="chips">${["VERIFIED AGAINST SOURCE", "CLINICALLY REVIEWED", "GUIDELINE RECOMMENDATION", "REGULATORY PRODUCT INFORMATION", "DR ARVEEN EDUCATIONAL SUMMARY", "PATIENT INFORMATION", "INSTITUTION-SPECIFIC PROTOCOL", "OFF-LABEL USE", "INVESTIGATIONAL TREATMENT", "PARTIALLY VERIFIED", "NOT VERIFIED", "SUPERSEDED"].map(statusPill).join(" ")}</div>
   <h2>Malaysian applicability labels</h2><div class="chips">${Object.keys(MY).map(myLabel).join(" ")}</div>
   <h2>Editorial workflow</h2><p><b>Professional content</b></p>${pipe(PRO_FLOW, "")}<p><b>Patient content</b></p>${pipe(PT_FLOW, "")}
   <h2>Copyright and licensing</h2><p>DR ARVEEN links to official sources and writes its own summaries. It does not reproduce restricted guidelines or proprietary pocket guides. Every imported item records its source and licence.</p>
@@ -1828,7 +1828,7 @@ function bindSdm() {
   app.querySelectorAll("[data-sq]").forEach(c => c.onchange = () => { let d = store.get("sdmq", []); const i = +c.dataset.sq; d = c.checked ? [...d, i] : d.filter(x => x !== i); store.set("sdmq", d); });
   app.querySelectorAll("[data-ws]").forEach(t => t.oninput = () => { const w = store.get("ws", {}); w[t.dataset.ws] = t.value; store.set("ws", w); });
 }
-/* ---------- Dr Arveen portfolio (public; same page on both sides, emphasis by audience) ---------- */
+/* ---------- DR ARVEEN portfolio (public; same page on both sides, emphasis by audience) ---------- */
 V.portfolio = () => {
   const P = window.ARVEEN_PUBLIC?.portfolio || D.portfolio || {}, ed = isEditor(), pro = state.aud === "pro";
   const has = v => Array.isArray(v) ? v.length > 0 : !!(v && String(v).trim());
@@ -1836,16 +1836,16 @@ V.portfolio = () => {
   const sec = (label, v, hint, render) => has(v) ? `<section class="section"><h2>${esc(label)}</h2>${render(v)}</section>` : todo(label, hint);
   const list = v => `<ul>${v.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
   const filled = ["summary", "qualifications", "interests", "locations"].filter(k => has(P[k])).length;
-  const name = P.name || "Dr Arveen";
+  const name = P.name || "DR ARVEEN";
   return `<div class="${pro ? "" : "patient "}detail portfolio">
   <section class="hero pf-hero">${P.image?.url && /^https:\/\//.test(P.image.url) ? `<img class="pf-photo" src="${esc(P.image.url)}" alt="${esc(P.image.alt || name)}">` : P.photo && /^https:\/\//.test(P.photo) ? `<img class="pf-photo" src="${esc(P.photo)}" alt="${esc(P.photoAlt || name)}">` : `<div class="pf-photo pf-ph" aria-hidden="true">${esc(name.replace(/^Dr\.?\s*/i, "").charAt(0) || "A")}</div>`}
     <div><span class="eyebrow">${pro ? "For healthcare professionals" : "For patients and families"} · About the doctor</span><h1>${esc(name)}</h1><p class="pf-title">${esc(P.title || "")}</p>${has(P.summary) ? `<p>${esc(P.summary)}</p>` : ""}</div></section>
   ${!filled && !ed ? `<p class="banner info">This profile is being prepared. Please check back soon.</p>` : ""}
-  ${ed && filled < 4 ? `<p class="banner">Editor view: empty sections below are hidden from the public. Fill them in with <a href="${FILES.cms}?id=edit%3Aportfolio%3Amain">Edit content → Dr Arveen portfolio</a>. Information must be factual and follow Malaysian Medical Council guidance on information about doctors (no testimonials or claims of superiority).</p>` : ""}
+  ${ed && filled < 4 ? `<p class="banner">Editor view: empty sections below are hidden from the public. Fill them in with <a href="${FILES.cms}?id=edit%3Aportfolio%3Amain">Edit content → DR ARVEEN portfolio</a>. Information must be factual and follow Malaysian Medical Council guidance on information about doctors (no testimonials or claims of superiority).</p>` : ""}
   ${pro ? sec("Referrals", P.referrals, "how clinicians refer: letter or email, MDT, urgent route", v => `<p class="prose">${esc(v)}</p>`) : ""}
   ${sec(pro ? "Clinical interests" : "Areas of care", P.interests, "clinical interests", list)}
   ${sec(pro ? "Services" : "What you can be seen for", P.services, "services offered", list)}
-  ${sec(pro ? "Clinics" : "Where to see Dr Arveen and how to make an appointment", P.locations, "clinic name, address, clinic days and appointment phone number", v => `<div class="grid">${v.map(l => `<div class="tile"><b>${esc(l.name || "")}</b>${l.address ? `<span>${esc(l.address)}</span>` : ""}${l.days ? `<span>${esc(l.days)}</span>` : ""}${l.phone ? `<span><a href="tel:${esc(l.phone.replace(/[^\d+]/g, ""))}">${esc(l.phone)}</a></span>` : ""}</div>`).join("")}</div>`)}
+  ${sec(pro ? "Clinics" : "Where to see DR ARVEEN and how to make an appointment", P.locations, "clinic name, address, clinic days and appointment phone number", v => `<div class="grid">${v.map(l => `<div class="tile"><b>${esc(l.name || "")}</b>${l.address ? `<span>${esc(l.address)}</span>` : ""}${l.days ? `<span>${esc(l.days)}</span>` : ""}${l.phone ? `<span><a href="tel:${esc(l.phone.replace(/[^\d+]/g, ""))}">${esc(l.phone)}</a></span>` : ""}</div>`).join("")}</div>`)}
   ${sec("Qualifications", P.qualifications, "degrees and specialist training, with institution and year", list)}
   ${sec("Registration", P.registration, "Malaysian Medical Council and National Specialist Register numbers", list)}
   ${pro ? sec("Research and publications", P.research, "publications and trials, with DOI or PubMed ID", list) : ""}
@@ -2030,7 +2030,7 @@ V.accounts = () => `<span class="eyebrow">Administration</span><h1>Account appro
 const GOV_PRO = [
   ["Discovered", "A new or revised source is identified (surveillance, reviewer, user report).", "Editor", "Source, date found"],
   ["Source retrieved", "The official document is obtained and its licence checked.", "Editor", "Source URL, access and licence status"],
-  ["Extracted", "Metadata and recommendations are entered; wording marked as quotation or ARVEEN paraphrase.", "Editor", "Fields entered, text type"],
+  ["Extracted", "Metadata and recommendations are entered; wording marked as quotation or DR ARVEEN paraphrase.", "Editor", "Fields entered, text type"],
   ["Structured", "Linked to disease, stage, biomarker, trials and protocols.", "Editor", "Links"],
   ["Clinically reviewed", "A clinician checks every field against the source.", "Clinical reviewer (not the editor)", "Reviewer name, date, comments"],
   ["Approved", "Final sign-off. High-risk prescribing content needs a second clinician or pharmacist.", "Clinical lead (+ pharmacist for doses)", "Approver, date"],
@@ -2676,7 +2676,7 @@ function editTarget(key) { // key = "edit:<coll>:<id>"
   const rest = key.slice(5), i = rest.indexOf(":"), coll = rest.slice(0, i), id = rest.slice(i + 1), row = state.edits[`${coll}:${id}`];
   if (coll === "page") { const pl = PAGE_LABELS.find(([r]) => r === id); return { coll, id, row, label: `Page: ${pl ? pl[1] : id}`, rec: state.pageEdits?.[id] || {}, scope: PUBLIC_PAGES.includes(id) ? "public" : "pro", view: id }; }
   if (coll === "slides") return { coll, id, row, label: id === "pt" ? "Patient home carousel" : "Professional home carousel", rec: { slides: state.slides?.[id] || SLIDES[id] || [] }, scope: id === "pt" ? "public" : "pro", view: id === "pt" ? "pt" : "home" };
-  if (coll === "portfolio") return { coll, id, row, label: "Dr Arveen portfolio", rec: window.ARVEEN_PUBLIC.portfolio || {}, orig: origOf("portfolio:main") || window.ARVEEN_PUBLIC.portfolio || {}, scope: "public", view: "portfolio" };
+  if (coll === "portfolio") return { coll, id, row, label: "DR ARVEEN portfolio", rec: window.ARVEEN_PUBLIC.portfolio || {}, orig: origOf("portfolio:main") || window.ARVEEN_PUBLIC.portfolio || {}, scope: "public", view: "portfolio" };
   const rec = byId(editList(D, coll) || [], id); if (!rec) return null;
   const view = { guidelines: `g.${id}`, diseases: `d.${id}`, staging: `s.${id}`, protocols: `p.${id}`, drugs: `dr.${id}`, trials: `t.${id}`, algorithms: `algorithms.${id}`, notes: "notes", recommendations: "recs", literature: "compare" }[coll];
   return { coll, id, row, label: `${(EDIT_COLLS.find(([c]) => c === coll) || [, coll])[1]} · ${recTitle(rec)}`, rec, orig: origOf(`${coll}:${id}`) || rec, scope: "pro", view };
@@ -2836,7 +2836,7 @@ V.cms = () => {
   const listHtml = `<label class="cms-filter">Find something to edit<input type="search" id="cms-filter" placeholder="e.g. carboplatin, ESGO, carousel"></label>
     <p class="cms-gh">Whole site</p>
     ${gGroup("edit:slides:", "Home page carousels", [["edit:slides:pro", "Professional home carousel"], ["edit:slides:pt", "Patient home carousel"]])}
-    ${gGroup("edit:portfolio:", "Dr Arveen portfolio", [["edit:portfolio:main", "Portfolio details and photo"]])}
+    ${gGroup("edit:portfolio:", "DR ARVEEN portfolio", [["edit:portfolio:main", "Portfolio details and photo"]])}
     ${gGroup("edit:page:", "Page pictures and intros", PAGE_LABELS.map(([r, l]) => [`edit:page:${r}`, l]))}
     <p class="cms-gh">Patient Education Centre</p>${patientHtml}
     <p class="cms-gh">Clinical reference</p>
